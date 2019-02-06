@@ -1,4 +1,4 @@
-import math
+from utils import distance_measures as dtm
 
 CODEBOOK_DICT = {7: {0: (0., 0., 0.),
                      1: (-1., 0., 0.),
@@ -51,18 +51,12 @@ CODEBOOK_DICT = {7: {0: (0., 0., 0.),
                       26: (0.0, -0.7071067811865475, 0.7071067811865476)}}
 
 
-def create_3d_codebook(num, plot=False):
+def create_3d_codebook(num):
     builder = CODEBOOK_DICT[num]
     codebook = {k: builder[k] for k in builder.keys()}
     return codebook
 
 
 def code_vector(codebook, v):
-    distances = {k: eucl_dist(codebook.get(k), v) for k in codebook.keys()}
+    distances = {k: dtm.eucl_dist(codebook.get(k), v) for k in codebook.keys()}
     return min(distances, key=distances.get)
-
-
-def eucl_dist(v1, v2):
-    dist = [(a - b) ** 2 for a, b in zip(v1, v2)]
-    distance = math.sqrt(sum(dist))
-    return distance

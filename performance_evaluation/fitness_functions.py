@@ -2,7 +2,7 @@ import numpy as np
 
 
 def isolated_fitness_function_params(matching_scores, thresholds, classes, parameter_to_optimize=5):
-    num_classes = len(matching_scores.columns) - 1
+    num_classes = matching_scores.shape[1] - 1
     num_instances = matching_scores.shape[0]
     thresholds = np.append(thresholds, 0)
     scores = matching_scores - thresholds

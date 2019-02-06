@@ -34,9 +34,10 @@ class WLCSSCuda:
         h_soffsets = np.cumsum(h_slen).astype(np.int32)
         h_soffsets = np.insert(h_soffsets[0:-1], 0, 0)
 
-        h_ts = np.array([item for sublist in self.h_t for item in sublist]).astype(np.int32)  # Template as numpy array
-        h_ss = np.array([item for sublist in self.h_s for item in sublist.values]).astype(
-            np.int32)  # Stream as numpy array
+        # Template as numpy array
+        h_ts = np.array([item for sublist in self.h_t for item in sublist[:, 0]]).astype(np.int32)
+        # Stream as numpy array
+        h_ss = np.array([item for sublist in self.h_s for item in sublist[:, 0]]).astype(np.int32)
 
         self.h_mss = np.zeros((len(h_ss) * self.num_params_sets * self.num_templates)).astype(np.int32)
         h_mss_offsets = np.cumsum(np.tile(h_slen, self.num_params_sets * self.num_templates)).astype(np.int32)

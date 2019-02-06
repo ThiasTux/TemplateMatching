@@ -37,7 +37,7 @@ def plot_gestures(data, col, classes=None, use_labels_color=False, save_fig=Fals
             sub.set_xticks([])
             sub.set_xticklabels([])
             # sub.set_yticklabels([])
-            sub.set_ylim(0, 100)
+            sub.set_ylim(-100, 100)
             sub.plot(instance, linewidth=1.5, color=color)
         if save_fig:
             fig.savefig(

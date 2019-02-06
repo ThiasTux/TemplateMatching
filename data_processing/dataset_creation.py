@@ -221,6 +221,7 @@ def create_synthetic_dataset(num_gestures=20, gesture_length=150):
     gestures = list()
     dataset_name = "synthetic"
     gestures += generate_sinusoid(num_gestures, gesture_length)
+    gestures += generate_normal_dist(num_gestures, gesture_length)
     gestures += generate_step_function(num_gestures, gesture_length)
     gestures += generate_squared_impulse(num_gestures, gesture_length)
     with open(join(OUTPUT_FOLDER, dataset_name, "all_data_isolated.pickle"), "wb") as output_file:
@@ -228,10 +229,27 @@ def create_synthetic_dataset(num_gestures=20, gesture_length=150):
 
 
 def generate_sinusoid(num_gestures, gesture_length):
+    sin_length = int(gesture_length / 3)
+    data = [np.zeros(gesture_length) for _ in range(num_gestures)]
+    f = 1
+    w = 2 * np.pi * f
+    for i in range(num_gestures):
+        start_idx = int(np.random.uniform(0, int(gesture_length / 2)))
+        end_idx = start_idx + sin_length
+        t = np.linspace(0, 1, sin_length)
+        tmp_sin = np.sin(w * t) * np.random.uniform(48, 64)
+        data[i][start_idx:end_idx] = tmp_sin
+    label = np.array([1001 for _ in range(gesture_length)])
+    user_no = np.array([0 for _ in range(gesture_length)])
+    generated_data = [np.stack((d, label, user_no), axis=-1) for d in data]
+    return generated_data
+
+
+def generate_normal_dist(num_gestures, gesture_length):
     t_mean = np.random.randint(int(gesture_length / 5), int(gesture_length / 5 * 3), size=num_gestures)
     t_std = np.random.randint(int(gesture_length / 7 / 10), int(gesture_length / 7 / 10 * 3), size=num_gestures)
     data = np.array([norm.pdf(np.arange(gesture_length), x, y) * 900 for x, y in zip(t_mean, t_std)])
-    label = np.array([1 for _ in range(gesture_length)])
+    label = np.array([1002 for _ in range(gesture_length)])
     user_no = np.array([0 for _ in range(gesture_length)])
     generated_data = [np.stack((d, label, user_no), axis=-1) for d in data]
     return generated_data
@@ -242,7 +260,7 @@ def generate_step_function(num_gestures, gesture_length):
     t_std = np.random.randint(int(gesture_length / 5 / 10), int(gesture_length / 5 / 10 * 3), size=num_gestures)
     step_heigth = np.random.randint(20, 100, size=num_gestures)
     data = np.array([uniform.cdf(np.arange(gesture_length), x, y) * st for x, y, st in zip(t_mean, t_std, step_heigth)])
-    label = np.array([2 for _ in range(gesture_length)])
+    label = np.array([1003 for _ in range(gesture_length)])
     user_no = np.array([0 for _ in range(gesture_length)])
     generated_data = [np.stack((d, label, user_no), axis=-1) for d in data]
     return generated_data
@@ -252,7 +270,7 @@ def generate_squared_impulse(num_gestures, gesture_length):
     t_mean = np.random.randint(int(gesture_length / 5), int(gesture_length / 5 * 3), size=num_gestures)
     t_std = np.random.randint(int(gesture_length / 4 / 2), int(gesture_length / 4 / 2 * 3), size=num_gestures)
     data = np.array([uniform.pdf(np.arange(gesture_length), x, y) * 900 for x, y in zip(t_mean, t_std)])
-    label = np.array([3 for _ in range(gesture_length)])
+    label = np.array([1004 for _ in range(gesture_length)])
     user_no = np.array([0 for _ in range(gesture_length)])
     generated_data = [np.stack((d, label, user_no), axis=-1) for d in data]
     return generated_data
