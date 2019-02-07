@@ -12,9 +12,6 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=f
    }
 }
 
-int32_t *d_mss, *d_mss_offsets, *d_ts, *d_ss, *d_tlen, *d_toffsets, *d_slen, *d_soffsets, *d_params;
-int num_templates, num_streams, num_params_sets, h_ts_length, h_ss_length, h_mss_length;
-
 __global__ void wlcss_cuda_kernel(int32_t *d_mss, int32_t *d_mss_offsets, int32_t *d_ts, int32_t *d_ss, int32_t *d_tlen, int32_t *d_toffsets, int32_t *d_slen, int32_t *d_soffsets, int32_t *d_params){
 
     int params_idx = threadIdx.x;
@@ -60,58 +57,49 @@ __global__ void wlcss_cuda_kernel(int32_t *d_mss, int32_t *d_mss_offsets, int32_
         tmp_window[t_len+1] = 0;
     }
     delete [] tmp_window;
+
 }
 
 extern "C"{
-    void wlcss_cuda_init(int32_t *h_mss, int32_t *h_mss_offsets, int32_t *h_ts, int32_t *h_ss, int32_t *h_tlen, int32_t *h_toffsets, int32_t *h_slen, int32_t *h_soffsets, int num_ts, int num_ss, int num_ps, int h_ts_len, int h_ss_len, int h_mss_len){
+    void wlcss_cuda(int32_t *h_mss, int32_t *h_mss_offsets, int32_t *h_ts, int32_t *h_ss, int32_t *h_tlen, int32_t *h_toffsets, int32_t *h_slen, int32_t *h_soffsets, int32_t *h_params, int num_templates, int num_streams, int num_params_sets, int h_ts_length, int h_ss_length, int h_mss_length){
 
-        num_templates = num_ts;
-        num_streams = num_ss;
-        num_params_sets = num_ps;
-        h_ts_length = h_ts_len;
-        h_ss_length = h_ss_len;
-        h_mss_length = h_mss_len;
+        int32_t *d_mss, *d_mss_offsets, *d_ts, *d_ss, *d_tlen, *d_toffsets, *d_slen, *d_soffsets, *d_params;
 
         // Allocate memory for templates array
-        gpuErrchk( cudaMalloc((void **) &d_ts, h_ts_length * sizeof(int32_t)) );
-        gpuErrchk( cudaMemcpy(d_ts, h_ts, h_ts_length * sizeof(int32_t), cudaMemcpyHostToDevice) );
+        gpuErrchk(cudaMalloc((void **) &d_ts, h_ts_length * sizeof(int32_t)));
+        gpuErrchk(cudaMemcpy(d_ts, h_ts, h_ts_length * sizeof(int32_t), cudaMemcpyHostToDevice));
 
         //Allocate memory for templates lengths
-        gpuErrchk( cudaMalloc((void **) &d_tlen, num_templates * sizeof(int32_t)) );
-        gpuErrchk( cudaMemcpy(d_tlen, h_tlen, num_templates * sizeof(int32_t), cudaMemcpyHostToDevice) );
+        gpuErrchk(cudaMalloc((void **) &d_tlen, num_templates * sizeof(int32_t)));
+        gpuErrchk(cudaMemcpy(d_tlen, h_tlen, num_templates * sizeof(int32_t), cudaMemcpyHostToDevice));
 
         // Allocate memory for templates offsets
-        gpuErrchk( cudaMalloc((void **) &d_toffsets, num_templates * sizeof(int32_t)) );
-        gpuErrchk( cudaMemcpy(d_toffsets, h_toffsets, num_templates * sizeof(int32_t), cudaMemcpyHostToDevice) );
+        gpuErrchk(cudaMalloc((void **) &d_toffsets, num_templates * sizeof(int32_t)));
+        gpuErrchk(cudaMemcpy(d_toffsets, h_toffsets, num_templates * sizeof(int32_t), cudaMemcpyHostToDevice));
 
         // Allocate memory for streams array
-        gpuErrchk( cudaMalloc((void **) &d_ss, h_ss_length * sizeof(int32_t)) );
-        gpuErrchk( cudaMemcpy(d_ss, h_ss, h_ss_length * sizeof(int32_t), cudaMemcpyHostToDevice) );
+        gpuErrchk(cudaMalloc((void **) &d_ss, h_ss_length * sizeof(int32_t)));
+        gpuErrchk(cudaMemcpy(d_ss, h_ss, h_ss_length * sizeof(int32_t), cudaMemcpyHostToDevice));
 
         // Allocate memory for streams lengths
-        gpuErrchk( cudaMalloc((void **) &d_slen, num_streams * sizeof(int32_t)) );
-        gpuErrchk( cudaMemcpy(d_slen, h_slen, num_streams * sizeof(int32_t), cudaMemcpyHostToDevice) );
+        gpuErrchk(cudaMalloc((void **) &d_slen, num_streams * sizeof(int32_t)));
+        gpuErrchk(cudaMemcpy(d_slen, h_slen, num_streams * sizeof(int32_t), cudaMemcpyHostToDevice));
 
         // Allocate memory for streams offsets
-        gpuErrchk( cudaMalloc((void **) &d_soffsets, num_streams * sizeof(int32_t)) );
-        gpuErrchk( cudaMemcpy(d_soffsets, h_soffsets, num_streams * sizeof(int32_t), cudaMemcpyHostToDevice) );
-
-        // Allocate memory for matching scores
-        gpuErrchk( cudaMalloc((void **) &d_mss, h_mss_length * sizeof(int32_t)) );
-
-        //Allocate memory for matching scores offsets
-        gpuErrchk( cudaMalloc((void **) &d_mss_offsets, num_streams*num_templates*num_params_sets * sizeof(int32_t)) );
-        gpuErrchk( cudaMemcpy(d_mss_offsets, h_mss_offsets, num_streams*num_templates*num_params_sets * sizeof(int32_t), cudaMemcpyHostToDevice) );
+        gpuErrchk(cudaMalloc((void **) &d_soffsets, num_streams * sizeof(int32_t)));
+        gpuErrchk(cudaMemcpy(d_soffsets, h_soffsets, num_streams * sizeof(int32_t), cudaMemcpyHostToDevice));
 
         // Allocate memory for d_params
-        gpuErrchk( cudaMalloc((void **) &d_params, num_params_sets * 3 * sizeof(int32_t)) );
+        gpuErrchk(cudaMalloc((void **) &d_params, num_params_sets * 3 * sizeof(int32_t)));
+        gpuErrchk(cudaMemcpy(d_params, h_params, num_params_sets * 3 * sizeof(int32_t), cudaMemcpyHostToDevice));
 
-    }
+        // Allocate memory for matching scores
+        gpuErrchk(cudaMalloc((void **) &d_mss, h_mss_length * sizeof(int32_t)));
+        gpuErrchk(cudaMemcpy(d_mss, h_mss, h_mss_length * sizeof(int32_t), cudaMemcpyHostToDevice));
 
-    void wlcss_cuda(int32_t *h_params, int32_t *h_mss){
-
-        gpuErrchk( cudaMemcpy(d_params, h_params, num_params_sets * 3 * sizeof(int32_t), cudaMemcpyHostToDevice) );
-        gpuErrchk( cudaMemcpy(d_mss, h_mss, h_mss_length * sizeof(int32_t), cudaMemcpyHostToDevice) );
+        // Allocate memory for matching scores offsets
+        gpuErrchk(cudaMalloc((void **) &d_mss_offsets, num_templates * num_streams * num_params_sets * sizeof(int32_t)));
+        gpuErrchk(cudaMemcpy(d_mss_offsets, h_mss_offsets, num_templates * num_streams * num_params_sets * sizeof(int32_t), cudaMemcpyHostToDevice));
 
         wlcss_cuda_kernel<<<dim3(num_templates, num_streams), num_params_sets>>>(d_mss, d_mss_offsets, d_ts, d_ss, d_tlen, d_toffsets, d_slen, d_soffsets, d_params);
 
@@ -119,20 +107,20 @@ extern "C"{
         gpuErrchk( cudaDeviceSynchronize() );
 
         gpuErrchk( cudaMemcpy(h_mss, d_mss, h_mss_length * sizeof(int32_t), cudaMemcpyDeviceToHost) );
-    }
-    
-    void wlcss_freemem(){
-        
+
         cudaFree(d_ts);
         cudaFree(d_tlen);
         cudaFree(d_toffsets);
-        
+
         cudaFree(d_ss);
         cudaFree(d_slen);
         cudaFree(d_soffsets);
-        
+
+        cudaFree(d_params);
+
         cudaFree(d_mss);
         cudaFree(d_mss_offsets);
-        gpuErrchk( cudaFree(d_params) );
+
+        cudaFree(d_mss);
     }
 }

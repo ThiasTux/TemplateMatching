@@ -1,4 +1,5 @@
 import glob
+import math
 import os
 import pickle
 from os.path import expanduser
@@ -9,11 +10,12 @@ import numpy as np
 from pyquaternion import Quaternion
 from scipy.stats import norm, uniform
 
-from utils import codebook_builder as cc
+from utils import codebook_builder as cc, filter_data as fd
 
 OUTPUT_FOLDER = "outputs/datasets/"
 
 OPPORTUNITY_FOLDER = join(expanduser("~"), "Documents/Datasets/OpportunityUCIDataset/dataset")
+OPPORTUNITY_DOWNSAMPLING_FACTOR = 3
 
 SKODA_FOLDER = join(expanduser("~"), "Documents/Datasets/SkodaDataset/processed_data/")
 SKODA_USER_DICT = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7}
@@ -29,7 +31,7 @@ SKODA_TIME_INTERVAL = 0.5
 SKODA_MIN_DISPLACEMENT = 0.03
 
 
-def extract_isolated_opportunity():
+def extract_isolated_opportunity(quantize_data=True, sensor=29):
     files = [file for file in glob.glob(OPPORTUNITY_FOLDER + "/*-Drill.dat") if
              os.stat(file).st_size != 0]
     eng = matlab.engine.start_matlab()
@@ -38,13 +40,32 @@ def extract_isolated_opportunity():
     for file in files:
         user_no = file.split("/")[-1].replace("-Drill.dat", "").replace("S", "0")
         data = np.loadtxt(file, dtype=float)
+        if quantize_data:
+            tmp_data = np.empty((int(math.ceil(len(data) / OPPORTUNITY_DOWNSAMPLING_FACTOR)), 3), dtype=int)
+            used_data = data[:, sensor]
+            np.nan_to_num(used_data, False)
+            cutoff_freq = 10
+            freq = 30
+            filtered_data = fd.butter_lowpass_filter(used_data, cutoff_freq, freq)
+            processed_data = fd.decimate_signal(filtered_data, OPPORTUNITY_DOWNSAMPLING_FACTOR)
+            max_value = 2000
+            min_value = -2000
+            bins = np.arange(min_value, max_value, (max_value - min_value) / 127)
+            digitized_data = np.digitize(processed_data, bins)
+            bins = np.arange(-64, 64)
+            quantized_data = np.array([bins[x] for x in digitized_data], dtype=int)
+            tmp_data[:, 0] = quantized_data
+            tmp_data[:, 1] = data[::OPPORTUNITY_DOWNSAMPLING_FACTOR, -2]
+            tmp_data[:, 2] = data[::OPPORTUNITY_DOWNSAMPLING_FACTOR, -1]
+            data = tmp_data
         labels = data[:, -1]
         [i1, i2, i3] = eng.dtcFindInstancesFromLabelStream(matlab.double(list(labels)), nargout=3)
         for i, c in enumerate(np.unique(labels)):
             m_range = i3[i]['range']
             num_inst = len(m_range)
             for k in range(num_inst):
-                extracted_data = data[int(i3[i]['range'][k][0] - 1):int(i3[i]['range'][k][1]), 37:102]
+                extracted_data = data[int(i3[i]['range'][k][0] - 1):int(i3[i]['range'][k][1]),
+                                 0 if quantize_data else 37:102]
                 if extracted_data.size != 0:
                     extracted_data_time = data[int(i3[i]['range'][k][0] - 1):int(i3[i]['range'][k][1]), 0]
                     tmp_data = np.empty((extracted_data.shape[0], extracted_data.shape[1] + 3))
@@ -54,8 +75,38 @@ def extract_isolated_opportunity():
                     tmp_data[:, -1] = np.array([user_no for i in range(extracted_data.shape[0])])
                     all_data.append(tmp_data)
     eng.quit()
-    with open(join(OUTPUT_FOLDER, dataset_name, "all_data_isolated.pickle"), "wb") as output_file:
-        pickle.dump(all_data, output_file)
+    if quantize_data:
+        with open(join(OUTPUT_FOLDER, dataset_name, "all_quant_data_isolated.pickle"), "wb") as output_file:
+            pickle.dump(all_data, output_file)
+    else:
+        with open(join(OUTPUT_FOLDER, dataset_name, "all_data_isolated.pickle"), "wb") as output_file:
+            pickle.dump(all_data, output_file)
+
+
+# def quantize_opportunity(sensors=28):
+#     data = pickle.load(open("outputs/datasets/opportunity/all_data_isolated.pickle", "rb"))
+#     new_data = list()
+#     dataset_name = "opportunity"
+#     for d in data:
+#         tmp_data = np.empty((int(math.ceil(len(d) / OPPORTUNITY_DOWNSAMPLING_FACTOR)), 3), dtype=int)
+#         used_data = d[:, sensors]
+#         np.nan_to_num(used_data, False)
+#         cutoff_freq = 10
+#         freq = 30
+#         filtered_data = fd.butter_lowpass_filter(used_data, cutoff_freq, freq)
+#         processed_data = fd.decimate_signal(filtered_data, OPPORTUNITY_DOWNSAMPLING_FACTOR)
+#         max_value = 2000
+#         min_value = -2000
+#         bins = np.arange(min_value, max_value, (max_value - min_value) / 127)
+#         digitized_data = np.digitize(processed_data, bins)
+#         bins = np.arange(-64, 64)
+#         quantized_data = np.array([bins[x] for x in digitized_data], dtype=int)
+#         tmp_data[:, 0] = quantized_data
+#         tmp_data[:, 1] = d[::OPPORTUNITY_DOWNSAMPLING_FACTOR, -2]
+#         tmp_data[:, 2] = d[::OPPORTUNITY_DOWNSAMPLING_FACTOR, -1]
+#         new_data.append(tmp_data)
+#     with open(join(OUTPUT_FOLDER, dataset_name, "quant_rla_data_isolated.pickle"), "wb") as output_file:
+#         pickle.dump(new_data, output_file)
 
 
 def extract_continuous_opportunity():

@@ -5,7 +5,10 @@ import numpy as np
 import progressbar
 
 from performance_evaluation import fitness_functions as fit_fun
-from template_matching.wlcss_cuda import WLCSSCuda
+from template_matching.wlcss_cuda_class import WLCSSCuda
+
+
+# from template_matching import wlcss_pycuda
 
 
 class GAParamsOptimizer:
@@ -134,7 +137,7 @@ class GAParamsOptimizer:
         thresholds = [
             [self.__np_to_int(p[self.__bits_parameter * 3 + (j * self.__bits_threshold):self.__bits_parameter * 3 + (
                     j + 1) * self.__bits_threshold]) for j in range(len(self.__templates))] for p in pop]
-        matching_scores = self.__m_wlcss_cuda.compute_cuda(params)
+        matching_scores = self.__m_wlcss_cuda.compute_wlcss(params)
         matching_scores = [np.concatenate((ms, self.__instances_labels), axis=1) for ms in matching_scores]
         fitness_scores = np.array([fit_fun.isolated_fitness_function_params(matching_scores[k], thresholds[k],
                                                                             self.__instances_labels,

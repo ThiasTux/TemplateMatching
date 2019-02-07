@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import datetime
 import time
 from os.path import join
@@ -6,7 +7,7 @@ from data_processing import data_loader as dl
 from training.params.ga_params_optimizer import GAParamsOptimizer
 
 if __name__ == '__main__':
-    dataset_choice = 700
+    dataset_choice = 201
     num_test = 1
     use_null = True
     write_to_file = True
@@ -20,9 +21,9 @@ if __name__ == '__main__':
     elif dataset_choice == 200 or dataset_choice == 201 or dataset_choice == 202 or dataset_choice == 203 \
             or dataset_choice == 204 or dataset_choice == 205 or dataset_choice == 211:
         use_encoding = False
-        classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
+        # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
         # classes = [406516, 408512, 405506]
-        # classes = [407521, 406520, 406505, 406519]
+        classes = [407521, 406520, 406505, 406519]
         output_folder = "outputs/training/cuda/opportunity/params"
         sensor = None
         null_class_percentage = 0.5
@@ -59,6 +60,7 @@ if __name__ == '__main__':
 
     chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice,
                                                                    classes=classes, extract_null=use_null,
+                                                                   num_gestures=45,
                                                                    null_class_percentage=null_class_percentage)
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
 

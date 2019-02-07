@@ -1,0 +1,4 @@
+gcc -shared -O3 -Wall -fPIC -o libwlcss.so wlcss.c distances.o
+
+nvcc -Xcompiler -fPIC -shared -o lib_wlcss_cuda.so wlcss_cuda.cu
+
