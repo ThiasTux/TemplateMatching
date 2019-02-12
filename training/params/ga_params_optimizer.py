@@ -1,4 +1,3 @@
-import multiprocessing as mp
 import random
 
 import numpy as np
@@ -43,18 +42,10 @@ class GAParamsOptimizer:
             self.__output_file = file
 
     def optimize(self):
-        results_queue = mp.Queue()
-        processes = [mp.Process(target=self.__execute_ga, args=([results_queue, t])) for t in
-                     range(self.__num_processes)]
-        for t, p in enumerate(processes):
-            print("Process {} started".format(t))
-            p.start()
-        for t, p in enumerate(processes):
-            p.join()
-            print("Process {} ended".format(t))
-        self.__results = [results_queue.get() for _ in processes]
+        for t in range(self.__num_processes):
+            self.__results += self.__execute_ga(t)
 
-    def __execute_ga(self, results_queue, num_test):
+    def __execute_ga(self, num_test):
         scores = list()
         pop = self.__generate_population()
         bar = progressbar.ProgressBar(max_value=self.__iterations)
@@ -98,8 +89,8 @@ class GAParamsOptimizer:
             with open(output_scores_path, 'w') as f:
                 for item in scores:
                     f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
-        results_queue.put([penalty, reward, accepted_distance, thresholds, top_score])
         self.__m_wlcss_cuda.cuda_freemem()
+        return [penalty, reward, accepted_distance, thresholds, top_score]
 
     def __generate_population(self):
         return (np.random.rand(self.__num_individuals, self.__total_genes) < 0.5).astype(int)

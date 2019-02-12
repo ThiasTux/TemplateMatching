@@ -7,7 +7,7 @@ from data_processing import data_loader as dl
 from training.params.ga_params_optimizer import GAParamsOptimizer
 
 if __name__ == '__main__':
-    dataset_choice = 201
+    dataset_choice = 700
     num_test = 1
     use_null = True
     write_to_file = True
