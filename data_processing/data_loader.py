@@ -10,6 +10,8 @@ def load_dataset(dataset_choice=100, classes=None, num_gestures=None, user=None)
     # Skoda dataset
     if dataset_choice == 100:
         data = pickle.load(open("outputs/datasets/skoda/all_data_isolated.pickle", "rb"))
+    elif dataset_choice == 101:
+        data = pickle.load(open("outputs/datasets/skoda/all_old_data_isolated.pickle", "rb"))
     # Opportunity dataset
     elif dataset_choice == 200:
         data = pickle.load(open("outputs/datasets/opportunity/all_data_isolated.pickle", "rb"))
@@ -18,6 +20,8 @@ def load_dataset(dataset_choice=100, classes=None, num_gestures=None, user=None)
     # Synthetic dataset
     elif dataset_choice == 700:
         data = pickle.load(open("outputs/datasets/synthetic/all_data_isolated.pickle", "rb"))
+    elif dataset_choice == 800:
+        data = pickle.load(open("outputs/datasets/unilever_drinking/all_data_isolated.pickle", "rb"))
     if user is None:
         selected_data = [[d for d in data if d[0, -2] == c] for c in classes]
     else:
@@ -71,6 +75,8 @@ def load_training_dataset(dataset_choice=700, classes=None, num_gestures=None, u
     # Skoda dataset
     if dataset_choice == 100:
         data = pickle.load(open("outputs/datasets/skoda/all_data_isolated.pickle", "rb"))
+    elif dataset_choice == 101:
+        data = pickle.load(open("outputs/datasets/skoda/all_old_data_isolated.pickle", "rb"))
     # Opportunity dataset
     elif dataset_choice == 200:
         data = pickle.load(open("outputs/datasets/opportunity/all_data_isolated.pickle", "rb"))
@@ -79,6 +85,8 @@ def load_training_dataset(dataset_choice=700, classes=None, num_gestures=None, u
     # Synthetic dataset
     elif dataset_choice == 700:
         data = pickle.load(open("outputs/datasets/synthetic/all_data_isolated.pickle", "rb"))
+    elif dataset_choice == 800:
+        data = pickle.load(open("outputs/datasets/unilever_drinking/all_data_isolated.pickle", "rb"))
     if user is None:
         selected_data = [[d for d in data if d[0, -2] == c] for c in classes]
     else:
@@ -95,7 +103,7 @@ def load_training_dataset(dataset_choice=700, classes=None, num_gestures=None, u
             matching_scores = np.zeros((len(templates), len(templates)), dtype=int)
             for i in range(len(templates)):
                 for j in range(i + 1, len(templates)):
-                    d, c = dtm.LCS(templates[i][:, 0], templates[j][:, 0])
+                    d, c = dtm.LCS(templates[i][:, 1], templates[j][:, 1])
                     matching_scores[i][j] = d
                     matching_scores[j][i] = d
             matching_scores_sums = np.sum(matching_scores, axis=0)

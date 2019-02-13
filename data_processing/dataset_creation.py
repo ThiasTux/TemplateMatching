@@ -17,7 +17,11 @@ OUTPUT_FOLDER = "outputs/datasets/"
 OPPORTUNITY_FOLDER = join(expanduser("~"), "Documents/Datasets/OpportunityUCIDataset/dataset")
 OPPORTUNITY_DOWNSAMPLING_FACTOR = 3
 
+UNILEVER_DRINKING = join(expanduser("~"), "Documents/Datasets/CupLogger/Training/z_training_data.csv")
+
 SKODA_FOLDER = join(expanduser("~"), "Documents/Datasets/SkodaDataset/processed_data/")
+SKODA_OLD_FILE = join(expanduser("~"),
+                      "Developer/Projects/PyCharmProjects/GestureRecognitionToolchain/datasets/skoda_enc_data_27.txt")
 SKODA_USER_DICT = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7}
 SKODA_COLS = [np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 14, 15, 16]) + (i * 16) for i in range(7)]
 SKODA_COLS = [item for sublist in SKODA_COLS for item in sublist]
@@ -129,6 +133,23 @@ def extract_continuous_opportunity():
             pickle.dump(tmp_data, output_file)
 
 
+def extract_unilever_drinking():
+    dataset_name = "unilever_drinking"
+    data = np.loadtxt(UNILEVER_DRINKING, delimiter=",")
+    gestures = data[:, :-1]
+    labels = data[:, -1]
+    all_data = list()
+    for i, g in enumerate(gestures):
+        tmp_data = np.empty((len(g), 4))
+        tmp_data[:, 0] = np.arange(len(g))
+        tmp_data[:, 1] = g.T * 1000
+        tmp_data[:, 2] = np.array([labels[i] for _ in range(len(g))])
+        tmp_data[:, 3] = np.array([0 for _ in range(len(g))])
+        all_data.append(tmp_data)
+    with open(join(OUTPUT_FOLDER, dataset_name, "all_data_isolated.pickle"), "wb") as output_file:
+        pickle.dump(all_data, output_file)
+
+
 def extract_isolated_skoda_gestures(encoding=False, use_spatial=True, use_temporal=False, use_rotation=False):
     files = [file for file in glob.glob(SKODA_FOLDER + "/subject*.txt") if
              os.stat(file).st_size != 0]
@@ -162,6 +183,31 @@ def extract_isolated_skoda_gestures(encoding=False, use_spatial=True, use_tempor
                     all_data.append(tmp_data)
     eng.quit()
     with open(join(OUTPUT_FOLDER, dataset_name, "all_data_isolated.pickle"), "wb") as output_file:
+        pickle.dump(all_data, output_file)
+
+
+def extract_old_skoda():
+    data = np.loadtxt(SKODA_OLD_FILE)
+    eng = matlab.engine.start_matlab()
+    labels = data[:, -1]
+    all_data = list()
+    [i1, i2, i3] = eng.dtcFindInstancesFromLabelStream(matlab.double(list(labels)), nargout=3)
+    dataset_name = "skoda"
+    for i, c in enumerate(np.unique(labels)):
+        m_range = i3[i]['range']
+        num_inst = len(m_range)
+        for k in range(num_inst):
+            extracted_data = data[int(i3[i]['range'][k][0] - 1):int(i3[i]['range'][k][1]), 0]
+            if extracted_data.size != 0:
+                extracted_data_time = data[int(i3[i]['range'][k][0] - 1):int(i3[i]['range'][k][1]), 1]
+                tmp_data = np.empty((extracted_data.shape[0], 4))
+                tmp_data[:, 0] = extracted_data_time
+                tmp_data[:, 1] = extracted_data.astype(np.int)
+                tmp_data[:, -2] = np.array([c for i in range(extracted_data.shape[0])], dtype=int)
+                tmp_data[:, -1] = np.array([0 for i in range(extracted_data.shape[0])], dtype=int)
+                all_data.append(tmp_data)
+    eng.quit()
+    with open(join(OUTPUT_FOLDER, dataset_name, "all_old_data_isolated.pickle"), "wb") as output_file:
         pickle.dump(all_data, output_file)
 
 
@@ -290,9 +336,10 @@ def generate_sinusoid(num_gestures, gesture_length):
         t = np.linspace(0, 1, sin_length)
         tmp_sin = np.sin(w * t) * np.random.uniform(48, 64)
         data[i][start_idx:end_idx] = tmp_sin
+    time = np.arange(gesture_length)
     label = np.array([1001 for _ in range(gesture_length)])
     user_no = np.array([0 for _ in range(gesture_length)])
-    generated_data = [np.stack((d, label, user_no), axis=-1) for d in data]
+    generated_data = [np.stack((time, d, label, user_no), axis=-1) for d in data]
     return generated_data
 
 
@@ -300,9 +347,10 @@ def generate_normal_dist(num_gestures, gesture_length):
     t_mean = np.random.randint(int(gesture_length / 5), int(gesture_length / 5 * 3), size=num_gestures)
     t_std = np.random.randint(int(gesture_length / 7 / 10), int(gesture_length / 7 / 10 * 3), size=num_gestures)
     data = np.array([norm.pdf(np.arange(gesture_length), x, y) * 900 for x, y in zip(t_mean, t_std)])
+    time = np.arange(gesture_length)
     label = np.array([1002 for _ in range(gesture_length)])
     user_no = np.array([0 for _ in range(gesture_length)])
-    generated_data = [np.stack((d, label, user_no), axis=-1) for d in data]
+    generated_data = [np.stack((time, d, label, user_no), axis=-1) for d in data]
     return generated_data
 
 
@@ -311,9 +359,10 @@ def generate_step_function(num_gestures, gesture_length):
     t_std = np.random.randint(int(gesture_length / 5 / 10), int(gesture_length / 5 / 10 * 3), size=num_gestures)
     step_heigth = np.random.randint(20, 100, size=num_gestures)
     data = np.array([uniform.cdf(np.arange(gesture_length), x, y) * st for x, y, st in zip(t_mean, t_std, step_heigth)])
+    time = np.arange(gesture_length)
     label = np.array([1003 for _ in range(gesture_length)])
     user_no = np.array([0 for _ in range(gesture_length)])
-    generated_data = [np.stack((d, label, user_no), axis=-1) for d in data]
+    generated_data = [np.stack((time, d, label, user_no), axis=-1) for d in data]
     return generated_data
 
 
@@ -321,7 +370,8 @@ def generate_squared_impulse(num_gestures, gesture_length):
     t_mean = np.random.randint(int(gesture_length / 5), int(gesture_length / 5 * 3), size=num_gestures)
     t_std = np.random.randint(int(gesture_length / 4 / 2), int(gesture_length / 4 / 2 * 3), size=num_gestures)
     data = np.array([uniform.pdf(np.arange(gesture_length), x, y) * 900 for x, y in zip(t_mean, t_std)])
+    time = np.arange(gesture_length)
     label = np.array([1004 for _ in range(gesture_length)])
     user_no = np.array([0 for _ in range(gesture_length)])
-    generated_data = [np.stack((d, label, user_no), axis=-1) for d in data]
+    generated_data = [np.stack((time, d, label, user_no), axis=-1) for d in data]
     return generated_data

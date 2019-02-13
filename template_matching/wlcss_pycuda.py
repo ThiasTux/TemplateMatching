@@ -2,9 +2,7 @@ import numpy as np
 import pycuda.driver as drv
 from pycuda.compiler import SourceModule
 
-
-def compute_wlcss(templates, streams, params):
-    mod = SourceModule("""
+mod = SourceModule("""
     __global__ void wlcss_cuda_kernel(int32_t *d_mss, int32_t *d_mss_offsets, int32_t *d_ts, int32_t *d_ss, int32_t *d_tlen, int32_t *d_toffsets, int32_t *d_slen, int32_t *d_soffsets, int32_t *d_params){
 
         int params_idx = threadIdx.x;
@@ -55,6 +53,8 @@ def compute_wlcss(templates, streams, params):
     }
     """)
 
+
+def compute_wlcss(templates, streams, params):
     wlcss_pycuda = mod.get_function("wlcss_cuda_kernel")
 
     h_t = templates
@@ -73,8 +73,8 @@ def compute_wlcss(templates, streams, params):
     h_soffsets = np.cumsum(h_slen).astype(np.int32)
     h_soffsets = np.insert(h_soffsets[0:-1], 0, 0)
 
-    h_ts = np.array([item for sublist in h_t for item in sublist]).astype(np.int32)  # Template as numpy array
-    h_ss = np.array([item for sublist in h_s for item in sublist]).astype(np.int32)  # Stream as numpy array
+    h_ts = np.array([item for sublist in h_t for item in sublist[:, 1]]).astype(np.int32)  # Template as numpy array
+    h_ss = np.array([item for sublist in h_s for item in sublist[:, 1]]).astype(np.int32)  # Stream as numpy array
 
     h_mss = np.zeros((len(h_ss) * num_params_sets * num_templates)).astype(np.int32)
     d_mss = drv.mem_alloc(h_mss.nbytes)
