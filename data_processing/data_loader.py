@@ -16,7 +16,7 @@ def load_dataset(dataset_choice=100, classes=None, num_gestures=None, user=None)
     elif dataset_choice == 200:
         data = pickle.load(open("outputs/datasets/opportunity/all_data_isolated.pickle", "rb"))
     elif dataset_choice == 201:
-        data = pickle.load(open("outputs/datasets/opportunity/all_quant_data_isolated.pickle", "rb"))
+        data = pickle.load(open("outputs/datasets/opportunity/all_quant_accy_data_isolated.pickle", "rb"))
     # Synthetic dataset
     elif dataset_choice == 700:
         data = pickle.load(open("outputs/datasets/synthetic/all_data_isolated.pickle", "rb"))
@@ -81,7 +81,7 @@ def load_training_dataset(dataset_choice=700, classes=None, num_gestures=None, u
     elif dataset_choice == 200:
         data = pickle.load(open("outputs/datasets/opportunity/all_data_isolated.pickle", "rb"))
     elif dataset_choice == 201:
-        data = pickle.load(open("outputs/datasets/opportunity/all_quant_data_isolated.pickle", "rb"))
+        data = pickle.load(open("outputs/datasets/opportunity/all_quant_accy_data_isolated.pickle", "rb"))
     # Synthetic dataset
     elif dataset_choice == 700:
         data = pickle.load(open("outputs/datasets/synthetic/all_data_isolated.pickle", "rb"))

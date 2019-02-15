@@ -7,7 +7,7 @@ from template_matching.wlcss_cuda_class import WLCSSCuda
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 700
+    dataset_choice = 201
 
     stream_modality = 1  # 1 for instances, 2 for complete stream
     save_img = False
@@ -15,6 +15,7 @@ if __name__ == '__main__':
     eval_templates = False
 
     use_null = True
+    user = None
 
     write_to_file = True
     if dataset_choice == 100:
@@ -40,7 +41,9 @@ if __name__ == '__main__':
         # classes = [406516, 408512, 405506]
         classes = [407521, 406520, 406505, 406519]
         output_folder = "outputs/training/cuda/opportunity/params"
-        sensor = None
+        user = 3
+        params = [25, 4, 5]
+        thresholds = [5, 748, 431, 842]
     elif dataset_choice == 300:
         use_encoding = False
         classes = [49, 50, 51, 52, 53]
@@ -63,20 +66,20 @@ if __name__ == '__main__':
         classes = [1001, 1002, 1003, 1004]
         output_folder = "outputs/training/cuda/synthetic/params"
         null_class_percentage = 0
-        params = [13, 1, 6]
-        thresholds = [669, 824, 1, 235]
+        params = [7, 5, 1]
+        thresholds = [-3466, -1576, -15231, -4022]
 
-    chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice,
-                                                                   classes=classes, extract_null=use_null,
-                                                                   null_class_percentage=null_class_percentage)
+    chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice, user=user,
+                                                                   classes=classes, extract_null=use_null)
 
     m_wlcss_cuda = WLCSSCuda(chosen_templates, instances, 1, False)
     mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
+    m_wlcss_cuda.cuda_freemem()
     tmp_labels = np.array(labels).reshape((len(instances), 1))
     mss = np.concatenate((mss, tmp_labels), axis=1)
     fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes)
     print(fitness_score)
     plt_creator.plot_isolated_mss(mss, thresholds)
-    plt_creator.plot_gestures(dl.load_dataset(dataset_choice, classes), classes=classes)
+    # plt_creator.plot_gestures(dl.load_dataset(dataset_choice, classes), classes=classes)
     plt.show()
     print("End!")

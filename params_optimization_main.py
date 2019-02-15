@@ -7,10 +7,12 @@ from data_processing import data_loader as dl
 from training.params.ga_params_optimizer import GAParamsOptimizer
 
 if __name__ == '__main__':
-    dataset_choice = 700
+    dataset_choice = 201
+
     num_test = 1
     use_null = True
     write_to_file = True
+    user = None
     if dataset_choice == 100:
         use_encoding = False
         classes = [3001, 3003, 3013, 3018]
@@ -31,8 +33,8 @@ if __name__ == '__main__':
         # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
         # classes = [406516, 408512, 405506]
         classes = [407521, 406520, 406505, 406519]
+        user = 3
         output_folder = "outputs/training/cuda/opportunity/params"
-        sensor = None
         null_class_percentage = 0.5
     elif dataset_choice == 210:
         use_encoding = False
@@ -66,11 +68,11 @@ if __name__ == '__main__':
         null_class_percentage = 0
 
     chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice,
-                                                                   classes=classes, extract_null=use_null,
+                                                                   classes=classes, user=user, extract_null=use_null,
                                                                    null_class_percentage=null_class_percentage)
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
 
-    optimizer = GAParamsOptimizer(chosen_templates, instances, labels,
+    optimizer = GAParamsOptimizer(chosen_templates, instances, labels, classes,
                                   file="{}/param_thres_{}".format(output_folder, st))
     optimizer.optimize()
 

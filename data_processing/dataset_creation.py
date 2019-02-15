@@ -1,5 +1,4 @@
 import glob
-import math
 import os
 import pickle
 from os.path import expanduser
@@ -15,7 +14,10 @@ from utils import codebook_builder as cc, filter_data as fd
 OUTPUT_FOLDER = "outputs/datasets/"
 
 OPPORTUNITY_FOLDER = join(expanduser("~"), "Documents/Datasets/OpportunityUCIDataset/dataset")
+OPPORTUNITY_OLD_FILE = join(expanduser("~"),
+                            "Developer/Projects/PyCharmProjects/GestureRecognitionToolchain/datasets/opp_rla_accy_quant.txt")
 OPPORTUNITY_DOWNSAMPLING_FACTOR = 3
+OPPORTUNITY_SENSOR_DICT = {63: "accx", 64: "accy", 65: "accz", 66: "gyrox", 67: "gyroy", 68: "gyroz"}
 
 UNILEVER_DRINKING = join(expanduser("~"), "Documents/Datasets/CupLogger/Training/z_training_data.csv")
 
@@ -35,7 +37,7 @@ SKODA_TIME_INTERVAL = 0.5
 SKODA_MIN_DISPLACEMENT = 0.03
 
 
-def extract_isolated_opportunity(quantize_data=True, sensor=29):
+def extract_isolated_opportunity(quantize_data=True, sensor=64, fix_labels=True):
     files = [file for file in glob.glob(OPPORTUNITY_FOLDER + "/*-Drill.dat") if
              os.stat(file).st_size != 0]
     eng = matlab.engine.start_matlab()
@@ -45,24 +47,33 @@ def extract_isolated_opportunity(quantize_data=True, sensor=29):
         user_no = file.split("/")[-1].replace("-Drill.dat", "").replace("S", "0")
         data = np.loadtxt(file, dtype=float)
         if quantize_data:
-            tmp_data = np.empty((int(math.ceil(len(data) / OPPORTUNITY_DOWNSAMPLING_FACTOR)), 3), dtype=int)
+            tmp_data = np.empty((len(data), 3), dtype=int)
             used_data = data[:, sensor]
             np.nan_to_num(used_data, False)
             cutoff_freq = 10
             freq = 30
             filtered_data = fd.butter_lowpass_filter(used_data, cutoff_freq, freq)
-            processed_data = fd.decimate_signal(filtered_data, OPPORTUNITY_DOWNSAMPLING_FACTOR)
+            # processed_data = fd.decimate_signal(filtered_data, OPPORTUNITY_DOWNSAMPLING_FACTOR)
             max_value = 2000
             min_value = -2000
             bins = np.arange(min_value, max_value, (max_value - min_value) / 127)
-            digitized_data = np.digitize(processed_data, bins)
+            digitized_data = np.digitize(filtered_data, bins)
             bins = np.arange(-64, 64)
             quantized_data = np.array([bins[x] for x in digitized_data], dtype=int)
             tmp_data[:, 0] = quantized_data
-            tmp_data[:, 1] = data[::OPPORTUNITY_DOWNSAMPLING_FACTOR, -2]
-            tmp_data[:, 2] = data[::OPPORTUNITY_DOWNSAMPLING_FACTOR, -1]
+            tmp_data[:, 1] = data[:, -2]
+            tmp_data[:, 2] = data[:, -1]
             data = tmp_data
         labels = data[:, -1]
+        if fix_labels:
+            # Doors
+            labels[labels == 406517] = 406516
+            labels[labels == 404517] = 404516
+            # Drawers
+            labels[labels == 406511] = 406519
+            labels[labels == 404511] = 404519
+            labels[labels == 406508] = 406519
+            labels[labels == 404508] = 404519
         [i1, i2, i3] = eng.dtcFindInstancesFromLabelStream(matlab.double(list(labels)), nargout=3)
         for i, c in enumerate(np.unique(labels)):
             m_range = i3[i]['range']
@@ -80,7 +91,9 @@ def extract_isolated_opportunity(quantize_data=True, sensor=29):
                     all_data.append(tmp_data)
     eng.quit()
     if quantize_data:
-        with open(join(OUTPUT_FOLDER, dataset_name, "all_quant_data_isolated.pickle"), "wb") as output_file:
+        with open(join(OUTPUT_FOLDER, dataset_name,
+                       "all_quant_{}_data_isolated.pickle".format(OPPORTUNITY_SENSOR_DICT[sensor])),
+                  "wb") as output_file:
             pickle.dump(all_data, output_file)
     else:
         with open(join(OUTPUT_FOLDER, dataset_name, "all_data_isolated.pickle"), "wb") as output_file:
@@ -111,6 +124,30 @@ def extract_isolated_opportunity(quantize_data=True, sensor=29):
 #         new_data.append(tmp_data)
 #     with open(join(OUTPUT_FOLDER, dataset_name, "quant_rla_data_isolated.pickle"), "wb") as output_file:
 #         pickle.dump(new_data, output_file)
+
+def extract_old_opportunity():
+    data = np.loadtxt(OPPORTUNITY_OLD_FILE)
+    eng = matlab.engine.start_matlab()
+    labels = data[:, -1]
+    all_data = list()
+    [i1, i2, i3] = eng.dtcFindInstancesFromLabelStream(matlab.double(list(labels)), nargout=3)
+    dataset_name = "opportunity"
+    for i, c in enumerate(np.unique(labels)):
+        m_range = i3[i]['range']
+        num_inst = len(m_range)
+        for k in range(num_inst):
+            extracted_data = data[int(i3[i]['range'][k][0] - 1):int(i3[i]['range'][k][1]), 0]
+            if extracted_data.size != 0:
+                extracted_data_time = data[int(i3[i]['range'][k][0] - 1):int(i3[i]['range'][k][1]), 1]
+                tmp_data = np.empty((extracted_data.shape[0], 4))
+                tmp_data[:, 0] = extracted_data_time
+                tmp_data[:, 1] = extracted_data.astype(np.int)
+                tmp_data[:, -2] = np.array([c for i in range(extracted_data.shape[0])], dtype=int)
+                tmp_data[:, -1] = np.array([0 for i in range(extracted_data.shape[0])], dtype=int)
+                all_data.append(tmp_data)
+    eng.quit()
+    with open(join(OUTPUT_FOLDER, dataset_name, "all_old_data_isolated.pickle"), "wb") as output_file:
+        pickle.dump(all_data, output_file)
 
 
 def extract_continuous_opportunity():

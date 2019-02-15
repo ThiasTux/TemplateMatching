@@ -6,7 +6,6 @@ def isolated_fitness_function_params(matching_scores, thresholds, classes, param
     num_instances = matching_scores.shape[0]
     thresholds = np.append(thresholds, 0)
     scores = matching_scores - thresholds
-    classes = np.unique(classes)
     true_positive = np.array(
         [np.count_nonzero(scores[np.where(scores[:, i] >= 0)[0]][:, -1] == classes[i]) for i in range(num_classes)])
     false_positive = np.array(

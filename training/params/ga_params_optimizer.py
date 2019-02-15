@@ -11,13 +11,14 @@ from template_matching.wlcss_cuda_class import WLCSSCuda
 
 
 class GAParamsOptimizer:
-    def __init__(self, templates, instances, instances_labels, file=None, use_encoding=False, num_processes=1,
+    def __init__(self, templates, instances, instances_labels, classes, file=None, use_encoding=False, num_processes=1,
                  iterations=500,
                  num_individuals=32,
                  bits_parameter=5, bits_threshold=10, cr_p=0.3, mt_p=0.1, elitism=3, rank=10, maximize=True):
         self.__templates = templates
         self.__instances = instances
         self.__instances_labels = np.array(instances_labels).reshape((len(instances), 1))
+        self.__classes = classes
         self.__use_encoding = use_encoding
         self.__num_processes = num_processes
         self.__iterations = iterations
@@ -29,6 +30,7 @@ class GAParamsOptimizer:
         self.__elitism = elitism
         self.__rank = rank
         self.__maximize = maximize
+        self.__scaling_factor = 2 ** (self.__bits_threshold - 1)
         self.__chromosomes = 3
         self.__total_genes = self.__bits_parameter * self.__chromosomes
         self.__chromosomes += len(templates)
@@ -67,7 +69,8 @@ class GAParamsOptimizer:
             penalty = self.__np_to_int(pop[top_idx][self.__bits_parameter:self.__bits_parameter * 2])
             accepted_distance = self.__np_to_int(pop[top_idx][self.__bits_parameter * 2:self.__bits_parameter * 3])
             thresholds = [self.__np_to_int(pop[top_idx][self.__bits_parameter * 3 + (
-                        j * self.__bits_threshold):self.__bits_parameter * 3 + (j + 1) * self.__bits_threshold]) for j
+                    j * self.__bits_threshold):self.__bits_parameter * 3 + (j + 1) * self.__bits_threshold]) for
+                          j
                           in range(len(self.__templates))]
             scores.append([np.mean(fit_scores), np.max(fit_scores), np.min(fit_scores), np.std(fit_scores),
                            [reward, penalty, accepted_distance, thresholds]])
@@ -82,7 +85,7 @@ class GAParamsOptimizer:
         penalty = self.__np_to_int(pop[top_idx][self.__bits_parameter:self.__bits_parameter * 2])
         accepted_distance = self.__np_to_int(pop[top_idx][self.__bits_parameter * 2:self.__bits_parameter * 3])
         thresholds = [self.__np_to_int(pop[top_idx][self.__bits_parameter * 3 + (
-                    j * self.__bits_threshold):self.__bits_parameter * 3 + (j + 1) * self.__bits_threshold]) for j in
+                j * self.__bits_threshold):self.__bits_parameter * 3 + (j + 1) * self.__bits_threshold]) for j in
                       range(len(self.__templates))]
         if self.__write_to_file:
             output_scores_path = "{}_{:02d}_scores.txt".format(self.__output_file, num_test)
@@ -126,12 +129,12 @@ class GAParamsOptimizer:
              self.__np_to_int(p[self.__bits_parameter:self.__bits_parameter * 2]),
              self.__np_to_int(p[self.__bits_parameter * 2:self.__bits_parameter * 3])] for p in pop]
         thresholds = [[self.__np_to_int(p[self.__bits_parameter * 3 + (
-                    j * self.__bits_threshold):self.__bits_parameter * 3 + (j + 1) * self.__bits_threshold]) for j in
+                j * self.__bits_threshold):self.__bits_parameter * 3 + (j + 1) * self.__bits_threshold]) for j in
                        range(len(self.__templates))] for p in pop]
         matching_scores = self.__m_wlcss_cuda.compute_wlcss(params)
         matching_scores = [np.concatenate((ms, self.__instances_labels), axis=1) for ms in matching_scores]
         fitness_scores = np.array([fit_fun.isolated_fitness_function_params(matching_scores[k], thresholds[k],
-                                                                            self.__instances_labels,
+                                                                            self.__classes,
                                                                             parameter_to_optimize=5) for k in
                                    range(len(pop))])
         return fitness_scores
