@@ -90,6 +90,54 @@ def plot_scores(input_paths, save_img=False, title=None, output_file=""):
         plt.savefig(join(OUTPUT_PATH, output_file), bbox_inches='tight', format='eps', dpi=1200)
 
 
+def plot_templates_scores(input_path, save_img=False, title=None, output_file=""):
+    fig = plt.figure(figsize=(12, 4))
+    # conf_path = input_path + "_conf.txt"
+    # with open(conf_path, 'r') as conf_file:
+    #     classes_line_num = 2
+    #     for _ in range(classes_line_num):
+    #         classes_line = conf_file.readline()
+    #     classes = classes_line.split(":")[1].strip().split(" ")
+    classes = [3001, 3003, 3013, 3018]
+    # fig.suptitle(title.format(len(classes)))
+    subplt = fig.add_subplot(111)
+    for c in classes:
+        scores_files = [file for file in glob.glob(input_path + "*_{}_scores.txt".format(c)) if
+                        os.stat(file).st_size != 0]
+        max_scores = None
+        for i in range(len(scores_files)):
+            file = scores_files[i]
+            scores = np.loadtxt(file, delimiter=",")
+            if max_scores is None:
+                max_scores = np.zeros([scores.shape[0], len(scores_files)])
+            max_scores[:, i] = scores[:, 1]
+        mean_scores = np.mean(max_scores, axis=1)
+        std_scores = np.std(max_scores, axis=1)
+        t = np.arange(len(mean_scores))
+        p_mean = subplt.plot(t, mean_scores, label="{}".format(c))
+        perc90 = np.percentile(mean_scores, 50)
+        perc90_idx = np.argmax(mean_scores >= perc90)
+        p_mean_color = p_mean[0].get_color()
+        subplt.hlines(y=perc90, xmin=-10, xmax=t[perc90_idx], color='k', linestyle='dashed', zorder=10)
+        subplt.axvline(x=t[perc90_idx], ymax=perc90 / 1000, color='k', linestyle='dashed')
+        subplt.text(t[perc90_idx], -0.05, "{}".format(t[perc90_idx]))
+        # x = -15 for params
+        subplt.text(-10, perc90 + 0.02, "{:4.2f}".format(perc90))
+        subplt.fill_between(t, mean_scores + std_scores / 2, mean_scores - std_scores / 2,
+                            color=lighten_color(p_mean_color))
+    subplt.set_xticks([0, len(mean_scores)])
+    subplt.set_ylabel("Score: min(good) - max(bad)")
+    subplt.set_xlabel("ES Iterations")
+    # subplt.set_ylim(-200, 1100)
+    # subplt.set_xlim(-10, 550)
+    subplt.set_xticks(np.arange(0, 600, 100))
+    plt.legend(loc=4)
+    figManager = plt.get_current_fig_manager()
+    figManager.window.showMaximized()
+    if save_img:
+        plt.savefig(join(OUTPUT_PATH, output_file), bbox_inches='tight', format='eps', dpi=1000)
+
+
 def lighten_color(color, amount=0.5):
     """
     Lightens the given color by multiplying (1-luminosity) by the given amount.

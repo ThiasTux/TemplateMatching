@@ -70,3 +70,42 @@ def isolated_fitness_function_params(matching_scores, thresholds, classes, param
             f1 = 0
         accuracy = (np.sum(true_positive) + np.sum(true_negative)) / (num_classes * num_instances)
         return f1 * accuracy
+
+
+def isolated_fitness_function_templates(scores, labels, threshold, parameter_to_optimize=1):
+    good_scores = scores[labels != 0]
+    bad_scores = scores[labels == 0]
+    if len(good_scores) == 0 or len(bad_scores) == 0:
+        return 0
+    if parameter_to_optimize == 1:
+        return np.mean(good_scores) - np.mean(bad_scores)
+        # min(good) - max(bad)
+    elif parameter_to_optimize == 2:
+        return np.min(good_scores) - np.max(bad_scores)
+    # 90 % (good) - 10 % (bad)
+    elif parameter_to_optimize == 3:
+        return np.percentile(good_scores, 90) - np.percentile(bad_scores, 10)
+    elif parameter_to_optimize == 4:
+        avg_good = np.sum(good_scores - threshold) / len(good_scores)
+        avg_bad = np.sum(threshold - bad_scores) / len(bad_scores)
+        return avg_good + avg_bad
+    elif parameter_to_optimize == 5:
+        avg_good = np.sum(good_scores - threshold) / len(good_scores) ** 2
+        avg_bad = (np.sum(bad_scores - threshold) / len(bad_scores)) ** 2
+        return avg_good * (-avg_bad)
+    elif parameter_to_optimize == 6:
+        return (np.min(good_scores) - threshold) * (np.min(good_scores) - np.max(bad_scores))
+    elif parameter_to_optimize == 7:
+        avg_good = np.sum(good_scores - threshold) / len(good_scores)
+        avg_bad = np.sum(bad_scores - threshold) / len(bad_scores)
+        if avg_good < 0:
+            if avg_bad < 0:
+                return avg_good
+            else:
+                return
+        else:
+            if avg_bad >= 0:
+                return -avg_bad
+            else:
+                return avg_good - avg_bad
+    return None

@@ -1,9 +1,10 @@
+#!/usr/bin/env python
 import matplotlib.pyplot as plt
 import numpy as np
 
 from data_processing import data_loader as dl
 from performance_evaluation import fitness_functions as ftf
-from template_matching.wlcss_cuda_class import WLCSSCuda
+from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
@@ -42,8 +43,8 @@ if __name__ == '__main__':
         classes = [407521, 406520, 406505, 406519]
         output_folder = "outputs/training/cuda/opportunity/params"
         user = 3
-        params = [25, 4, 5]
-        thresholds = [5, 748, 431, 842]
+        params = [14, 1, 5]
+        thresholds = [327, 1021, 636, 505]
     elif dataset_choice == 300:
         use_encoding = False
         classes = [49, 50, 51, 52, 53]
@@ -72,7 +73,7 @@ if __name__ == '__main__':
     chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice, user=user,
                                                                    classes=classes, extract_null=use_null)
 
-    m_wlcss_cuda = WLCSSCuda(chosen_templates, instances, 1, False)
+    m_wlcss_cuda = WLCSSCudaParamsTraining(chosen_templates, instances, 1, False)
     mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
     m_wlcss_cuda.cuda_freemem()
     tmp_labels = np.array(labels).reshape((len(instances), 1))

@@ -58,7 +58,7 @@ def extract_isolated_opportunity(quantize_data=True, sensor=64, fix_labels=True)
             min_value = -2000
             bins = np.arange(min_value, max_value, (max_value - min_value) / 127)
             digitized_data = np.digitize(filtered_data, bins)
-            bins = np.arange(-64, 64)
+            bins = np.arange(128)
             quantized_data = np.array([bins[x] for x in digitized_data], dtype=int)
             tmp_data[:, 0] = quantized_data
             tmp_data[:, 1] = data[:, -2]

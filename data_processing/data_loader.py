@@ -17,6 +17,8 @@ def load_dataset(dataset_choice=100, classes=None, num_gestures=None, user=None)
         data = pickle.load(open("outputs/datasets/opportunity/all_data_isolated.pickle", "rb"))
     elif dataset_choice == 201:
         data = pickle.load(open("outputs/datasets/opportunity/all_quant_accy_data_isolated.pickle", "rb"))
+    elif dataset_choice == 211:
+        data = pickle.load(open("outputs/datasets/opportunity/all_old_data_isolated.pickle", "rb"))
     # Synthetic dataset
     elif dataset_choice == 700:
         data = pickle.load(open("outputs/datasets/synthetic/all_data_isolated.pickle", "rb"))
@@ -96,28 +98,33 @@ def load_training_dataset(dataset_choice=700, classes=None, num_gestures=None, u
             selected_data = [random.sample(sel_data, num_gestures) for sel_data in selected_data]
         except ValueError:
             pass
-    chosen_templates = [np.array([]) for _ in classes]
-    if template_choice_method == 1:
-        for k, c in enumerate(classes):
-            templates = selected_data[k]
-            matching_scores = np.zeros((len(templates), len(templates)), dtype=int)
-            for i in range(len(templates)):
-                for j in range(i + 1, len(templates)):
-                    d, c = dtm.LCS(templates[i][:, 1], templates[j][:, 1])
-                    matching_scores[i][j] = d
-                    matching_scores[j][i] = d
-            matching_scores_sums = np.sum(matching_scores, axis=0)
-            matching_scores_perc = np.array(
-                [matching_scores_sums[i] / len(templates[i]) for i in range(len(templates))])
-            ordered_indexes = np.argsort(matching_scores_perc)
-            chosen_templates[k] = np.array(templates[ordered_indexes[-1]])
-    elif template_choice_method == 2:
-        for k, c in enumerate(classes):
-            templates = [d for d in selected_data if d[0, -2] == c]
-            chosen_templates[k] = templates[np.random.uniform(0, len(templates))]
-    templates = [instance for class_data in selected_data for instance in class_data]
-    labels = [instance[0, -2] for class_data in selected_data for instance in class_data]
-    return chosen_templates, templates, labels
+    if template_choice_method != 0:
+        chosen_templates = [np.array([]) for _ in classes]
+        if template_choice_method == 1:
+            for k, c in enumerate(classes):
+                templates = selected_data[k]
+                matching_scores = np.zeros((len(templates), len(templates)), dtype=int)
+                for i in range(len(templates)):
+                    for j in range(i + 1, len(templates)):
+                        d, c = dtm.LCS(templates[i][:, 1], templates[j][:, 1])
+                        matching_scores[i][j] = d
+                        matching_scores[j][i] = d
+                matching_scores_sums = np.sum(matching_scores, axis=0)
+                matching_scores_perc = np.array(
+                    [matching_scores_sums[i] / len(templates[i]) for i in range(len(templates))])
+                ordered_indexes = np.argsort(matching_scores_perc)
+                chosen_templates[k] = np.array(templates[ordered_indexes[-1]])
+        elif template_choice_method == 2:
+            for k, c in enumerate(classes):
+                templates = [d for d in selected_data if d[0, -2] == c]
+                chosen_templates[k] = templates[np.random.uniform(0, len(templates))]
+        templates = [instance for class_data in selected_data for instance in class_data]
+        labels = [instance[0, -2] for class_data in selected_data for instance in class_data]
+        return chosen_templates, templates, labels
+    else:
+        templates = [instance for class_data in selected_data for instance in class_data]
+        labels = [instance[0, -2] for class_data in selected_data for instance in class_data]
+        return templates, labels
 
 
 def enc_data_loader(input_path):

@@ -4,10 +4,7 @@ import numpy as np
 import progressbar
 
 from performance_evaluation import fitness_functions as fit_fun
-from template_matching.wlcss_cuda_class import WLCSSCuda
-
-
-# from template_matching import wlcss_pycuda
+from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
 
 
 class GAParamsOptimizer:
@@ -35,7 +32,8 @@ class GAParamsOptimizer:
         self.__total_genes = self.__bits_parameter * self.__chromosomes
         self.__chromosomes += len(templates)
         self.__total_genes += bits_threshold * len(templates)
-        self.__m_wlcss_cuda = WLCSSCuda(self.__templates, self.__instances, self.__num_individuals, self.__use_encoding)
+        self.__m_wlcss_cuda = WLCSSCudaParamsTraining(self.__templates, self.__instances, self.__num_individuals,
+                                                      self.__use_encoding)
         self.__results = list()
         if file is None:
             self.__write_to_file = False
@@ -107,7 +105,7 @@ class GAParamsOptimizer:
 
     def __crossover(self, pop, cp):
         new_pop = np.empty(pop.shape, dtype=int)
-        for i in range(0, len(pop) - 1, 2):
+        for i in range(0, self.__num_individuals - 1, 2):
             if np.random.random() < cp:
                 chromosomes_len = self.__total_genes
                 crossover_position = random.randint(0, chromosomes_len - 2)
@@ -136,7 +134,7 @@ class GAParamsOptimizer:
         fitness_scores = np.array([fit_fun.isolated_fitness_function_params(matching_scores[k], thresholds[k],
                                                                             self.__classes,
                                                                             parameter_to_optimize=5) for k in
-                                   range(len(pop))])
+                                   range(self.__num_individuals)])
         return fitness_scores
 
     def __np_to_int(self, chromosome):
