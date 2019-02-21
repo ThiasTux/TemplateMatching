@@ -97,15 +97,9 @@ def isolated_fitness_function_templates(scores, labels, threshold, parameter_to_
         return (np.min(good_scores) - threshold) * (np.min(good_scores) - np.max(bad_scores))
     elif parameter_to_optimize == 7:
         avg_good = np.sum(good_scores - threshold) / len(good_scores)
-        avg_bad = np.sum(bad_scores - threshold) / len(bad_scores)
+        avg_bad = np.sum(threshold - bad_scores) / len(bad_scores)
         if avg_good < 0:
-            if avg_bad < 0:
-                return avg_good
-            else:
-                return
+            return avg_good
         else:
-            if avg_bad >= 0:
-                return -avg_bad
-            else:
-                return avg_good - avg_bad
+            return avg_good + avg_bad
     return None

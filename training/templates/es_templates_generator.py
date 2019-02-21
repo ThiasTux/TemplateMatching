@@ -13,7 +13,8 @@ class ESTemplateGenerator:
                  num_processes=1,
                  iterations=500,
                  num_individuals=32,
-                 cr_p=0.3, mt_p=0.1, elitism=3, rank=10, maximize=True):
+                 cr_p=0.3, mt_p=0.1,
+                 elitism=3, rank=10, fitness_function=7, maximize=True):
         self.__instances = instances
         self.__instances_labels = np.array(instances_labels).reshape((len(instances), 1))
         self.__params = params
@@ -28,6 +29,7 @@ class ESTemplateGenerator:
         self.__mutation_probability = mt_p
         self.__elitism = elitism
         self.__rank = rank
+        self.__fitness_function = fitness_function
         self.__maximize = maximize
         self.__chromosomes = chromosomes
         self.__m_wlcss_cuda = WLCSSCudaTemplatesTraining(self.__instances, self.__params, self.__chromosomes,
@@ -121,7 +123,8 @@ class ESTemplateGenerator:
         fitness_scores = np.array([fit_fun.isolated_fitness_function_templates(matching_scores[0][:, k],
                                                                                matching_scores[0][:, -1],
                                                                                self.__threshold,
-                                                                               parameter_to_optimize=4) for k in
+                                                                               parameter_to_optimize=self.__fitness_function)
+                                   for k in
                                    range(self.__num_individuals)])
         return fitness_scores
 

@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colors as mcolors
 
+from utils import filter_data as fd
+
 COLORS = list(mcolors.BASE_COLORS.keys())
 OUTPUT_PATH = "/home/mathias/Documents/Academic/PhD/Publications/2019/ABC/WLCSSLearn/figures"
 
@@ -169,3 +171,25 @@ def plot_isolated_mss(mss, thresholds):
         subplt = fig.add_subplot(num_templates, 1, t + 1)
         subplt.plot(mss[:, t], '.', markersize=3)
         subplt.axes.axhline(thresholds[t], color='orange')
+
+
+def plot_bluesense_data(input_path, channel):
+    fig = plt.figure()
+    files = [file for file in glob.glob(input_path + "*.LOG") if os.stat(file).st_size != 0]
+    shared_xaxis = None
+    for i, file in enumerate(files):
+        sensor_name = file.split("/")[-1].split(".")[0]
+        data = np.loadtxt(file)
+        data_time = data[:, 1]
+        freq = 500
+        cut_off = 5
+        x_data = fd.butter_lowpass_filter(data[:, channel], cut_off, freq)
+        y_data = fd.butter_lowpass_filter(data[:, channel + 1], cut_off, freq)
+        z_data = fd.butter_lowpass_filter(data[:, channel + 2], cut_off, freq)
+        if shared_xaxis is None:
+            subplt = fig.add_subplot(len(files), 1, i + 1)
+            shared_xaxis = subplt
+        else:
+            subplt = fig.add_subplot(len(files), 1, i + 1, sharex=shared_xaxis)
+        subplt.set_title("{}".format(sensor_name))
+        subplt.plot(data_time, x_data, data_time, y_data, data_time, z_data, linewidth=0.5)
