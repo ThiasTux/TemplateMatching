@@ -100,7 +100,7 @@ def plot_templates_scores(input_path, save_img=False, title=None, output_file=""
     #     for _ in range(classes_line_num):
     #         classes_line = conf_file.readline()
     #     classes = classes_line.split(":")[1].strip().split(" ")
-    classes = [3001, 3003, 3013, 3018]
+    classes = [407521, 406520, 406505, 406519]
     # fig.suptitle(title.format(len(classes)))
     subplt = fig.add_subplot(111)
     for c in classes:

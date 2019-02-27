@@ -94,7 +94,9 @@ if __name__ == '__main__':
         tmp_labels[tmp_labels != c] = 0
         chromosomes = int(np.ceil(np.average([len(t) for t in instances if t[0, -2] != 0]).astype(int)))
         optimizer = ESTemplateGenerator(instances, tmp_labels, params, thresholds[i], c, chromosomes, bit_values,
-                                        file="{}/templates_{}".format(output_folder, st), fitness_function=7)
+                                        file="{}/templates_{}".format(output_folder, st), num_individuals=64, rank=20,
+                                        iterations=1000,
+                                        fitness_function=7)
         optimizer.optimize()
 
         best_templates += [np.array(r[-1]) for r in optimizer.get_results()]

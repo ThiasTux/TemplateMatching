@@ -101,5 +101,5 @@ def isolated_fitness_function_templates(scores, labels, threshold, parameter_to_
         if avg_good < 0:
             return avg_good
         else:
-            return avg_good + avg_bad
+            return -avg_bad
     return None
