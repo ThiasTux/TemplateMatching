@@ -94,13 +94,12 @@ def plot_scores(input_paths, save_img=False, title=None, output_file=""):
 
 def plot_templates_scores(input_path, save_img=False, title=None, output_file=""):
     fig = plt.figure(figsize=(12, 4))
-    # conf_path = input_path + "_conf.txt"
-    # with open(conf_path, 'r') as conf_file:
-    #     classes_line_num = 2
-    #     for _ in range(classes_line_num):
-    #         classes_line = conf_file.readline()
-    #     classes = classes_line.split(":")[1].strip().split(" ")
-    classes = [407521, 406520, 406505, 406519]
+    conf_path = input_path + "_conf.txt"
+    with open(conf_path, 'r') as conf_file:
+        classes_line_num = 2
+        for _ in range(classes_line_num):
+            classes_line = conf_file.readline()
+        classes = classes_line.split(":")[1].strip().split(" ")
     # fig.suptitle(title.format(len(classes)))
     subplt = fig.add_subplot(111)
     for c in classes:

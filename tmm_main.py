@@ -8,7 +8,7 @@ from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 201
+    dataset_choice = 700
 
     stream_modality = 1  # 1 for instances, 2 for complete stream
     save_img = False

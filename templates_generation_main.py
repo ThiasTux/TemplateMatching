@@ -13,7 +13,7 @@ from training.templates.es_templates_generator import ESTemplateGenerator
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 201
+    dataset_choice = 700
 
     num_test = 1
     use_null = True
@@ -22,6 +22,15 @@ if __name__ == '__main__':
     params = list()
     thresholds = list()
     null_class_percentage = 0.6
+
+    num_individuals = 64
+    rank = 10
+    elitism = 3
+    iterations = 1000
+    fitness_function = 1
+    crossover_probability = 0.3
+    mutation_probability = 0.1
+
     if dataset_choice == 100:
         use_encoding = False
         classes = [3001, 3003, 3013, 3018]
@@ -81,6 +90,9 @@ if __name__ == '__main__':
         classes = [1001, 1002, 1003, 1004]
         output_folder = "outputs/training/cuda/synthetic/templates"
         null_class_percentage = 0
+        params = [7, 5, 1]
+        thresholds = [-3466, -1576, -15231, -4022]
+        bit_values = 128
 
     instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice,
                                                  classes=classes, user=user, extract_null=use_null,
@@ -89,14 +101,19 @@ if __name__ == '__main__':
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
     best_templates = list()
     scores = list()
+    start_time = time.time()
     for i, c in enumerate(classes):
         tmp_labels = np.copy(labels)
         tmp_labels[tmp_labels != c] = 0
         chromosomes = int(np.ceil(np.average([len(t) for t in instances if t[0, -2] != 0]).astype(int)))
         optimizer = ESTemplateGenerator(instances, tmp_labels, params, thresholds[i], c, chromosomes, bit_values,
-                                        file="{}/templates_{}".format(output_folder, st), num_individuals=64, rank=20,
-                                        iterations=1000,
-                                        fitness_function=7)
+                                        file="{}/templates_{}".format(output_folder, st),
+                                        num_individuals=num_individuals, rank=rank,
+                                        elitism=elitism,
+                                        iterations=iterations,
+                                        fitness_function=fitness_function,
+                                        cr_p=crossover_probability,
+                                        mt_p=mutation_probability)
         optimizer.optimize()
 
         best_templates += [np.array(r[-1]) for r in optimizer.get_results()]
@@ -104,11 +121,27 @@ if __name__ == '__main__':
     best_templates = [np.stack((np.arange(len(r)), r), axis=1) for r in best_templates]
     output_file_path = join(output_folder,
                             "templates_{}.txt".format(st))
-    output_config_path = join(output_folder,
-                              "templates_{}_conf.txt".format(st))
     m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, instances, 1, False)
     mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
     m_wlcss_cuda.cuda_freemem()
+
+    elapsed_time = time.time() - start_time
+    output_config_path = join(output_folder,
+                              "templates_{}_conf.txt".format(st))
+    with open(output_config_path, 'w') as outputconffile:
+        outputconffile.write("Dataset choice: {}\n".format(dataset_choice))
+        outputconffile.write("Classes: {}\n".format(' '.join([str(c) for c in classes])))
+        outputconffile.write("Population: {}\n".format(num_individuals))
+        outputconffile.write("Iteration: {}\n".format(iterations))
+        outputconffile.write("Crossover: {}\n".format(crossover_probability))
+        outputconffile.write("Mutation: {}\n".format(mutation_probability))
+        outputconffile.write("Elitism: {}\n".format(elitism))
+        outputconffile.write("Rank: {}\n".format(rank))
+        outputconffile.write("Num tests: {}\n".format(num_test))
+        outputconffile.write("Null class extraction: {}\n".format(use_null))
+        outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
+        outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
+
     tmp_labels = np.array(labels).reshape((len(instances), 1))
     mss = np.concatenate((mss, tmp_labels), axis=1)
     plt_creator.plot_isolated_mss(mss, thresholds)
