@@ -30,6 +30,7 @@ if __name__ == '__main__':
     fitness_function = 1
     crossover_probability = 0.3
     mutation_probability = 0.1
+    inject_templates = True
 
     if dataset_choice == 100:
         use_encoding = False
@@ -94,10 +95,18 @@ if __name__ == '__main__':
         thresholds = [-3466, -1576, -15231, -4022]
         bit_values = 128
 
-    instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice,
-                                                 classes=classes, user=user, extract_null=use_null,
-                                                 template_choice_method=0,
-                                                 null_class_percentage=null_class_percentage)
+    if inject_templates:
+        chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice,
+                                                                       classes=classes, user=user,
+                                                                       extract_null=use_null,
+                                                                       template_choice_method=1,
+                                                                       null_class_percentage=null_class_percentage)
+    else:
+        instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice,
+                                                     classes=classes, user=user, extract_null=use_null,
+                                                     template_choice_method=0,
+                                                     null_class_percentage=null_class_percentage)
+        chosen_templates = [None for _ in range(len(classes))]
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
     best_templates = list()
     scores = list()
@@ -105,9 +114,13 @@ if __name__ == '__main__':
     for i, c in enumerate(classes):
         tmp_labels = np.copy(labels)
         tmp_labels[tmp_labels != c] = 0
-        chromosomes = int(np.ceil(np.average([len(t) for t in instances if t[0, -2] != 0]).astype(int)))
+        if inject_templates:
+            chromosomes = len(chosen_templates[i])
+        else:
+            chromosomes = int(np.ceil(np.average([len(t) for t in instances if t[0, -2] != 0]).astype(int)))
         optimizer = ESTemplateGenerator(instances, tmp_labels, params, thresholds[i], c, chromosomes, bit_values,
                                         file="{}/templates_{}".format(output_folder, st),
+                                        chosen_template=chosen_templates[i],
                                         num_individuals=num_individuals, rank=rank,
                                         elitism=elitism,
                                         iterations=iterations,
@@ -137,6 +150,7 @@ if __name__ == '__main__':
         outputconffile.write("Mutation: {}\n".format(mutation_probability))
         outputconffile.write("Elitism: {}\n".format(elitism))
         outputconffile.write("Rank: {}\n".format(rank))
+        outputconffile.write("Inject templates: {}\n".format(inject_templates))
         outputconffile.write("Num tests: {}\n".format(num_test))
         outputconffile.write("Null class extraction: {}\n".format(use_null))
         outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))

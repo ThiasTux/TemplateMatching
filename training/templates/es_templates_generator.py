@@ -9,6 +9,7 @@ from template_matching.wlcss_cuda_class import WLCSSCudaTemplatesTraining
 
 class ESTemplateGenerator:
     def __init__(self, instances, instances_labels, params, threshold, cls, chromosomes, bit_values, file=None,
+                 chosen_template=None,
                  use_encoding=False,
                  num_processes=1,
                  iterations=500,
@@ -22,6 +23,7 @@ class ESTemplateGenerator:
         self.__class = cls
         self.__bit_values = bit_values
         self.__use_encoding = use_encoding
+        self.__chosen_template = chosen_template
         self.__num_processes = num_processes
         self.__iterations = iterations
         self.__num_individuals = num_individuals
@@ -88,7 +90,10 @@ class ESTemplateGenerator:
         return [top_score, best_template]
 
     def __generate_population(self):
-        return np.random.randint(0, self.__bit_values, size=(self.__num_individuals, self.__chromosomes))
+        pop = np.random.randint(0, self.__bit_values, size=(self.__num_individuals, self.__chromosomes))
+        if self.__chosen_template is not None:
+            pop[0] = self.__chosen_template[:, 1]
+        return pop
 
     def __selection(self, top_individuals, rnk):
         top_individuals = top_individuals[0:rnk]
