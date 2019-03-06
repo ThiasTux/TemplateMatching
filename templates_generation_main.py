@@ -13,7 +13,7 @@ from training.templates.es_templates_generator import ESTemplateGenerator
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 700
+    dataset_choice = 201
 
     num_test = 1
     use_null = True
@@ -27,10 +27,11 @@ if __name__ == '__main__':
     rank = 10
     elitism = 3
     iterations = 1000
-    fitness_function = 1
+    fitness_function = 7
     crossover_probability = 0.3
     mutation_probability = 0.1
     inject_templates = True
+    optimize_thresholds = True
 
     if dataset_choice == 100:
         use_encoding = False
@@ -107,8 +108,12 @@ if __name__ == '__main__':
                                                      template_choice_method=0,
                                                      null_class_percentage=null_class_percentage)
         chosen_templates = [None for _ in range(len(classes))]
+
+    if optimize_thresholds:
+        thresholds = [None for _ in range(len(classes))]
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
     best_templates = list()
+    best_thresholds = list()
     scores = list()
     start_time = time.time()
     for i, c in enumerate(classes):
@@ -129,7 +134,8 @@ if __name__ == '__main__':
                                         mt_p=mutation_probability)
         optimizer.optimize()
 
-        best_templates += [np.array(r[-1]) for r in optimizer.get_results()]
+        best_templates += [np.array(r[-2]) for r in optimizer.get_results()]
+        best_thresholds += [r[-1] for r in optimizer.get_results()]
 
     best_templates = [np.stack((np.arange(len(r)), r), axis=1) for r in best_templates]
     output_file_path = join(output_folder,
@@ -158,8 +164,8 @@ if __name__ == '__main__':
 
     tmp_labels = np.array(labels).reshape((len(instances), 1))
     mss = np.concatenate((mss, tmp_labels), axis=1)
-    plt_creator.plot_isolated_mss(mss, thresholds)
-    fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes)
+    plt_creator.plot_isolated_mss(mss, best_thresholds)
+    fitness_score = ftf.isolated_fitness_function_params(mss, best_thresholds, classes)
     print(fitness_score)
     print(output_file_path)
     print("Results written")

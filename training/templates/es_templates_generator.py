@@ -1,4 +1,5 @@
 import random
+from math import ceil, log2
 
 import numpy as np
 import progressbar
@@ -33,8 +34,9 @@ class ESTemplateGenerator:
         self.__rank = rank
         self.__fitness_function = fitness_function
         self.__maximize = maximize
-        self.__chromosomes = chromosomes
-        self.__m_wlcss_cuda = WLCSSCudaTemplatesTraining(self.__instances, self.__params, self.__chromosomes,
+        self.__templates_chromosomes = chromosomes
+        self.__threshold_chromosomes = int(ceil(log2(params[0] * self.__templates_chromosomes)))
+        self.__m_wlcss_cuda = WLCSSCudaTemplatesTraining(self.__instances, self.__params, self.__templates_chromosomes,
                                                          self.__num_individuals, self.__use_encoding)
         self.__results = list()
         if file is None:
@@ -50,25 +52,37 @@ class ESTemplateGenerator:
     def __execute_ga(self, num_test):
         scores = list()
         best_templates = list()
-        pop = self.__generate_population()
+        best_thresholds = list()
+        templates_pop, thresholds_pop = self.__generate_population()
         bar = progressbar.ProgressBar(max_value=self.__iterations)
-        fit_scores = self.__compute_fitness_cuda(pop)
+        fit_scores = self.__compute_fitness_cuda(templates_pop, thresholds_pop)
         for i in range(self.__iterations):
             pop_sort_idx = np.argsort(-fit_scores if self.__maximize else fit_scores)
-            top_individuals = pop[pop_sort_idx]
-            selected_population = self.__selection(top_individuals, self.__rank)
-            crossovered_population = self.__crossover(selected_population, self.__crossover_probability)
-            pop = self.__mutation(crossovered_population, self.__mutation_probability)
+            top_templates_individuals = templates_pop[pop_sort_idx]
+            top_thresholds_individuals = thresholds_pop[pop_sort_idx]
+            templates_selected_population, threshold_selected_population = self.__selection(top_templates_individuals,
+                                                                                            top_thresholds_individuals,
+                                                                                            self.__rank)
+            templates_crossovered_population, threshold_crossovered_population = self.__crossover(
+                templates_selected_population,
+                threshold_selected_population,
+                self.__crossover_probability)
+            templates_pop, thresholds_pop = self.__mutation(templates_crossovered_population,
+                                                            threshold_crossovered_population,
+                                                            self.__mutation_probability)
             if self.__elitism > 0:
-                pop[0:self.__elitism] = top_individuals[0:self.__elitism]
-            fit_scores = self.__compute_fitness_cuda(pop)
+                templates_pop[0:self.__elitism] = top_templates_individuals[0:self.__elitism]
+                thresholds_pop[0:self.__elitism] = top_thresholds_individuals[0:self.__elitism]
+            fit_scores = self.__compute_fitness_cuda(templates_pop, thresholds_pop)
             if self.__maximize:
                 top_idx = np.argmax(fit_scores)
             else:
                 top_idx = np.argmin(fit_scores)
-            best_template = pop[top_idx]
+            best_template = templates_pop[top_idx]
+            best_threshold = self.__np_to_int(thresholds_pop[top_idx])
             scores.append([np.mean(fit_scores), np.max(fit_scores), np.min(fit_scores), np.std(fit_scores)])
             best_templates.append(best_template)
+            best_thresholds.append(best_threshold)
             bar.update(i)
         bar.finish()
         if self.__maximize:
@@ -76,7 +90,8 @@ class ESTemplateGenerator:
         else:
             top_idx = np.argmin(fit_scores)
         top_score = fit_scores[top_idx]
-        best_template = pop[top_idx]
+        best_template = templates_pop[top_idx]
+        best_threshold = self.__np_to_int(thresholds_pop[top_idx])
         if self.__write_to_file:
             output_scores_path = "{}_{:02d}_{}_scores.txt".format(self.__output_file, num_test, self.__class)
             with open(output_scores_path, 'w') as f:
@@ -84,54 +99,80 @@ class ESTemplateGenerator:
                     f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
             output_templates_path = "{}_{:02d}_{}_templates.txt".format(self.__output_file, num_test, self.__class)
             with open(output_templates_path, 'w') as f:
-                for item in best_templates:
-                    f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
+                for i, item in enumerate(best_templates):
+                    f.write("{} {}\n".format(str(item), best_thresholds[i]))
         self.__m_wlcss_cuda.cuda_freemem()
-        return [top_score, best_template]
+        return [top_score, best_template, best_threshold]
 
     def __generate_population(self):
-        pop = np.random.randint(0, self.__bit_values, size=(self.__num_individuals, self.__chromosomes))
+        templates_pop = np.random.randint(0, self.__bit_values,
+                                          size=(self.__num_individuals, self.__templates_chromosomes))
         if self.__chosen_template is not None:
-            pop[0] = self.__chosen_template[:, 1]
-        return pop
+            templates_pop[0] = self.__chosen_template[:, 1]
+        thresholds_pop = (np.random.rand(self.__num_individuals, self.__threshold_chromosomes) < 0.5).astype(int)
+        return templates_pop, thresholds_pop
 
-    def __selection(self, top_individuals, rnk):
-        top_individuals = top_individuals[0:rnk]
-        reproduced_individuals = np.array(
-            [top_individuals[i % len(top_individuals)] for i in range(self.__num_individuals)])
-        np.random.shuffle(reproduced_individuals)
-        return reproduced_individuals
+    def __selection(self, top_templates_individuals, top_thresholds_individuals, rnk):
+        top_templates_individuals = top_templates_individuals[0:rnk]
+        reproduced_templates_individuals = np.array(
+            [top_templates_individuals[i % len(top_templates_individuals)] for i in range(self.__num_individuals)])
+        random_idx = np.arange(0, self.__num_individuals)
+        np.random.shuffle(random_idx)
+        top_thresholds_individuals = top_thresholds_individuals[0:rnk]
+        reproduced_thresholds_individuals = np.array(
+            [top_thresholds_individuals[i % len(top_thresholds_individuals)] for i in range(self.__num_individuals)])
+        return reproduced_templates_individuals[random_idx], reproduced_thresholds_individuals[random_idx]
 
-    def __crossover(self, pop, cp):
-        new_pop = np.empty(pop.shape, dtype=int)
-        for i in range(0, len(pop) - 1, 2):
+    def __crossover(self, templates_pop, thresholds_pop, cp):
+        new_templates_pop = np.empty(templates_pop.shape, dtype=int)
+        for i in range(0, len(templates_pop) - 1, 2):
             if np.random.random() < cp:
-                crossover_position = random.randint(0, self.__chromosomes - 2)
-                new_pop[i] = np.append(pop[i][0:crossover_position], pop[i + 1][crossover_position:])
-                new_pop[i + 1] = np.append(pop[i + 1][0:crossover_position], pop[i][crossover_position:])
+                crossover_position = random.randint(0, self.__templates_chromosomes - 2)
+                new_templates_pop[i] = np.append(templates_pop[i][0:crossover_position],
+                                                 templates_pop[i + 1][crossover_position:])
+                new_templates_pop[i + 1] = np.append(templates_pop[i + 1][0:crossover_position],
+                                                     templates_pop[i][crossover_position:])
             else:
-                new_pop[i] = pop[i]
-                new_pop[i + 1] = pop[i + 1]
-        return new_pop
+                new_templates_pop[i] = templates_pop[i]
+                new_templates_pop[i + 1] = templates_pop[i + 1]
+        new_thresholds_pop = np.empty(thresholds_pop.shape, dtype=int)
+        for i in range(0, len(thresholds_pop) - 1, 2):
+            if np.random.random() < cp:
+                crossover_position = random.randint(0, self.__threshold_chromosomes - 2)
+                new_thresholds_pop[i] = np.append(thresholds_pop[i][0:crossover_position],
+                                                  thresholds_pop[i + 1][crossover_position:])
+                new_thresholds_pop[i + 1] = np.append(thresholds_pop[i + 1][0:crossover_position],
+                                                      thresholds_pop[i][crossover_position:])
+            else:
+                new_thresholds_pop[i] = thresholds_pop[i]
+                new_thresholds_pop[i + 1] = thresholds_pop[i + 1]
+        return new_templates_pop, new_thresholds_pop
 
-    def __mutation(self, pop, mp):
-        sizes = pop.shape
-        mask = np.random.rand(pop.shape[0], pop.shape[1]) < mp
-        new_pop_mask = np.random.randint(0, self.__bit_values, size=sizes) * mask
-        new_pop = np.copy(pop)
-        new_pop[mask] = new_pop_mask[mask]
-        return new_pop
+    def __mutation(self, templates_pop, thresholds_pop, mp):
+        tmpl_sizes = templates_pop.shape
+        mask = np.random.rand(templates_pop.shape[0], templates_pop.shape[1]) < mp
+        new_templates_pop_mask = np.random.randint(0, self.__bit_values, size=tmpl_sizes) * mask
+        new_templates_pop = np.copy(templates_pop)
+        new_templates_pop[mask] = new_templates_pop_mask[mask]
 
-    def __compute_fitness_cuda(self, pop):
-        matching_scores = self.__m_wlcss_cuda.compute_wlcss(pop)
+        mask = np.random.rand(thresholds_pop.shape[0], thresholds_pop.shape[1]) < mp
+        new_thresholds_pop = np.mod(thresholds_pop + mask, 2)
+
+        return new_templates_pop, new_thresholds_pop
+
+    def __compute_fitness_cuda(self, templates_pop, threshold_pop):
+        matching_scores = self.__m_wlcss_cuda.compute_wlcss(templates_pop)
         matching_scores = [np.concatenate((ms, self.__instances_labels), axis=1) for ms in matching_scores]
         fitness_scores = np.array([fit_fun.isolated_fitness_function_templates(matching_scores[0][:, k],
                                                                                matching_scores[0][:, -1],
-                                                                               self.__threshold,
+                                                                               self.__np_to_int(threshold_pop[k]),
                                                                                parameter_to_optimize=self.__fitness_function)
                                    for k in
                                    range(self.__num_individuals)])
         return fitness_scores
+
+    def __np_to_int(self, chromosome):
+        return int("".join(chromosome.astype('U')), 2)
 
     def get_results(self):
         return self.__results
