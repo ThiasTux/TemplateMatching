@@ -17,6 +17,8 @@ if __name__ == '__main__':
 
     use_null = True
     user = None
+    use_evolved_templates = False
+    use_evolved_thresholds = False
 
     write_to_file = True
     if dataset_choice == 100:
@@ -69,9 +71,18 @@ if __name__ == '__main__':
         null_class_percentage = 0
         params = [7, 5, 1]
         thresholds = [-3466, -1576, -15231, -4022]
+        es_results_file = "outputs/training/cuda/synthetic/templates/templates_2019-03-07_16-25-56"
 
     chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice, user=user,
                                                                    classes=classes, extract_null=use_null)
+
+    if use_evolved_templates:
+        if es_results_file is not None:
+            if use_evolved_thresholds:
+                chosen_templates, thresholds = dl.load_evolved_templates(es_results_file, classes,
+                                                                         use_evolved_thresholds)
+            else:
+                chosen_templates = dl.load_evolved_templates(es_results_file, classes)
 
     m_wlcss_cuda = WLCSSCudaParamsTraining(chosen_templates, instances, 1, False)
     mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]

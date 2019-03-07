@@ -100,7 +100,8 @@ class ESTemplateGenerator:
             output_templates_path = "{}_{:02d}_{}_templates.txt".format(self.__output_file, num_test, self.__class)
             with open(output_templates_path, 'w') as f:
                 for i, item in enumerate(best_templates):
-                    f.write("{} {}\n".format(str(item), best_thresholds[i]))
+                    f.write("{} {}\n".format(" ".join([str(x) for x in item.tolist()]),
+                                             best_thresholds[i]))
         self.__m_wlcss_cuda.cuda_freemem()
         return [top_score, best_template, best_threshold]
 

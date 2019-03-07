@@ -127,6 +127,23 @@ def load_training_dataset(dataset_choice=700, classes=None, num_gestures=None, u
         return templates, labels
 
 
+def load_evolved_templates(es_results_file, classes, use_evolved_thresholds=False):
+    chosen_templates = [None for _ in classes]
+    thresholds = list()
+    for i, c in enumerate(classes):
+        file_path = es_results_file + "_00_{}_templates.txt".format(c)
+        with open(file_path, "r") as templates_file:
+            last_line = templates_file.readlines()[-1]
+            template = np.array([int(v) for v in last_line.split(" ")[:-1]])
+            if use_evolved_thresholds:
+                thresholds.append(int(last_line.split(" ")[-1]))
+            chosen_templates[i] = np.stack((np.arange(len(template)), template), axis=-1)
+    if use_evolved_thresholds:
+        return chosen_templates, thresholds
+    else:
+        return chosen_templates
+
+
 def enc_data_loader(input_path):
     data = np.loadtxt(input_path, )
     return data

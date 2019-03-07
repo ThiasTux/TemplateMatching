@@ -139,6 +139,43 @@ def plot_templates_scores(input_path, save_img=False, title=None, output_file=""
         plt.savefig(join(OUTPUT_PATH, output_file), bbox_inches='tight', format='eps', dpi=1000)
 
 
+def plot_templates(input_path, num_templates=20, save_img=False, title=None, output_file=""):
+    conf_path = input_path + "_conf.txt"
+    with open(conf_path, 'r') as conf_file:
+        for i, line in enumerate(conf_file.readlines()):
+            if i == 1:
+                classes_line = line
+            elif i == 3:
+                iterations_line = line
+            elif i == 9:
+                num_test_line = line
+        classes = classes_line.split(":")[1].strip().split(" ")
+        iterations = int(iterations_line.split(":")[1].strip())
+        num_test = int(num_test_line.split(":")[1].strip())
+    if num_templates < iterations:
+        templates_reduction_factor = (iterations / num_templates)
+    else:
+        templates_reduction_factor = 1
+    num_instances_root = math.sqrt(20)
+    num_rows = (math.floor(num_instances_root) if num_instances_root % math.floor(
+        num_instances_root) < 0.5 else math.ceil(num_instances_root))
+    num_cols = math.ceil(num_instances_root)
+    for c in classes:
+        for t in range(num_test):
+            templates_file_path = input_path + ("_{:02d}_{}_templates.txt".format(t, c))
+            fig = plt.figure()
+            fig.suptitle("{} - {}".format(c, t))
+            with open(templates_file_path, 'r') as templates_file:
+                j = 1
+                for i, line in enumerate(templates_file.readlines()):
+                    if i % templates_reduction_factor == 0:
+                        t = [int(v) for v in line.split(" ")[:-1]]
+                        subplt = fig.add_subplot(num_rows - 1, num_cols + 2, j)
+                        subplt.plot(t)
+                        subplt.set_title("{}".format(i))
+                        j += 1
+
+
 def lighten_color(color, amount=0.5):
     """
     Lightens the given color by multiplying (1-luminosity) by the given amount.
