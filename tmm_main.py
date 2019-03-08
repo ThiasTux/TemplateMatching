@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     use_null = True
     user = None
-    use_evolved_templates = False
+    use_evolved_templates = True
     use_evolved_thresholds = False
 
     write_to_file = True
@@ -70,8 +70,8 @@ if __name__ == '__main__':
         output_folder = "outputs/training/cuda/synthetic/params"
         null_class_percentage = 0
         params = [7, 5, 1]
-        thresholds = [-3466, -1576, -15231, -4022]
-        es_results_file = "outputs/training/cuda/synthetic/templates/templates_2019-03-07_16-25-56"
+        thresholds = [-2500, -2000, -4000, -2200]
+        es_results_file = "outputs/training/cuda/synthetic/templates/templates_2019-03-08_12-04-51"
 
     chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice, user=user,
                                                                    classes=classes, extract_null=use_null)
@@ -89,8 +89,8 @@ if __name__ == '__main__':
     m_wlcss_cuda.cuda_freemem()
     tmp_labels = np.array(labels).reshape((len(instances), 1))
     mss = np.concatenate((mss, tmp_labels), axis=1)
-    fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes)
-    print(fitness_score)
+    fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes, parameter_to_optimize=4)
+    print("F1: {:4.3f}".format(fitness_score))
     plt_creator.plot_isolated_mss(mss, thresholds)
     # plt_creator.plot_gestures(dl.load_dataset(dataset_choice, classes), classes=classes)
     plt.show()

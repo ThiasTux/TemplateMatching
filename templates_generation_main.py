@@ -9,11 +9,11 @@ import numpy as np
 from data_processing import data_loader as dl
 from performance_evaluation import fitness_functions as ftf
 from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
-from training.templates.es_templates_generator import ESTemplateGenerator
+from training.templates.es_templates_generator import ESTemplateGenerator, ESTemplateThresholdsGenerator
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 201
+    dataset_choice = 700
 
     num_test = 1
     use_null = True
@@ -26,12 +26,12 @@ if __name__ == '__main__':
     num_individuals = 64
     rank = 10
     elitism = 3
-    iterations = 1000
+    iterations = 500
     fitness_function = 7
     crossover_probability = 0.3
     mutation_probability = 0.1
     inject_templates = True
-    optimize_thresholds = True
+    optimize_thresholds = False
 
     if dataset_choice == 100:
         use_encoding = False
@@ -111,9 +111,9 @@ if __name__ == '__main__':
 
     if optimize_thresholds:
         thresholds = [None for _ in range(len(classes))]
+        best_thresholds = list()
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
     best_templates = list()
-    best_thresholds = list()
     scores = list()
     start_time = time.time()
     for i, c in enumerate(classes):
@@ -123,19 +123,33 @@ if __name__ == '__main__':
             chromosomes = len(chosen_templates[i])
         else:
             chromosomes = int(np.ceil(np.average([len(t) for t in instances if t[0, -2] != 0]).astype(int)))
-        optimizer = ESTemplateGenerator(instances, tmp_labels, params, thresholds[i], c, chromosomes, bit_values,
-                                        file="{}/templates_{}".format(output_folder, st),
-                                        chosen_template=chosen_templates[i],
-                                        num_individuals=num_individuals, rank=rank,
-                                        elitism=elitism,
-                                        iterations=iterations,
-                                        fitness_function=fitness_function,
-                                        cr_p=crossover_probability,
-                                        mt_p=mutation_probability)
+        if optimize_thresholds:
+            optimizer = ESTemplateThresholdsGenerator(instances, tmp_labels, params, c, chromosomes, bit_values,
+                                                      file="{}/templates_{}".format(output_folder, st),
+                                                      chosen_template=chosen_templates[i],
+                                                      num_individuals=num_individuals, rank=rank,
+                                                      elitism=elitism,
+                                                      iterations=iterations,
+                                                      fitness_function=fitness_function,
+                                                      cr_p=crossover_probability,
+                                                      mt_p=mutation_probability)
+        else:
+            optimizer = ESTemplateGenerator(instances, tmp_labels, params, thresholds[i], c, chromosomes, bit_values,
+                                            file="{}/templates_{}".format(output_folder, st),
+                                            chosen_template=chosen_templates[i],
+                                            num_individuals=num_individuals, rank=rank,
+                                            elitism=elitism,
+                                            iterations=iterations,
+                                            fitness_function=fitness_function,
+                                            cr_p=crossover_probability,
+                                            mt_p=mutation_probability)
         optimizer.optimize()
 
-        best_templates += [np.array(r[-2]) for r in optimizer.get_results()]
-        best_thresholds += [r[-1] for r in optimizer.get_results()]
+        if optimize_thresholds:
+            best_templates += [np.array(r[-2]) for r in optimizer.get_results()]
+            best_thresholds += [r[-1] for r in optimizer.get_results()]
+        else:
+            best_templates += [np.array(r[-1]) for r in optimizer.get_results()]
 
     best_templates = [np.stack((np.arange(len(r)), r), axis=1) for r in best_templates]
     output_file_path = join(output_folder,
@@ -157,6 +171,7 @@ if __name__ == '__main__':
         outputconffile.write("Elitism: {}\n".format(elitism))
         outputconffile.write("Rank: {}\n".format(rank))
         outputconffile.write("Inject templates: {}\n".format(inject_templates))
+        outputconffile.write("Optimize threshold: {}\n".format(optimize_thresholds))
         outputconffile.write("Num tests: {}\n".format(num_test))
         outputconffile.write("Null class extraction: {}\n".format(use_null))
         outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
@@ -164,10 +179,14 @@ if __name__ == '__main__':
 
     tmp_labels = np.array(labels).reshape((len(instances), 1))
     mss = np.concatenate((mss, tmp_labels), axis=1)
-    plt_creator.plot_isolated_mss(mss, best_thresholds)
-    fitness_score = ftf.isolated_fitness_function_params(mss, best_thresholds, classes)
+    if optimize_thresholds:
+        plt_creator.plot_isolated_mss(mss, best_thresholds)
+        fitness_score = ftf.isolated_fitness_function_params(mss, best_thresholds, classes)
+    else:
+        plt_creator.plot_isolated_mss(mss, thresholds)
+        fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes)
     print(fitness_score)
-    print(output_file_path)
+    print(output_file_path.replace(".txt", ""))
     print("Results written")
     print("End!")
     plt.show()

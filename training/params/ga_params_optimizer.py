@@ -67,7 +67,8 @@ class GAParamsOptimizer:
             penalty = self.__np_to_int(pop[top_idx][self.__bits_parameter:self.__bits_parameter * 2])
             accepted_distance = self.__np_to_int(pop[top_idx][self.__bits_parameter * 2:self.__bits_parameter * 3])
             thresholds = [self.__np_to_int(pop[top_idx][self.__bits_parameter * 3 + (
-                    j * self.__bits_threshold):self.__bits_parameter * 3 + (j + 1) * self.__bits_threshold]) for
+                    j * self.__bits_threshold):self.__bits_parameter * 3 + (
+                        j + 1) * self.__bits_threshold]) - self.__scaling_factor for
                           j
                           in range(len(self.__templates))]
             scores.append([np.mean(fit_scores), np.max(fit_scores), np.min(fit_scores), np.std(fit_scores),
