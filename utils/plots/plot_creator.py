@@ -210,22 +210,25 @@ def plot_isolated_mss(mss, thresholds):
 
 
 def plot_bluesense_data(input_path, channel):
-    fig = plt.figure()
-    files = [file for file in glob.glob(input_path + "*.LOG") if os.stat(file).st_size != 0]
-    shared_xaxis = None
-    for i, file in enumerate(files):
-        sensor_name = file.split("/")[-1].split(".")[0]
-        data = np.loadtxt(file)
-        data_time = data[:, 1]
-        freq = 500
-        cut_off = 5
-        x_data = fd.butter_lowpass_filter(data[:, channel], cut_off, freq)
-        y_data = fd.butter_lowpass_filter(data[:, channel + 1], cut_off, freq)
-        z_data = fd.butter_lowpass_filter(data[:, channel + 2], cut_off, freq)
-        if shared_xaxis is None:
-            subplt = fig.add_subplot(len(files), 1, i + 1)
-            shared_xaxis = subplt
-        else:
-            subplt = fig.add_subplot(len(files), 1, i + 1, sharex=shared_xaxis)
-        subplt.set_title("{}".format(sensor_name))
-        subplt.plot(data_time, x_data, data_time, y_data, data_time, z_data, linewidth=0.5)
+    users = ["user1", "user2", "user3", "user4"]
+    for user in users:
+        fig = plt.figure()
+        files = [file for file in glob.glob(join(input_path, user) + "/larm*.txt") if os.stat(file).st_size != 0]
+        shared_xaxis = None
+        for i, file in enumerate(files):
+            sensor_name = file.split("/")[-1].split(".")[0]
+            data = np.loadtxt(file)
+            data_time = data[::50, 1]
+            freq = 500
+            cut_off = 5
+            x_data = fd.butter_lowpass_filter(data[:, channel], cut_off, freq)
+            # y_data = fd.butter_lowpass_filter(data[:, channel + 1], cut_off, freq)
+            # z_data = fd.butter_lowpass_filter(data[:, channel + 2], cut_off, freq)
+            if shared_xaxis is None:
+                subplt = fig.add_subplot(len(files), 1, i + 1)
+                shared_xaxis = subplt
+            else:
+                subplt = fig.add_subplot(len(files), 1, i + 1, sharex=shared_xaxis)
+            subplt.set_title("{}".format(sensor_name))
+            # subplt.plot(data_time, x_data, data_time, y_data, data_time, z_data, linewidth=0.5)
+            subplt.plot(data_time, x_data[::50], linewidth=0.5)
