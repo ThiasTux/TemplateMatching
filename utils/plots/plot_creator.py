@@ -147,7 +147,7 @@ def plot_templates(input_path, num_templates=20, save_img=False, title=None, out
                 classes_line = line
             elif i == 3:
                 iterations_line = line
-            elif i == 9:
+            elif i == 10:
                 num_test_line = line
         classes = classes_line.split(":")[1].strip().split(" ")
         iterations = int(iterations_line.split(":")[1].strip())
