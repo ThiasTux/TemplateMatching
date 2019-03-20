@@ -1,8 +1,10 @@
 import glob
 import os
 import pickle
+from scipy import signal
 from os.path import expanduser
 from os.path import join
+from random import randint
 
 import matlab.engine
 import numpy as np
@@ -362,21 +364,46 @@ def create_synthetic_dataset(num_gestures=20, gesture_length=150):
         pickle.dump(gestures, output_file)
 
 
+def create_synthetic2_dataset(num_gestures=20, gesture_length=150):
+    gestures = list()
+    dataset_name = "synthetic2"
+    gestures += generate_sinusoid(num_gestures, gesture_length)
+    gestures += generate_sawtooth(num_gestures, gesture_length)
+    with open(join(OUTPUT_FOLDER, dataset_name, "all_data_isolated.pickle"), "wb") as output_file:
+        pickle.dump(gestures, output_file)
+
+
 def generate_sinusoid(num_gestures, gesture_length):
     sin_length = int(gesture_length / 3)
     data = [np.zeros(gesture_length) for _ in range(num_gestures)]
     f = 1
-    w = 2 * np.pi * f
     for i in range(num_gestures):
-        start_idx = int(np.random.uniform(0, int(gesture_length / 2)))
-        end_idx = start_idx + sin_length
-        t = np.linspace(0, 1, sin_length)
+        w = 2 * np.pi * f
+        start_idx = randint(0, sin_length)
+        end_idx = randint(sin_length * 2, gesture_length)
+        t = np.linspace(0, 1, end_idx - start_idx)
         tmp_sin = np.sin(w * t) * np.random.uniform(48, 64)
         data[i][start_idx:end_idx] = tmp_sin
     time = np.arange(gesture_length)
     label = np.array([1001 for _ in range(gesture_length)])
     user_no = np.array([0 for _ in range(gesture_length)])
-    generated_data = [np.stack((time, d, label, user_no), axis=-1) for d in data]
+    generated_data = [np.stack((time, d + 64, label, user_no), axis=-1) for d in data]
+    return generated_data
+
+
+def generate_sawtooth(num_gestures, gesture_length):
+    interval_length = int(gesture_length / 3)
+    data = [np.zeros(gesture_length) for _ in range(num_gestures)]
+    for i in range(num_gestures):
+        start_idx = randint(0, interval_length)
+        end_idx = randint(interval_length * 2, gesture_length)
+        t = np.linspace(0, 1, end_idx - start_idx)
+        tmp_data = signal.sawtooth(2 * np.pi * t, width=end_idx / gesture_length)
+        data[i][start_idx:end_idx] = tmp_data * np.random.uniform(48, 64)
+    time = np.arange(gesture_length)
+    label = np.array([1002 for _ in range(gesture_length)])
+    user_no = np.array([0 for _ in range(gesture_length)])
+    generated_data = [np.stack((time, d + 64, label, user_no), axis=-1) for d in data]
     return generated_data
 
 

@@ -8,7 +8,7 @@ from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 700
+    dataset_choice = 701
 
     stream_modality = 1  # 1 for instances, 2 for complete stream
     save_img = False
@@ -72,6 +72,14 @@ if __name__ == '__main__':
         params = [7, 5, 1]
         thresholds = [-2500, -2000, -4000, -2200]
         es_results_file = "outputs/training/cuda/synthetic/templates/templates_2019-03-08_12-04-51"
+    elif dataset_choice == 701:
+        use_encoding = False
+        classes = [1001, 1002]
+        output_folder = "outputs/training/cuda/synthetic2/params"
+        null_class_percentage = 0
+        params = [28, 2, 0]
+        thresholds = [991, 567]
+        es_results_file = "outputs/training/cuda/synthetic2/templates/templates_2019-03-19_17-45-43"
 
     chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice, user=user,
                                                                    classes=classes, extract_null=use_null)

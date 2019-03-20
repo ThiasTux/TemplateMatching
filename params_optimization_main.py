@@ -7,7 +7,7 @@ from data_processing import data_loader as dl
 from training.params.ga_params_optimizer import GAParamsOptimizer
 
 if __name__ == '__main__':
-    dataset_choice = 201
+    dataset_choice = 701
 
     num_test = 1
     use_null = True
@@ -65,6 +65,11 @@ if __name__ == '__main__':
         use_encoding = False
         classes = [1001, 1002, 1003, 1004]
         output_folder = "outputs/training/cuda/synthetic/params"
+        null_class_percentage = 0
+    elif dataset_choice == 701:
+        use_encoding = False
+        classes = [1001, 1002]
+        output_folder = "outputs/training/cuda/synthetic2/params"
         null_class_percentage = 0
 
     chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice,

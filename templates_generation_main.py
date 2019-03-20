@@ -13,7 +13,7 @@ from training.templates.es_templates_generator import ESTemplateGenerator, ESTem
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 700
+    dataset_choice = 701
 
     num_test = 1
     use_null = True
@@ -24,9 +24,9 @@ if __name__ == '__main__':
     null_class_percentage = 0.6
 
     num_individuals = 64
-    rank = 10
+    rank = 20
     elitism = 3
-    iterations = 500
+    iterations = 1000
     fitness_function = 7
     crossover_probability = 0.3
     mutation_probability = 0.1
@@ -55,12 +55,12 @@ if __name__ == '__main__':
         use_encoding = False
         # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
         # classes = [406516, 408512, 405506]
-        classes = [407521, 406520, 406505, 406519]
+        classes = [407521, 406520]
         user = 3
         output_folder = "outputs/training/cuda/opportunity/templates"
         null_class_percentage = 0.5
         params = [14, 1, 5]
-        thresholds = [327, 1021, 636, 505]
+        thresholds = [327, 1021]
         bit_values = 128
     elif dataset_choice == 210:
         use_encoding = False
@@ -94,6 +94,14 @@ if __name__ == '__main__':
         null_class_percentage = 0
         params = [7, 5, 1]
         thresholds = [-3466, -1576, -15231, -4022]
+        bit_values = 128
+    elif dataset_choice == 701:
+        use_encoding = False
+        classes = [1001, 1002]
+        output_folder = "outputs/training/cuda/synthetic2/templates"
+        null_class_percentage = 0
+        params = [28, 2, 0]
+        thresholds = [991, 567]
         bit_values = 128
 
     if inject_templates:
