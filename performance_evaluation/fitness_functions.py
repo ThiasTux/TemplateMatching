@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.special import expit
 
 
 def isolated_fitness_function_params(matching_scores, thresholds, classes, parameter_to_optimize=5):
@@ -102,4 +103,26 @@ def isolated_fitness_function_templates(scores, labels, threshold, parameter_to_
             return avg_good
         else:
             return -avg_bad
+    elif parameter_to_optimize == 8:
+        good_perc = np.percentile(good_scores, 10)
+        bad_perc = np.percentile(bad_scores, 90)
+        if good_perc <= bad_perc:
+            return -(bad_perc - good_perc)
+        elif good_perc > bad_perc:
+            return (good_perc - bad_perc) - threshold
+    elif parameter_to_optimize == 9:
+        good_perc = np.percentile(good_scores, 10)
+        bad_perc = np.percentile(bad_scores, 90)
+        return (good_perc ** 2 - threshold ** 2) * (threshold ** 2 - bad_perc ** 2)
+    elif parameter_to_optimize == 10:
+        # Accuracy
+        true_positive = len(good_scores[good_scores >= threshold])
+        true_negative = len(bad_scores[bad_scores >= threshold])
+        return (true_positive + true_negative) / len(scores)
+    elif parameter_to_optimize == 11:
+        good_distances = good_scores - threshold
+        bad_distances = threshold - bad_scores
+        good = np.sum(expit(good_distances)) / len(good_scores)
+        bad = np.sum(expit(bad_distances)) / len(bad_scores)
+        return good + bad
     return None

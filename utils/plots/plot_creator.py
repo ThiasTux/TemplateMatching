@@ -213,22 +213,27 @@ def plot_bluesense_data(input_path, channel):
     users = ["user1", "user2", "user3", "user4"]
     for user in users:
         fig = plt.figure()
-        files = [file for file in glob.glob(join(input_path, user) + "/larm*.txt") if os.stat(file).st_size != 0]
+        files = [file for file in glob.glob(join(input_path, user) + "/hand*.txt") if os.stat(file).st_size != 0]
         shared_xaxis = None
         for i, file in enumerate(files):
             sensor_name = file.split("/")[-1].split(".")[0]
             data = np.loadtxt(file)
-            data_time = data[::50, 1]
+            data_time = data[:, 0]
             freq = 500
-            cut_off = 5
-            x_data = fd.butter_lowpass_filter(data[:, channel], cut_off, freq)
-            # y_data = fd.butter_lowpass_filter(data[:, channel + 1], cut_off, freq)
-            # z_data = fd.butter_lowpass_filter(data[:, channel + 2], cut_off, freq)
+            cut_off = 0
+            if cut_off != 0:
+                x_data = fd.butter_lowpass_filter(data[:, channel], cut_off, freq)
+                y_data = fd.butter_lowpass_filter(data[:, channel + 1], cut_off, freq)
+                z_data = fd.butter_lowpass_filter(data[:, channel + 2], cut_off, freq)
+            else:
+                x_data = data[:, channel]
+                y_data = data[:, channel + 1]
+                z_data = data[:, channel + 2]
             if shared_xaxis is None:
                 subplt = fig.add_subplot(len(files), 1, i + 1)
                 shared_xaxis = subplt
             else:
                 subplt = fig.add_subplot(len(files), 1, i + 1, sharex=shared_xaxis)
-            subplt.set_title("{}".format(sensor_name))
-            # subplt.plot(data_time, x_data, data_time, y_data, data_time, z_data, linewidth=0.5)
-            subplt.plot(data_time, x_data[::50], linewidth=0.5)
+            subplt.set_title("{} - Cut_off {}".format(sensor_name, cut_off))
+            subplt.plot(data_time, x_data, data_time, y_data, data_time, z_data, linewidth=0.5)
+            # subplt.plot(data_time, x_data[::50], linewidth=0.5)

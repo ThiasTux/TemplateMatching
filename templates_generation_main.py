@@ -23,14 +23,14 @@ if __name__ == '__main__':
     thresholds = list()
     null_class_percentage = 0.6
 
-    num_individuals = 64
-    rank = 20
+    num_individuals = 1024
+    rank = 40
     elitism = 3
-    iterations = 1000
-    fitness_function = 7
+    iterations = 2000
+    fitness_function = 8
     crossover_probability = 0.3
     mutation_probability = 0.1
-    inject_templates = True
+    inject_templates = False
     optimize_thresholds = False
 
     if dataset_choice == 100:
@@ -181,6 +181,7 @@ if __name__ == '__main__':
         outputconffile.write("Inject templates: {}\n".format(inject_templates))
         outputconffile.write("Optimize threshold: {}\n".format(optimize_thresholds))
         outputconffile.write("Num tests: {}\n".format(num_test))
+        outputconffile.write("Fitness function: {}\n".format(fitness_function))
         outputconffile.write("Null class extraction: {}\n".format(use_null))
         outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
         outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
