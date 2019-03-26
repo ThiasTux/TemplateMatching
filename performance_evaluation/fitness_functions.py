@@ -106,10 +106,29 @@ def isolated_fitness_function_templates(scores, labels, threshold, parameter_to_
     elif parameter_to_optimize == 8:
         good_perc = np.percentile(good_scores, 10)
         bad_perc = np.percentile(bad_scores, 90)
-        if good_perc <= bad_perc:
-            return -(bad_perc - good_perc)
-        elif good_perc > bad_perc:
-            return (good_perc - bad_perc) - threshold
+        return good_perc - bad_perc
+    elif parameter_to_optimize == 81:
+        good_perc = np.percentile(good_scores, 10)
+        bad_perc = np.percentile(bad_scores, 90)
+        good_distance = good_perc - threshold
+        bad_distance = bad_perc - threshold
+        return good_distance - bad_distance
+    elif parameter_to_optimize == 82:
+        good_perc = np.percentile(good_scores, 10)
+        bad_perc = np.percentile(bad_scores, 90)
+        # good_distance = good_perc - threshold
+        # bad_distance = bad_perc - threshold
+        return (1 / (1 + np.e ** (good_perc * .005)) * 1 / (1 + np.e ** (-bad_perc * .005))) * 4 * threshold
+    elif parameter_to_optimize == 83:
+        good_perc = np.percentile(good_scores, 10)
+        bad_perc = np.percentile(bad_scores, 90)
+        good_distance = good_perc - threshold
+        bad_distance = bad_perc - threshold
+        if good_distance >= 1 >= bad_distance:
+            return good_distance * (-bad_distance) / 1000
+        else:
+            a = 4000
+            return (a / ((1 + np.e ** ((-good_distance - 1000) * .005)) * (1 + np.e ** ((bad_distance - 1000) * .005)))) - a
     elif parameter_to_optimize == 9:
         good_perc = np.percentile(good_scores, 10)
         bad_perc = np.percentile(bad_scores, 90)
