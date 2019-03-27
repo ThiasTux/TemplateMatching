@@ -138,9 +138,11 @@ def load_evolved_templates(es_results_file, classes, use_evolved_thresholds=Fals
         file_path = es_results_file + "_00_{}_templates.txt".format(c)
         with open(file_path, "r") as templates_file:
             last_line = templates_file.readlines()[-1]
-            template = np.array([int(v) for v in last_line.split(" ")[:-1]])
             if use_evolved_thresholds:
+                template = np.array([int(v) for v in last_line.split(" ")[:-1]])
                 thresholds.append(int(last_line.split(" ")[-1]))
+            else:
+                template = np.array([int(v) for v in last_line.split(" ")])
             chosen_templates[i] = np.stack((np.arange(len(template)), template), axis=-1)
     if use_evolved_thresholds:
         return chosen_templates, thresholds

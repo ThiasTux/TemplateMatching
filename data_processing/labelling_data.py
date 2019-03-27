@@ -2,14 +2,14 @@ import glob
 import os
 from os.path import join
 from subprocess import call
-import matlab.engine
 from xml.dom import minidom
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, SubElement
-from utils import filter_data as fd
+
+import matlab.engine
 import numpy as np
 
-DOWNSAMPLING_RATE = 20
+DOWNSAMPLING_RATE = 1
 
 
 def create_merge_file(input_path):
@@ -91,8 +91,9 @@ def downsample_extract_annotation_data(input_path):
         data_seconds = data[:, 1] // 1000
         data_microseconds = (data[:, 1] % 1000) * 1000
         freq = 500
-        cut_off = 5
-        data_axes = fd.butter_lowpass_filter(data[:, 1], cut_off, freq)[::DOWNSAMPLING_RATE]
+        cut_off = 0
+        # data_axes = fd.butter_lowpass_filter(data[:, 1], cut_off, freq)[::DOWNSAMPLING_RATE]
+        data_axes = data[:, 3]
         new_data = np.empty((len(data_axes), 3))
         new_data[:, 0] = data_seconds[::DOWNSAMPLING_RATE]
         new_data[:, 1] = data_microseconds[::DOWNSAMPLING_RATE]

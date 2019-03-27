@@ -8,7 +8,7 @@ from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 701
+    dataset_choice = 201
 
     stream_modality = 1  # 1 for instances, 2 for complete stream
     save_img = False
@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     use_null = True
     user = None
-    use_evolved_templates = True
+    use_evolved_templates = False
     use_evolved_thresholds = False
 
     write_to_file = True
@@ -35,8 +35,9 @@ if __name__ == '__main__':
         output_folder = "outputs/training/cuda/skoda/params"
         sensor = None
         null_class_percentage = 0.6
-        params = [30, 1, 0]
-        thresholds = [337, 195, 304, 232]
+        params = [31, 0, 0]
+        thresholds = [471, 523, 441, 423]
+        es_results_file = "outputs/training/cuda/skoda_old/templates/templates_2019-03-25_13-54-27"
     elif dataset_choice == 200 or dataset_choice == 201 or dataset_choice == 202 or dataset_choice == 203 \
             or dataset_choice == 204 or dataset_choice == 205 or dataset_choice == 211:
         use_encoding = False
@@ -47,6 +48,7 @@ if __name__ == '__main__':
         user = 3
         params = [14, 1, 5]
         thresholds = [327, 1021, 636, 505]
+        es_results_file = "outputs/training/cuda/opportunity/templates/templates_2019-03-25_14-06-47"
     elif dataset_choice == 300:
         use_encoding = False
         classes = [49, 50, 51, 52, 53]
@@ -79,7 +81,7 @@ if __name__ == '__main__':
         null_class_percentage = 0
         params = [28, 2, 0]
         thresholds = [991, 567]
-        es_results_file = "outputs/training/cuda/synthetic2/templates/templates_2019-03-19_17-45-43"
+        es_results_file = "outputs/training/cuda/synthetic2/templates/templates_2019-03-25_13-31-16"
 
     chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice, user=user,
                                                                    classes=classes, extract_null=use_null)

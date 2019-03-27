@@ -13,7 +13,7 @@ from training.templates.es_templates_generator import ESTemplateGenerator, ESTem
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 701
+    dataset_choice = 201
 
     num_test = 1
     use_null = True
@@ -23,15 +23,15 @@ if __name__ == '__main__':
     thresholds = list()
     null_class_percentage = 0.6
 
-    num_individuals = 1024
-    rank = 40
+    num_individuals = 128
+    rank = 20
     elitism = 3
-    iterations = 2000
-    fitness_function = 8
+    iterations = 1000
+    fitness_function = 83
     crossover_probability = 0.3
     mutation_probability = 0.1
     inject_templates = False
-    optimize_thresholds = False
+    optimize_thresholds = True
 
     if dataset_choice == 100:
         use_encoding = False
@@ -55,12 +55,12 @@ if __name__ == '__main__':
         use_encoding = False
         # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
         # classes = [406516, 408512, 405506]
-        classes = [407521, 406520]
+        classes = [407521, 406520, 406505, 406519]
         user = 3
         output_folder = "outputs/training/cuda/opportunity/templates"
         null_class_percentage = 0.5
         params = [14, 1, 5]
-        thresholds = [327, 1021]
+        thresholds = [327, 1021, 636, 505]
         bit_values = 128
     elif dataset_choice == 210:
         use_encoding = False
@@ -182,6 +182,7 @@ if __name__ == '__main__':
         outputconffile.write("Optimize threshold: {}\n".format(optimize_thresholds))
         outputconffile.write("Num tests: {}\n".format(num_test))
         outputconffile.write("Fitness function: {}\n".format(fitness_function))
+        outputconffile.write("Chromosomes: {}\n".format(chromosomes))
         outputconffile.write("Null class extraction: {}\n".format(use_null))
         outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
         outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
@@ -197,5 +198,5 @@ if __name__ == '__main__':
     print(fitness_score)
     print(output_file_path.replace(".txt", ""))
     print("Results written")
-    print("End!")
     plt.show()
+    print("End!")

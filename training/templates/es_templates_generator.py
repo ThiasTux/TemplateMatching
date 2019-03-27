@@ -216,7 +216,7 @@ class ESTemplateThresholdsGenerator:
             else:
                 top_idx = np.argmin(fit_scores)
             best_template = templates_pop[top_idx]
-            best_threshold = self.__np_to_int(thresholds_pop[top_idx])
+            best_threshold = self.__np_to_int(thresholds_pop[top_idx]) - self.__scaling_factor
             scores.append([np.mean(fit_scores), np.max(fit_scores), np.min(fit_scores), np.std(fit_scores)])
             best_templates.append(best_template)
             best_thresholds.append(best_threshold)
@@ -228,7 +228,7 @@ class ESTemplateThresholdsGenerator:
             top_idx = np.argmin(fit_scores)
         top_score = fit_scores[top_idx]
         best_template = templates_pop[top_idx]
-        best_threshold = self.__np_to_int(thresholds_pop[top_idx])
+        best_threshold = self.__np_to_int(thresholds_pop[top_idx]) - self.__scaling_factor
         if self.__write_to_file:
             output_scores_path = "{}_{:02d}_{}_scores.txt".format(self.__output_file, num_test, self.__class)
             with open(output_scores_path, 'w') as f:
