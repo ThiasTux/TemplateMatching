@@ -190,11 +190,10 @@ if __name__ == '__main__':
     tmp_labels = np.array(labels).reshape((len(instances), 1))
     mss = np.concatenate((mss, tmp_labels), axis=1)
     if optimize_thresholds:
-        plt_creator.plot_isolated_mss(mss, best_thresholds)
-        fitness_score = ftf.isolated_fitness_function_params(mss, best_thresholds, classes)
-    else:
-        plt_creator.plot_isolated_mss(mss, thresholds)
-        fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes)
+        thresholds = best_thresholds
+    plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes,
+                                  title="Isolated matching score - Template gen. - {}".format(dataset_choice))
+    fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes)
     print(fitness_score)
     print(output_file_path.replace(".txt", ""))
     print("Results written")

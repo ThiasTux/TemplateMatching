@@ -55,6 +55,8 @@ def plot_scores(input_paths, save_img=False, title=None, output_file=""):
     fig = plt.figure(figsize=(13, 3))
     if title is not None:
         fig.suptitle(title)
+    else:
+        fig.suptitle("Scores: {}")
     subplt = fig.add_subplot(111)
     for input_path in input_paths:
         scores_files = [file for file in glob.glob(input_path + "*_scores.txt") if os.stat(file).st_size != 0]
@@ -100,7 +102,7 @@ def plot_templates_scores(input_path, save_img=False, title=None, output_file=""
         for _ in range(classes_line_num):
             classes_line = conf_file.readline()
         classes = classes_line.split(":")[1].strip().split(" ")
-    # fig.suptitle(title.format(len(classes)))
+    fig.suptitle("Template scores: {}".format(input_path))
     subplt = fig.add_subplot(111)
     for c in classes:
         scores_files = [file for file in glob.glob(input_path + "*_{}_scores.txt".format(c)) if
@@ -127,7 +129,7 @@ def plot_templates_scores(input_path, save_img=False, title=None, output_file=""
         subplt.fill_between(t, mean_scores + std_scores / 2, mean_scores - std_scores / 2,
                             color=lighten_color(p_mean_color))
     subplt.set_xticks([0, len(mean_scores)])
-    subplt.set_ylabel("Score: min(good) - max(bad)")
+    subplt.set_ylabel("Score")
     subplt.set_xlabel("ES Iterations")
     # subplt.set_ylim(-200, 1100)
     # subplt.set_xlim(-10, 550)
@@ -196,16 +198,21 @@ def lighten_color(color, amount=0.5):
     return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
 
 
-def plot_isolated_mss(mss, thresholds):
+def plot_isolated_mss(mss, thresholds, dataset_choice, classes, title=None):
     num_instances = mss.shape[0]
     num_templates = mss.shape[1] - 1
     if len(thresholds) != num_templates:
         print("Not enough thresholds!")
         return None
     fig = plt.figure()
+    if title is None:
+        fig.suptitle("Isolated matching scores - {}".format(dataset_choice))
+    else:
+        fig.suptitle(title)
     for t in range(num_templates):
         subplt = fig.add_subplot(num_templates, 1, t + 1)
         subplt.plot(mss[:, t], '.', markersize=3)
+        subplt.set_title("{}".format(classes[t]))
         subplt.axes.axhline(thresholds[t], color='orange')
 
 
