@@ -183,6 +183,8 @@ if __name__ == '__main__':
         outputconffile.write("Num tests: {}\n".format(num_test))
         outputconffile.write("Fitness function: {}\n".format(fitness_function))
         outputconffile.write("Chromosomes: {}\n".format(chromosomes))
+        outputconffile.write("Params: {}\n".format(params))
+        outputconffile.write("Thresholds: {}\n".format(thresholds))
         outputconffile.write("Null class extraction: {}\n".format(use_null))
         outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
         outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
