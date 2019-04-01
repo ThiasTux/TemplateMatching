@@ -1,7 +1,6 @@
 import glob
 import os
 import pickle
-from scipy import signal
 from os.path import expanduser
 from os.path import join
 from random import randint
@@ -9,6 +8,7 @@ from random import randint
 import matlab.engine
 import numpy as np
 from pyquaternion import Quaternion
+from scipy import signal
 from scipy.stats import norm, uniform
 
 from utils import codebook_builder as cc, filter_data as fd
@@ -48,10 +48,15 @@ def extract_isolated_opportunity(quantize_data=True, sensor=64, fix_labels=True)
     for file in files:
         user_no = file.split("/")[-1].replace("-Drill.dat", "").replace("S", "0")
         data = np.loadtxt(file, dtype=float)
+        # Tmp data loaded from file (Time, data, label)
+        tmp_data = np.empty((len(data), 3), dtype=int)
+        used_data = data[:, sensor]
+        np.nan_to_num(used_data, False)
+        # Time
+        tmp_data[:, 0] = data[:, 0]
+        # ML label
+        tmp_data[:, 2] = data[:, -1]
         if quantize_data:
-            tmp_data = np.empty((len(data), 3), dtype=int)
-            used_data = data[:, sensor]
-            np.nan_to_num(used_data, False)
             cutoff_freq = 10
             freq = 30
             filtered_data = fd.butter_lowpass_filter(used_data, cutoff_freq, freq)
@@ -62,11 +67,14 @@ def extract_isolated_opportunity(quantize_data=True, sensor=64, fix_labels=True)
             digitized_data = np.digitize(filtered_data, bins)
             bins = np.arange(128)
             quantized_data = np.array([bins[x] for x in digitized_data], dtype=int)
-            tmp_data[:, 0] = quantized_data
-            tmp_data[:, 1] = data[:, -2]
-            tmp_data[:, 2] = data[:, -1]
-            data = tmp_data
-        labels = data[:, -1]
+            # Data
+            tmp_data[:, 1] = quantized_data
+        else:
+            # Data
+            tmp_data[:, 1] = used_data
+        data = tmp_data
+        # Extracted channel data (time, data, label)
+        labels = tmp_data[:, 2]
         if fix_labels:
             # Doors
             labels[labels == 406517] = 406516
@@ -81,15 +89,12 @@ def extract_isolated_opportunity(quantize_data=True, sensor=64, fix_labels=True)
             m_range = i3[i]['range']
             num_inst = len(m_range)
             for k in range(num_inst):
-                extracted_data = data[int(i3[i]['range'][k][0] - 1):int(i3[i]['range'][k][1]),
-                                 0 if quantize_data else 37:102]
+                extracted_data = data[int(i3[i]['range'][k][0] - 1):int(i3[i]['range'][k][1])]
                 if extracted_data.size != 0:
-                    extracted_data_time = data[int(i3[i]['range'][k][0] - 1):int(i3[i]['range'][k][1]), 0]
-                    tmp_data = np.empty((extracted_data.shape[0], extracted_data.shape[1] + 3))
-                    tmp_data[:, 0] = extracted_data_time
-                    tmp_data[:, 1:-2] = extracted_data
-                    tmp_data[:, -2] = np.array([c for i in range(extracted_data.shape[0])])
-                    tmp_data[:, -1] = np.array([user_no for i in range(extracted_data.shape[0])])
+                    # Tmp extracted data (time, data, label, user)
+                    tmp_data = np.empty((extracted_data.shape[0], 4))
+                    tmp_data[:, 0:3] = extracted_data
+                    tmp_data[:, 3] = np.array([user_no for i in range(extracted_data.shape[0])])
                     all_data.append(tmp_data)
     eng.quit()
     if quantize_data:
@@ -98,7 +103,8 @@ def extract_isolated_opportunity(quantize_data=True, sensor=64, fix_labels=True)
                   "wb") as output_file:
             pickle.dump(all_data, output_file)
     else:
-        with open(join(OUTPUT_FOLDER, dataset_name, "all_data_isolated.pickle"), "wb") as output_file:
+        with open(join(OUTPUT_FOLDER, dataset_name,
+                       "all_{}_data_isolated.pickle".format(OPPORTUNITY_SENSOR_DICT[sensor])), "wb") as output_file:
             pickle.dump(all_data, output_file)
 
 
@@ -152,24 +158,62 @@ def extract_old_opportunity():
         pickle.dump(all_data, output_file)
 
 
-def extract_continuous_opportunity():
+def extract_continuous_opportunity(quantize_data=True, sensor=64, fix_labels=True):
     files = [file for file in glob.glob(OPPORTUNITY_FOLDER + "/*-Drill.dat") if
              os.stat(file).st_size != 0]
     dataset_name = "opportunity"
     for file in files:
-        user_no = file.split("/")[-1].replace("-Drill.dat", "").replace("S", "0")
+        user_no = int(file.split("/")[-1].replace("-Drill.dat", "").replace("S", "0"))
         data = np.loadtxt(file, dtype=float)
-        extracted_data = data[:, 37:102]
-        extracted_data_time = data[:, 0]
-        extracted_data_labels = data[:, -1]
-        tmp_data = np.empty((extracted_data.shape[0], extracted_data.shape[1] + 3))
-        tmp_data[:, 0] = extracted_data_time
-        tmp_data[:, 1:-2] = extracted_data
-        tmp_data[:, -2] = extracted_data_labels
-        tmp_data[:, -1] = np.array([user_no for i in range(extracted_data.shape[0])])
-        with open(join(OUTPUT_FOLDER, dataset_name, "user_{}_data_continuous.pickle".format(user_no)),
-                  "wb") as output_file:
-            pickle.dump(tmp_data, output_file)
+        tmp_data = np.empty((len(data), 4), dtype=int)
+        used_data = data[:, sensor]
+        np.nan_to_num(used_data, False)
+        # Time
+        tmp_data[:, 0] = data[:, 0]
+        # ML label
+        tmp_data[:, 2] = data[:, -1]
+        # User
+        tmp_data[:, 3] = np.array([user_no for i in range(data.shape[0])])
+        if quantize_data:
+            cutoff_freq = 10
+            freq = 30
+            filtered_data = fd.butter_lowpass_filter(used_data, cutoff_freq, freq)
+            # processed_data = fd.decimate_signal(filtered_data, OPPORTUNITY_DOWNSAMPLING_FACTOR)
+            max_value = 2000
+            min_value = -2000
+            bins = np.arange(min_value, max_value, (max_value - min_value) / 127)
+            digitized_data = np.digitize(filtered_data, bins)
+            bins = np.arange(128)
+            quantized_data = np.array([bins[x] for x in digitized_data], dtype=int)
+            # Data
+            tmp_data[:, 1] = quantized_data
+        else:
+            # Data
+            tmp_data[:, 1] = used_data
+        # Extracted channel data (time, data, label)
+        labels = tmp_data[:, 2]
+        if fix_labels:
+            # Doors
+            labels[labels == 406517] = 406516
+            labels[labels == 404517] = 404516
+            # Drawers
+            labels[labels == 406511] = 406519
+            labels[labels == 404511] = 404519
+            labels[labels == 406508] = 406519
+            labels[labels == 404508] = 404519
+        tmp_data[:, 2] = labels
+        if quantize_data:
+            with open(join(OUTPUT_FOLDER, dataset_name,
+                           "user_{:02d}_quant_{}_data_continuous.pickle".format(user_no,
+                                                                                OPPORTUNITY_SENSOR_DICT[sensor])),
+                      "wb") as output_file:
+                pickle.dump(tmp_data, output_file)
+        else:
+            with open(join(OUTPUT_FOLDER, dataset_name, "user_{:2d}_{}_data_continuous.pickle.pickle".format(user_no,
+                                                                                                             OPPORTUNITY_SENSOR_DICT[
+                                                                                                                 sensor])),
+                      "wb") as output_file:
+                pickle.dump(tmp_data, output_file)
 
 
 def extract_unilever_drinking():

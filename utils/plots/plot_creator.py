@@ -1,11 +1,11 @@
 import glob
-import math
 import os
 from os.path import join
 
+import math
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import colors as mcolors
+from matplotlib import colors as mcolors, patches
 
 from utils import filter_data as fd
 
@@ -244,3 +244,29 @@ def plot_bluesense_data(input_path, channel):
             subplt.set_title("{} - Cut_off {}".format(sensor_name, cut_off))
             subplt.plot(data_time, x_data, data_time, y_data, data_time, z_data, linewidth=0.5)
             # subplt.plot(data_time, x_data[::50], linewidth=0.5)
+
+
+def plot_continuous_data(data, classes, save_fig=False):
+    fig = plt.figure()
+    num_subplt = len(classes)
+    timestamps = data[:, 0]
+    for i, c in enumerate(classes):
+        labels = np.copy(data[:, -2])
+        labels[labels != c] = 0
+        tmp_labels = labels[1:] - labels[0:-1]
+        start_idx = np.where(tmp_labels > 0)[0]
+        end_idx = np.where(tmp_labels < 0)[0]
+        subplt = fig.add_subplot(num_subplt, 1, i + 1)
+        subplt.set_title("{}".format(c))
+        subplt.plot(timestamps, data[:, 1], linewidth=0.5)
+        for start_act, end_act in zip(start_idx, end_idx):
+            subplt.add_patch(
+                patches.Rectangle(
+                    (timestamps[start_act], -0.5),
+                    timestamps[end_act] - timestamps[start_act],
+                    128,
+                    facecolor="y",
+                    alpha=0.5,
+                    zorder=10
+                )
+            )

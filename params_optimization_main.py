@@ -13,6 +13,17 @@ if __name__ == '__main__':
     use_null = True
     write_to_file = True
     user = None
+
+    num_individuals = 32
+    bits_params = 5
+    bits_thresholds = 10
+    rank = 10
+    elitism = 3
+    iterations = 500
+    fitness_function = 84
+    crossover_probability = 0.3
+    mutation_probability = 0.1
+
     if dataset_choice == 100:
         use_encoding = False
         classes = [3001, 3003, 3013, 3018]
@@ -78,14 +89,40 @@ if __name__ == '__main__':
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
 
     optimizer = GAParamsOptimizer(chosen_templates, instances, labels, classes,
-                                  file="{}/param_thres_{}".format(output_folder, st))
+                                  file="{}/param_thres_{}".format(output_folder, st),
+                                  num_individuals=num_individuals, rank=rank,
+                                  elitism=elitism,
+                                  iterations=iterations,
+                                  fitness_function=fitness_function,
+                                  cr_p=crossover_probability,
+                                  mt_p=mutation_probability)
+    start_time = time.time()
+
     optimizer.optimize()
 
+    elapsed_time = time.time() - start_time
     results = optimizer.get_results()
     output_file_path = join(output_folder,
                             "param_thres_{}.txt".format(st))
     output_config_path = join(output_folder,
                               "param_thres_{}_conf.txt".format(st))
+    with open(output_config_path, 'w') as outputconffile:
+        outputconffile.write("Dataset choice: {}\n".format(dataset_choice))
+        outputconffile.write("Classes: {}\n".format(' '.join([str(c) for c in classes])))
+        outputconffile.write("Population: {}\n".format(num_individuals))
+        outputconffile.write("Iteration: {}\n".format(iterations))
+        outputconffile.write("Crossover: {}\n".format(crossover_probability))
+        outputconffile.write("Mutation: {}\n".format(mutation_probability))
+        outputconffile.write("Elitism: {}\n".format(elitism))
+        outputconffile.write("Rank: {}\n".format(rank))
+        outputconffile.write("Num tests: {}\n".format(num_test))
+        outputconffile.write("Fitness function: {}\n".format(fitness_function))
+        outputconffile.write("Bit params: {}\n".format(bits_params))
+        outputconffile.write("Bit thresholds: {}\n".format(bits_thresholds))
+        outputconffile.write("Null class extraction: {}\n".format(use_null))
+        outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
+        outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
+
     with open(output_file_path, 'w') as outputfile:
         for t, r in enumerate(results):
             outputfile.write("{} {}\n".format(t, r[0:]))

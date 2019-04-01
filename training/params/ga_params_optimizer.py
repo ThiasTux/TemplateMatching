@@ -11,7 +11,8 @@ class GAParamsOptimizer:
     def __init__(self, templates, instances, instances_labels, classes, file=None, use_encoding=False, num_processes=1,
                  iterations=500,
                  num_individuals=32,
-                 bits_parameter=5, bits_threshold=10, cr_p=0.3, mt_p=0.1, elitism=3, rank=10, maximize=True):
+                 bits_parameter=5, bits_threshold=10, cr_p=0.3, mt_p=0.1, elitism=3, rank=10, maximize=True,
+                 fitness_function=5):
         self.__templates = templates
         self.__instances = instances
         self.__instances_labels = np.array(instances_labels).reshape((len(instances), 1))
@@ -26,6 +27,7 @@ class GAParamsOptimizer:
         self.__mutation_probability = mt_p
         self.__elitism = elitism
         self.__rank = rank
+        self.__fitness_function = fitness_function
         self.__maximize = maximize
         self.__scaling_factor = 2 ** (self.__bits_threshold - 1)
         self.__chromosomes = 3

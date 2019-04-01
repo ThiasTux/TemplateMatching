@@ -10,15 +10,15 @@ from utils.plots import plot_creator as plt_creator
 if __name__ == '__main__':
     dataset_choice = 201
 
-    stream_modality = 1  # 1 for instances, 2 for complete stream
+    isolated_case = True  # True for isolate, False for continuous
     save_img = False
     extract_null = False
     eval_templates = False
 
     use_null = True
     user = None
-    use_evolved_templates = False
-    use_evolved_thresholds = False
+    use_evolved_templates = True
+    use_evolved_thresholds = True
 
     write_to_file = True
     if dataset_choice == 100:
@@ -37,7 +37,7 @@ if __name__ == '__main__':
         null_class_percentage = 0.6
         params = [31, 0, 0]
         thresholds = [471, 523, 441, 423]
-        es_results_file = "outputs/training/cuda/skoda_old/templates/templates_2019-03-25_13-54-27"
+        es_results_file = "outputs/training/cuda/skoda_old/templates/templates_2019-03-27_18-24-04"
     elif dataset_choice == 200 or dataset_choice == 201 or dataset_choice == 202 or dataset_choice == 203 \
             or dataset_choice == 204 or dataset_choice == 205 or dataset_choice == 211:
         use_encoding = False
@@ -48,7 +48,7 @@ if __name__ == '__main__':
         user = 3
         params = [14, 1, 5]
         thresholds = [327, 1021, 636, 505]
-        es_results_file = "outputs/training/cuda/opportunity/templates/templates_2019-03-25_14-06-47"
+        es_results_file = "outputs/training/cuda/opportunity/templates/templates_2019-03-27_18-30-02"
     elif dataset_choice == 300:
         use_encoding = False
         classes = [49, 50, 51, 52, 53]
@@ -83,8 +83,14 @@ if __name__ == '__main__':
         thresholds = [991, 567]
         es_results_file = "outputs/training/cuda/synthetic2/templates/templates_2019-03-25_13-31-16"
 
-    chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice, user=user,
-                                                                   classes=classes, extract_null=use_null)
+    if isolated_case:
+        chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice, user=user,
+                                                                       classes=classes, extract_null=use_null)
+    else:
+        if not use_evolved_templates:
+            chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice, user=user,
+                                                                           classes=classes, extract_null=use_null)
+        stream = dl.load_continuous_dataset(dataset_choice=dataset_choice, user=user, )
 
     if use_evolved_templates:
         if es_results_file is not None:
@@ -94,14 +100,20 @@ if __name__ == '__main__':
             else:
                 chosen_templates = dl.load_evolved_templates(es_results_file, classes)
 
-    m_wlcss_cuda = WLCSSCudaParamsTraining(chosen_templates, instances, 1, False)
-    mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
-    m_wlcss_cuda.cuda_freemem()
-    tmp_labels = np.array(labels).reshape((len(instances), 1))
-    mss = np.concatenate((mss, tmp_labels), axis=1)
-    fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes, parameter_to_optimize=4)
-    print("F1: {:4.3f}".format(fitness_score))
-    plt_creator.plot_isolated_mss(mss, thresholds)
-    # plt_creator.plot_gestures(dl.load_dataset(dataset_choice, classes), classes=classes)
+    if isolated_case:
+        m_wlcss_cuda = WLCSSCudaParamsTraining(chosen_templates, instances, 1, False)
+        mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
+        m_wlcss_cuda.cuda_freemem()
+        tmp_labels = np.array(labels).reshape((len(instances), 1))
+        mss = np.concatenate((mss, tmp_labels), axis=1)
+        fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes, parameter_to_optimize=4)
+        print("F1: {:4.3f}".format(fitness_score))
+        plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes)
+        # plt_creator.plot_gestures(dl.load_dataset(dataset_choice, classes), classes=classes)
+    else:
+        m_wlcss_cuda = WLCSSCudaParamsTraining(chosen_templates, stream, 1, False)
+        mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
+        m_wlcss_cuda.cuda_freemem()
+
     plt.show()
     print("End!")
