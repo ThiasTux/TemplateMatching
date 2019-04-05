@@ -125,6 +125,7 @@ if __name__ == '__main__':
     scores = list()
     start_time = time.time()
     for i, c in enumerate(classes):
+        print("{}".format(c))
         tmp_labels = np.copy(labels)
         tmp_labels[tmp_labels != c] = 0
         if inject_templates:
@@ -162,10 +163,6 @@ if __name__ == '__main__':
     best_templates = [np.stack((np.arange(len(r)), r), axis=1) for r in best_templates]
     output_file_path = join(output_folder,
                             "templates_{}.txt".format(st))
-    m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, instances, 1, False)
-    mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
-    m_wlcss_cuda.cuda_freemem()
-
     elapsed_time = time.time() - start_time
     output_config_path = join(output_folder,
                               "templates_{}_conf.txt".format(st))
@@ -188,6 +185,10 @@ if __name__ == '__main__':
         outputconffile.write("Null class extraction: {}\n".format(use_null))
         outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
         outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
+
+    m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, instances, 1, False)
+    mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
+    m_wlcss_cuda.cuda_freemem()
 
     tmp_labels = np.array(labels).reshape((len(instances), 1))
     mss = np.concatenate((mss, tmp_labels), axis=1)

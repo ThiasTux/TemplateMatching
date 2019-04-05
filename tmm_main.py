@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from data_processing import data_loader as dl
-from performance_evaluation import fitness_functions as ftf
-from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
+from performance_evaluation import performance_evaluation as pfe
+from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining, WLCSSCudaContinuous
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
@@ -12,10 +12,8 @@ if __name__ == '__main__':
 
     isolated_case = True  # True for isolate, False for continuous
     save_img = False
-    extract_null = False
-    eval_templates = False
 
-    use_null = True
+    use_null = False
     user = None
     use_evolved_templates = True
     use_evolved_thresholds = True
@@ -106,14 +104,23 @@ if __name__ == '__main__':
         m_wlcss_cuda.cuda_freemem()
         tmp_labels = np.array(labels).reshape((len(instances), 1))
         mss = np.concatenate((mss, tmp_labels), axis=1)
-        fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes, parameter_to_optimize=4)
-        print("F1: {:4.3f}".format(fitness_score))
-        plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes)
+        pfe.performance_evaluation_isolated(mss, thresholds, classes)
+        plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes,
+                                      title="Dataset: {} - {} - Evolved_templ: {} - Evolved_thres: {}".format(
+                                          dataset_choice, "Isolated", use_evolved_templates, use_evolved_thresholds))
         # plt_creator.plot_gestures(dl.load_dataset(dataset_choice, classes), classes=classes)
     else:
-        m_wlcss_cuda = WLCSSCudaParamsTraining(chosen_templates, stream, 1, False)
-        mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
+        m_wlcss_cuda = WLCSSCudaContinuous(chosen_templates, [stream], 1, False)
+        mss = m_wlcss_cuda.compute_wlcss(np.array([params]))
         m_wlcss_cuda.cuda_freemem()
-
+        plt_creator.plot_continuous_data(stream, classes)
+        tmp_mss = np.empty((mss.shape[0], mss.shape[1] + 2))
+        tmp_mss[:, 0] = stream[:, 0]
+        tmp_mss[:, -1] = stream[:, 2]
+        tmp_mss[:, 1:-1] = mss
+        plt_creator.plot_continuous_mss(tmp_mss, classes, thresholds,
+                                        title="Dataset: {} - {} - Evolved_templ: {} - Evolved_thres: {}".format(
+                                            dataset_choice, "Continuous", use_evolved_templates,
+                                            use_evolved_thresholds))
     plt.show()
     print("End!")

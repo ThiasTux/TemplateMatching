@@ -270,3 +270,31 @@ def plot_continuous_data(data, classes, save_fig=False):
                     zorder=10
                 )
             )
+
+
+def plot_continuous_mss(mss, classes, thresholds, title=""):
+    fig = plt.figure()
+    fig.suptitle(title)
+    num_subplt = len(classes)
+    timestamps = mss[:, 0]
+    for i, c in enumerate(classes):
+        labels = np.copy(mss[:, -2])
+        labels[labels != c] = 0
+        tmp_labels = labels[1:] - labels[0:-1]
+        start_idx = np.where(tmp_labels > 0)[0]
+        end_idx = np.where(tmp_labels < 0)[0]
+        subplt = fig.add_subplot(num_subplt, 1, i + 1)
+        subplt.set_title("{}".format(c))
+        subplt.plot(timestamps, mss[:, i + 1], linewidth=0.5)
+        subplt.axes.axhline(thresholds[i], color='orange')
+        for start_act, end_act in zip(start_idx, end_idx):
+            subplt.add_patch(
+                patches.Rectangle(
+                    (timestamps[start_act], -0.5),
+                    timestamps[end_act] - timestamps[start_act],
+                    128,
+                    facecolor="y",
+                    alpha=0.5,
+                    zorder=10
+                )
+            )
