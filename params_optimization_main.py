@@ -3,11 +3,17 @@ import datetime
 import time
 from os.path import join
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 from data_processing import data_loader as dl
+from performance_evaluation import fitness_functions as ftf
+from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
 from training.params.ga_params_optimizer import GAParamsOptimizer
+from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 701
+    dataset_choice = 201
 
     num_test = 1
     use_null = True
@@ -19,7 +25,7 @@ if __name__ == '__main__':
     bits_thresholds = 10
     rank = 10
     elitism = 3
-    iterations = 500
+    iterations = 200
     fitness_function = 84
     crossover_probability = 0.3
     mutation_probability = 0.1
@@ -41,9 +47,9 @@ if __name__ == '__main__':
     elif dataset_choice == 200 or dataset_choice == 201 or dataset_choice == 202 or dataset_choice == 203 \
             or dataset_choice == 204 or dataset_choice == 205 or dataset_choice == 211:
         use_encoding = False
-        # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
+        classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
         # classes = [406516, 408512, 405506]
-        classes = [407521, 406520, 406505, 406519]
+        # classes = [407521, 406520, 406505, 406519]
         user = 3
         output_folder = "outputs/training/cuda/opportunity/params"
         null_class_percentage = 0.5
@@ -126,7 +132,22 @@ if __name__ == '__main__':
     with open(output_file_path, 'w') as outputfile:
         for t, r in enumerate(results):
             outputfile.write("{} {}\n".format(t, r[0:]))
+    print("Results written")
     print(output_file_path)
     print(results[-1][0:])
-    print("Results written")
+
+    params = results[-1][0:3]
+    thresholds = results[-1][3]
+
+    m_wlcss_cuda = WLCSSCudaParamsTraining(chosen_templates, instances, 1, False)
+    mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
+    m_wlcss_cuda.cuda_freemem()
+
+    tmp_labels = np.array(labels).reshape((len(instances), 1))
+    mss = np.concatenate((mss, tmp_labels), axis=1)
+    plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes,
+                                  title="Isolated matching score - Template gen. - {}".format(dataset_choice))
+    fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes)
+    print(fitness_score)
+    plt.show()
     print("End!")
