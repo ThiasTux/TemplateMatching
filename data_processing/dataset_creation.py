@@ -38,6 +38,11 @@ V = np.array([0., 1., 0.])
 SKODA_TIME_INTERVAL = 0.5
 SKODA_MIN_DISPLACEMENT = 0.03
 
+HCI_FILE = "/home/mathias/Documents/Datasets/FreeHandGestures/usb_hci_guided.csv"
+HCI_SENSOR_DICT = {3: [[2, 3, 4], [5, 6, 7]], 4: [[9, 10, 11], [12, 13, 14]], 18: [[16, 17, 18], [19, 20, 21]],
+                   19: [[23, 24, 25], [26, 27, 28]], 20: [[30, 31, 32], [33, 34, 35]], 27: [[37, 38, 39], [40, 41, 42]],
+                   29: [[44, 45, 46], [47, 48, 49]], 31: [[51, 52, 53], [54, 55, 56]]}
+
 
 def extract_isolated_opportunity(quantize_data=True, sensor=64, fix_labels=True):
     files = [file for file in glob.glob(OPPORTUNITY_FOLDER + "/*-Drill.dat") if
@@ -209,8 +214,8 @@ def extract_continuous_opportunity(quantize_data=True, sensor=64, fix_labels=Tru
                       "wb") as output_file:
                 pickle.dump(tmp_data, output_file)
         else:
-            with open(join(OUTPUT_FOLDER, dataset_name, "user_{:2d}_{}_data_continuous.pickle.pickle".format(user_no,
-                                                                                                             OPPORTUNITY_SENSOR_DICT[
+            with open(join(OUTPUT_FOLDER, dataset_name, "user_{:2d}_{}_data_continuous.pickle".format(user_no,
+                                                                                                      OPPORTUNITY_SENSOR_DICT[
                                                                                                                  sensor])),
                       "wb") as output_file:
                 pickle.dump(tmp_data, output_file)
@@ -483,3 +488,54 @@ def generate_squared_impulse(num_gestures, gesture_length):
     user_no = np.array([0 for _ in range(gesture_length)])
     generated_data = [np.stack((time, d, label, user_no), axis=-1) for d in data]
     return generated_data
+
+
+def load_hci_dataset(sensor=31, downsampling_factor=10):
+    cut_off = 5
+    frequency = 96
+    data = np.loadtxt(HCI_FILE)
+    acc_columns = HCI_SENSOR_DICT[sensor][0]
+    x_data = fd.decimate_signal(fd.butter_lowpass_filter(data[:, acc_columns[0]], cut_off, frequency), 10)
+    y_data = fd.decimate_signal(fd.butter_lowpass_filter(data[:, acc_columns[1]], cut_off, frequency), 10)
+    z_data = fd.decimate_signal(fd.butter_lowpass_filter(data[:, acc_columns[2]], cut_off, frequency), 10)
+    tmp_data = np.array([x_data, y_data, z_data]).T
+    filtered_data = np.linalg.norm(tmp_data, axis=1)
+    max_value = 3500
+    min_value = 0
+    # filtered_data = fd.decimate_signal(filtered_data, 10)
+    bins = np.arange(min_value, max_value, (max_value - min_value) / 127)
+    quantized_data = np.digitize(filtered_data, bins)
+    bins = np.arange(0, 128)
+    processed_data = np.array([bins[x] for x in quantized_data], dtype=int)
+    continuous_data = processed_data.astype(int)
+    timestamps = np.arange(len(filtered_data), dtype=int)
+    labels = data[::downsampling_factor, 0]
+    eng = matlab.engine.start_matlab()
+    dataset_name = "hci"
+    [i1, i2, i3] = eng.dtcFindInstancesFromLabelStream(matlab.double(list(labels)), nargout=3)
+    eng.quit()
+    all_data = list()
+    user_no = 1
+    for i, c in enumerate(np.unique(labels)):
+        m_range = i3[i]['range']
+        num_inst = len(m_range)
+        for k in range(num_inst):
+            extracted_data = continuous_data[int(i3[i]['range'][k][0] - 1):int(i3[i]['range'][k][1])]
+            if extracted_data.size != 0:
+                extracted_data_time = timestamps[int(i3[i]['range'][k][0] - 1):int(i3[i]['range'][k][1])]
+                tmp_data = np.empty((extracted_data.shape[0], 4))
+                tmp_data[:, 0] = extracted_data_time
+                tmp_data[:, 1] = extracted_data
+                tmp_data[:, -2] = np.array([c for i in range(extracted_data.shape[0])])
+                tmp_data[:, -1] = np.array([user_no for i in range(extracted_data.shape[0])])
+                all_data.append(tmp_data)
+    with open(join(OUTPUT_FOLDER, dataset_name, "all_data_isolated.pickle"), "wb") as output_file:
+        pickle.dump(all_data, output_file)
+    with open(join(OUTPUT_FOLDER, dataset_name, "user_{:02d}_data_continuous.pickle".format(user_no)),
+              "wb") as output_file:
+        tmp_data = np.empty((len(continuous_data), 4))
+        tmp_data[:, 0] = timestamps
+        tmp_data[:, 1] = continuous_data
+        tmp_data[:, -2] = labels
+        tmp_data[:, -1] = np.array([user_no for _ in range(len(continuous_data))])
+        pickle.dump(tmp_data, output_file)
