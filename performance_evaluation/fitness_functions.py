@@ -157,6 +157,16 @@ def isolated_fitness_function_templates(scores, labels, threshold, parameter_to_
             a = 4000
             return (a / ((1 + np.e ** ((-good_distance - 1000) * .005)) * (
                         1 + np.e ** ((bad_distance - 1000) * .005)))) - a
+    elif parameter_to_optimize == 85:
+        min_good = np.min(good_scores)
+        max_bad = np.max(bad_scores)
+        good_distance = (min_good - threshold)
+        bad_distance = -(max_bad - threshold)
+        if good_distance >= 1 >= bad_distance:
+            fitness_score = good_distance * (-bad_distance)
+        else:
+            fitness_score = -(good_distance ** 2 + bad_distance ** 2)
+        return fitness_score
     elif parameter_to_optimize == 9:
         good_perc = np.percentile(good_scores, 10)
         bad_perc = np.percentile(bad_scores, 90)

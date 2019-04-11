@@ -44,7 +44,7 @@ HCI_SENSOR_DICT = {3: [[2, 3, 4], [5, 6, 7]], 4: [[9, 10, 11], [12, 13, 14]], 18
                    29: [[44, 45, 46], [47, 48, 49]], 31: [[51, 52, 53], [54, 55, 56]]}
 
 
-def extract_isolated_opportunity(quantize_data=True, sensor=64, fix_labels=True):
+def extract_isolated_opportunity(quantize_data=True, sensor=64, fix_labels=False):
     files = [file for file in glob.glob(OPPORTUNITY_FOLDER + "/*-Drill.dat") if
              os.stat(file).st_size != 0]
     eng = matlab.engine.start_matlab()
@@ -163,7 +163,7 @@ def extract_old_opportunity():
         pickle.dump(all_data, output_file)
 
 
-def extract_continuous_opportunity(quantize_data=True, sensor=64, fix_labels=True):
+def extract_continuous_opportunity(quantize_data=True, sensor=64, fix_labels=False):
     files = [file for file in glob.glob(OPPORTUNITY_FOLDER + "/*-Drill.dat") if
              os.stat(file).st_size != 0]
     dataset_name = "opportunity"

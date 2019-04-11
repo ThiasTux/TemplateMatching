@@ -81,54 +81,35 @@ def compute_confusion_matrix_isolated(matching_scores, thresholds, classes, save
     return cfm
 
 
-def performance_evaluation_continuous(matching_scores, thresholds, labels, classes, wsize=500,
+def performance_evaluation_continuous(matching_scores, thresholds, classes, wsize=500,
                                       temporal_merging_window=5, tolerance_window=5, compute_conf_matrix=True,
                                       print_results=True):
-    np_classes = np.array(classes)
-    num_classes = len(classes)
     multiple_matches = 0
     w_overlap = 1
-    pred_labels = np.array([], dtype=int)
-    act_labels = np.array([], dtype=int)
+    predicted_labels = np.array([], dtype=int)
+    actual_labels = np.array([], dtype=int)
     time = np.array([])
-    start_time = matching_scores.iloc[1, -2]
-    end_time = matching_scores.iloc[-1, -2]
-    for j in range(num_classes):
-        matching_scores[str(np_classes[j])] = (matching_scores[str(np_classes[j])] - thresholds[j]) / \
-                                              thresholds[
-                                                  j]
+    start_time = matching_scores[0, 0]
+    end_time = matching_scores[-1, 0]
+    matching_scores[:, 1:-1] = (matching_scores[:, 1:-1] - thresholds) / thresholds
     for i in np.arange(start_time, end_time, int(wsize * w_overlap)):
-        accumulated_wcost = np.ndarray(shape=num_classes)
         end_w = i + wsize
-        x_scores = matching_scores['time'][
-            (matching_scores['time'] > i) & (matching_scores['time'] < end_w)].values
+        x_scores = matching_scores[np.where((matching_scores[:, 0] > i) & (matching_scores[:, 0] < end_w))[0]]
         if len(x_scores) > 0:
-            act_time = x_scores[-1]
-            act_labels = np.append(act_labels, matching_scores['labels'][matching_scores['time'] == act_time])
-            time = np.append(time, act_time)
-            x_scores = x_scores - x_scores[0]
-            for j in range(num_classes):
-                act = np_classes[j]
-                y_scores = matching_scores[str(act)][
-                    (matching_scores['time'] > i) & (matching_scores['time'] < end_w)].values
-                idxs = np.where(y_scores < 0)
-                if len(idxs) > 0:
-                    y_scores[idxs] = 0
-                    area = np.trapz(y_scores, x_scores)
-                    accumulated_wcost[j] = area
-                else:
-                    accumulated_wcost[j] = 0
-            if np.sum(accumulated_wcost) > 0:
-                c = np_classes[np.where(accumulated_wcost == max(accumulated_wcost))]
-                if len(c) > 1:
-                    c = c[0]
-                    multiple_matches += 1
-                pred_labels = np.append(pred_labels, c)
+            time = np.append(time, x_scores[-1, 0])
+            actual_labels = np.append(actual_labels, x_scores[-1, -1])
+            tmp = x_scores[:, 1:-1]
+            tmp[tmp < 0] = 0
+            time_x_scores = x_scores[:, 0].reshape(len(x_scores))
+            tmp = np.trapz(tmp, time_x_scores - time_x_scores[0], axis=0)
+            if np.sum(tmp) > 0:
+                pred_class = classes[np.argmax(tmp)]
+                multiple_matches += np.count_nonzero(tmp == np.max(tmp)) - 1
             else:
-                pred_labels = np.append(pred_labels, 0)
-    header = np.array(['pred_labels', 'act_labels', 'time'])
-    pred_label_df = pd.DataFrame(np.array([pred_labels, act_labels, time]).T, columns=header)
-    test_events_dict, ground_events_dict = event_extraction(pred_label_df)
+                pred_class = 0
+            predicted_labels = np.append(predicted_labels, pred_class)
+    prediction_array = np.stack((time, predicted_labels, actual_labels), axis=1)
+    test_events_dict, ground_events_dict = event_extraction(prediction_array, classes)
     if print_results:
         for c in classes:
             print("{} \nDetected events: {} \nGround truth events: {}".format(c, len(test_events_dict[c]),
@@ -136,6 +117,7 @@ def performance_evaluation_continuous(matching_scores, thresholds, labels, class
         print("Multiple matches: {}".format(multiple_matches))
     results = mat_eval(test_events_dict, ground_events_dict, classes, temporal_merging_window, tolerance_window,
                        print_results, compute_conf_matrix)
+    return results
 
 
 def mat_eval(detected_events_dict, ground_truth_events_dict, classes, temporal_merging_window, tolerance_window,
@@ -155,7 +137,7 @@ def mat_eval(detected_events_dict, ground_truth_events_dict, classes, temporal_m
                 plt.axvspan(gte[0], gte[1], 0.66, 1, color=color)
         for dte in detected_events_list:
             color = colors[colors_key[classes.index(dte[2])]]
-            plt.axvspan(dte[0], dte[1], 0, 0.33, color=color)
+            plt.axvspan(dte[0], dte[1], 0.33, 0.66, color=color)
 
     # Temporal filter for merging close samples
     m_detected_events_list = detected_events_list
@@ -177,7 +159,7 @@ def mat_eval(detected_events_dict, ground_truth_events_dict, classes, temporal_m
         print("Merged events by temporal filter: {}".format(merged_events))
         for dte in m_detected_events_list:
             color = colors[colors_key[classes.index(dte[2])]]
-            plt.axvspan(dte[0], dte[1], 0.33, 0.66, color=color)
+            plt.axvspan(dte[0], dte[1], 0, 0, color=color)
         plt.axhline(y=0.33, color='k', linestyle='-')
         plt.axhline(y=0.66, color='k', linestyle='-')
         # tolerance windows after a ground truth event
@@ -230,7 +212,10 @@ def mat_eval(detected_events_dict, ground_truth_events_dict, classes, temporal_m
     accuracy = (true_positive + true_negative) / total_events
     precision = true_positive / (true_positive + false_positive)
     recall = true_positive / (true_positive + false_negative)
-    f1 = 2 / (1 / recall + 1 / precision)
+    if precision > 0 and recall > 0:
+        f1 = 2 / (1 / recall + 1 / precision)
+    else:
+        f1 = 0
     if print_results:
         print("Accuracy: {}, Precision: {}, Recall: {}, F1: {}".format(accuracy, precision, recall, f1))
 
@@ -354,18 +339,12 @@ def compute_confusion_matrix_continuous(flagged_events, classes):
     return cf_matrix
 
 
-def event_extraction(data):
-    act_labels = data.iloc[:, 1].copy().values
-    time = data.iloc[:, 2].copy().values
-    classes = np.unique(act_labels).astype(int).tolist()
-    try:
-        classes.remove(0)
-    except:
-        pass
+def event_extraction(prediction_array, classes):
+    time = prediction_array[:, 0]
     test_events_dict = dict()
     ground_events_dict = dict()
     for c in classes:
-        tmp_pred_labels = data.iloc[:, 0].copy().values
+        tmp_pred_labels = np.copy(prediction_array[:, 1])
         tmp_pred_labels[tmp_pred_labels != c] = 0
 
         diff_pred_labels = tmp_pred_labels[1:] - tmp_pred_labels[0:-1]
@@ -376,7 +355,7 @@ def event_extraction(data):
 
         test_events_dict[c] = [event for event in zip(start_times_p, end_times_p)]
 
-        tmp_act_labels = data.iloc[:, 1].copy().values
+        tmp_act_labels = np.copy(prediction_array[:, 2])
         tmp_act_labels[tmp_act_labels != c] = 0
 
         diff_act_labels = tmp_act_labels[1:] - tmp_act_labels[0:-1]
@@ -387,7 +366,7 @@ def event_extraction(data):
 
         ground_events_dict[c] = [event for event in zip(start_times_a, end_times_a)]
 
-    tmp_act_labels = data.iloc[:, 1].copy().values
+    tmp_act_labels = np.copy(prediction_array[:, 2])
 
     start_times_a = np.array(
         [time[i + 1] for i, e in enumerate(tmp_act_labels[:-1]) if e != 0 and tmp_act_labels[i + 1] == 0])

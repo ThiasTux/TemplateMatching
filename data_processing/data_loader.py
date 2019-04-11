@@ -19,6 +19,9 @@ def load_dataset(dataset_choice=100, classes=None, num_gestures=None, user=None)
         data = pickle.load(open("outputs/datasets/opportunity/all_quant_accy_data_isolated.pickle", "rb"))
     elif dataset_choice == 211:
         data = pickle.load(open("outputs/datasets/opportunity/all_old_data_isolated.pickle", "rb"))
+    # HCI guided
+    elif dataset_choice == 300:
+        data = pickle.load(open("outputs/datasets/hci/all_data_isolated.pickle", "rb"))
     # Synthetic dataset
     elif dataset_choice == 700:
         data = pickle.load(open("outputs/datasets/synthetic/all_data_isolated.pickle", "rb"))
@@ -86,6 +89,9 @@ def load_training_dataset(dataset_choice=700, classes=None, num_gestures=None, u
         data = pickle.load(open("outputs/datasets/opportunity/all_data_isolated.pickle", "rb"))
     elif dataset_choice == 201:
         data = pickle.load(open("outputs/datasets/opportunity/all_quant_accy_data_isolated.pickle", "rb"))
+    # HCI guided
+    elif dataset_choice == 300:
+        data = pickle.load(open("outputs/datasets/hci/all_data_isolated.pickle", "rb"))
     # Synthetic dataset
     elif dataset_choice == 700:
         data = pickle.load(open("outputs/datasets/synthetic/all_data_isolated.pickle", "rb"))
@@ -195,6 +201,10 @@ def load_continuous_dataset(dataset_choice=101, user=1, template_choice_method=1
     elif dataset_choice == 201:
         data = pickle.load(
             open("outputs/datasets/opportunity/user_{:02d}_quant_accy_data_continuous.pickle".format(user), "rb"))
+    # HCI guided
+    elif dataset_choice == 300:
+        data = pickle.load(
+            open("outputs/datasets/hci/user_{:02d}_data_continuous.pickle".format(user), "rb"))
     # Synthetic dataset
     elif dataset_choice == 700:
         data = pickle.load(open("outputs/datasets/synthetic/all_data_isolated.pickle", "rb"))

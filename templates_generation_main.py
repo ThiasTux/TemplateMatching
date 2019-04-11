@@ -72,9 +72,11 @@ if __name__ == '__main__':
         null_class_percentage = 0.8
     elif dataset_choice == 300:
         use_encoding = False
-        classes = [49, 50, 51, 52, 53]
+        classes = [49, 50]
         output_folder = "outputs/training/cuda/hci_guided/templates"
-        sensor = 31
+        params = [31, 11, 4]
+        thresholds = [304, 649, 512, 693, 890]
+        bit_values = 128
         null_class_percentage = 0.5
     elif dataset_choice == 400:
         use_encoding = False
@@ -101,7 +103,7 @@ if __name__ == '__main__':
         output_folder = "outputs/training/cuda/synthetic2/templates"
         null_class_percentage = 0
         params = [28, 2, 0]
-        thresholds = [991, 567]
+        thresholds = [994, 753]
         bit_values = 128
 
     if inject_templates:
@@ -124,14 +126,30 @@ if __name__ == '__main__':
     best_templates = list()
     scores = list()
     start_time = time.time()
+    print("Dataset choice: {}".format(dataset_choice))
+    print("Classes: {}".format(' '.join([str(c) for c in classes])))
+    print("Population: {}".format(num_individuals))
+    print("Iteration: {}".format(iterations))
+    print("Crossover: {}".format(crossover_probability))
+    print("Mutation: {}".format(mutation_probability))
+    print("Elitism: {}".format(elitism))
+    print("Rank: {}".format(rank))
+    print("Inject templates: {}".format(inject_templates))
+    print("Optimize threshold: {}".format(optimize_thresholds))
+    print("Num tests: {}".format(num_test))
+    print("Fitness function: {}".format(fitness_function))
+    print("Params: {}".format(params))
+    print("Thresholds: {}".format(thresholds))
+    print("Null class extraction: {}".format(use_null))
+    print("Null class percentage: {}".format(null_class_percentage))
     for i, c in enumerate(classes):
-        print("{}".format(c))
         tmp_labels = np.copy(labels)
         tmp_labels[tmp_labels != c] = 0
         if inject_templates:
             chromosomes = len(chosen_templates[i])
         else:
             chromosomes = int(np.ceil(np.average([len(t) for t in instances if t[0, -2] != 0]).astype(int)))
+        print("{} - {}".format(c, chromosomes))
         if optimize_thresholds:
             optimizer = ESTemplateThresholdsGenerator(instances, tmp_labels, params, c, chromosomes, bit_values,
                                                       file="{}/templates_{}".format(output_folder, st),
@@ -197,6 +215,7 @@ if __name__ == '__main__':
     plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes,
                                   title="Isolated matching score - Template gen. - {}".format(dataset_choice))
     fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes)
+    plt_creator.plot_templates_scores(output_file_path.replace(".txt", ""))
     print(fitness_score)
     print(output_file_path.replace(".txt", ""))
     print("Results written")

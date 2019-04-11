@@ -13,10 +13,10 @@ from training.params.ga_params_optimizer import GAParamsOptimizer
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 201
+    dataset_choice = 300
 
     num_test = 1
-    use_null = True
+    use_null = False
     write_to_file = True
     user = None
 
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     rank = 10
     elitism = 3
     iterations = 200
-    fitness_function = 84
+    fitness_function = 5
     crossover_probability = 0.3
     mutation_probability = 0.1
 
@@ -63,9 +63,8 @@ if __name__ == '__main__':
         null_class_percentage = 0.8
     elif dataset_choice == 300:
         use_encoding = False
-        classes = [49, 50, 51, 52, 53]
+        classes = [49, 50]
         output_folder = "outputs/training/cuda/hci_guided/params"
-        sensor = 31
         null_class_percentage = 0.5
     elif dataset_choice == 400:
         use_encoding = False
@@ -146,7 +145,7 @@ if __name__ == '__main__':
     tmp_labels = np.array(labels).reshape((len(instances), 1))
     mss = np.concatenate((mss, tmp_labels), axis=1)
     plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes,
-                                  title="Isolated matching score - Template gen. - {}".format(dataset_choice))
+                                  title="Isolated matching score - Params opt. - {}".format(dataset_choice))
     fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes)
     print(fitness_score)
     plt.show()

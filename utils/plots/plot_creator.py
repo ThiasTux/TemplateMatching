@@ -272,7 +272,7 @@ def plot_continuous_data(data, classes, save_fig=False):
             )
 
 
-def plot_continuous_mss(mss, classes, thresholds, title=""):
+def plot_continuous_mss(mss, classes, thresholds, peaks=None, title=""):
     fig = plt.figure()
     fig.suptitle(title)
     num_subplt = len(classes)
@@ -298,3 +298,7 @@ def plot_continuous_mss(mss, classes, thresholds, title=""):
                     zorder=10
                 )
             )
+        if peaks is not None:
+            y = mss[peaks[i], i + 1]
+            x = mss[peaks[i], 0]
+            subplt.plot(x, y, 'x', color='r', markersize=5)
