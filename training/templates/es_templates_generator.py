@@ -193,7 +193,8 @@ class ESTemplateThresholdsGenerator:
         templates_pop, thresholds_pop = self.__generate_population()
         bar = progressbar.ProgressBar(max_value=self.__iterations)
         fit_scores = self.__compute_fitness_cuda(templates_pop, thresholds_pop)
-        for i in range(self.__iterations):
+        i = 0
+        while i < self.__iterations and np.max(fit_scores) < 0:
             pop_sort_idx = np.argsort(-fit_scores if self.__maximize else fit_scores)
             top_templates_individuals = templates_pop[pop_sort_idx]
             top_thresholds_individuals = thresholds_pop[pop_sort_idx]
@@ -220,6 +221,7 @@ class ESTemplateThresholdsGenerator:
             scores.append([np.mean(fit_scores), np.max(fit_scores), np.min(fit_scores), np.std(fit_scores)])
             best_templates.append(best_template)
             best_thresholds.append(best_threshold)
+            i += 1
             bar.update(i)
         bar.finish()
         if self.__maximize:
@@ -310,7 +312,10 @@ class ESTemplateThresholdsGenerator:
         return fitness_scores
 
     def __np_to_int(self, chromosome):
-        return int("".join(chromosome.astype('U')), 2)
+        out = 0
+        for bit in chromosome:
+            out = (out << 1) | bit
+        return out
 
     def get_results(self):
         return self.__results

@@ -161,7 +161,7 @@ def isolated_fitness_function_templates(scores, labels, threshold, parameter_to_
         min_good = np.min(good_scores)
         max_bad = np.max(bad_scores)
         good_distance = (min_good - threshold)
-        bad_distance = -(max_bad - threshold)
+        bad_distance = (max_bad - threshold)
         if good_distance >= 1 >= bad_distance:
             fitness_score = good_distance * (-bad_distance)
         else:

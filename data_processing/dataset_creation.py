@@ -216,7 +216,7 @@ def extract_continuous_opportunity(quantize_data=True, sensor=64, fix_labels=Fal
         else:
             with open(join(OUTPUT_FOLDER, dataset_name, "user_{:2d}_{}_data_continuous.pickle".format(user_no,
                                                                                                       OPPORTUNITY_SENSOR_DICT[
-                                                                                                                 sensor])),
+                                                                                                          sensor])),
                       "wb") as output_file:
                 pickle.dump(tmp_data, output_file)
 
@@ -510,6 +510,7 @@ def load_hci_dataset(sensor=31, downsampling_factor=10):
     continuous_data = processed_data.astype(int)
     timestamps = np.arange(len(filtered_data), dtype=int)
     labels = data[::downsampling_factor, 0]
+    labels[labels > 53] = 0
     eng = matlab.engine.start_matlab()
     dataset_name = "hci"
     [i1, i2, i3] = eng.dtcFindInstancesFromLabelStream(matlab.double(list(labels)), nargout=3)

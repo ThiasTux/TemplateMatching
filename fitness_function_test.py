@@ -1,3 +1,4 @@
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm
@@ -20,6 +21,21 @@ def fitness_function(X, Y):
     return Z
 
 
+def fitness_function2(X, Y):
+    rows = len(X)
+    columns = len(Y)
+    Z = np.zeros((rows, columns))
+    for i in range(rows):
+        for j in range(columns):
+            good_distance = X[i, j]
+            bad_distance = Y[i, j]
+            if good_distance >= 1 >= bad_distance:
+                Z[i, j] = good_distance * (-bad_distance)
+            else:
+                Z[i, j] = - (good_distance ** 2 + bad_distance ** 2)
+    return Z
+
+
 if __name__ == '__main__':
     fig = plt.figure()
     ax = fig.gca(projection='3d')
@@ -27,7 +43,7 @@ if __name__ == '__main__':
     X = np.arange(-2000, 2000, 10)
     Y = np.arange(-2000, 2000, 10)
     X, Y = np.meshgrid(X, Y)
-    Z = (fitness_function(X, Y, 1000))
+    Z = (fitness_function2(X, Y))
 
     ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0, antialiased=False)
 

@@ -9,15 +9,15 @@ from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining, WLCSSCud
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 300
+    dataset_choice = 201
 
-    isolated_case = False  # True for isolate, False for continuous
+    isolated_case = True  # True for isolate, False for continuous
     save_img = False
 
     use_null = False
     user = None
     use_evolved_templates = False
-    use_evolved_thresholds = True
+    use_evolved_thresholds = False
 
     write_to_file = True
     if dataset_choice == 100:
@@ -29,32 +29,38 @@ if __name__ == '__main__':
         null_class_percentage = 0.6
     elif dataset_choice == 101:
         use_encoding = False
-        classes = [3001, 3003, 3013, 3018]
+        classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
         # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
         output_folder = "outputs/training/cuda/skoda/params"
         sensor = None
         null_class_percentage = 0.6
-        params = [31, 0, 0]
-        thresholds = [471, 523, 441, 423]
+        params = [25, 6, 1]
+        thresholds = [22, 169, 29, 283, 284, 311, 225, 138]
         es_results_file = "outputs/training/cuda/skoda_old/templates/templates_2019-03-27_18-24-04"
+        wsize = 1000
+        temporal_merging_window = 5
+        tolerance_window = 5
     elif dataset_choice == 200 or dataset_choice == 201 or dataset_choice == 202 or dataset_choice == 203 \
             or dataset_choice == 204 or dataset_choice == 205 or dataset_choice == 211:
         use_encoding = False
-        # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
+        classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
         # classes = [406516, 408512, 405506]
-        classes = [406520, 406505, 406519]
+        # classes = [407521, 406520, 406505, 406519]
         output_folder = "outputs/training/cuda/opportunity/params"
         user = 3
-        params = [14, 1, 5]
-        thresholds = [1021, 636, 505]
-        es_results_file = "outputs/training/cuda/opportunity/templates/templates_2019-03-27_18-30-02"
+        params = [29, 3, 2]
+        thresholds = [206, 456, 906, 1005, 588, 892, 996, 794, 815, 254, 586]
+        wsize = 500
+        es_results_file = "outputs/training/cuda/opportunity/templates/templates_2019-04-11_17-01-25"
     elif dataset_choice == 300:
         use_encoding = False
         classes = [49, 50, 51, 52, 53]
         output_folder = "outputs/training/cuda/hci_guided/params"
         user = 1
-        params = [25, 7, 3]
-        thresholds = [304, 649, 512, 693, 890]
+        params = [31, 12, 2]
+        thresholds = [2, 118, 397, 396, 477]
+        wsize = 5
+        temporal_merging_window = 5
         null_class_percentage = 0.5
     elif dataset_choice == 400:
         use_encoding = False
@@ -129,6 +135,6 @@ if __name__ == '__main__':
                                         title="Dataset: {} - {} - Evolved_templ: {} - Evolved_thres: {}".format(
                                             dataset_choice, "Continuous", use_evolved_templates,
                                             use_evolved_thresholds))
-        pfe.performance_evaluation_continuous(tmp_mss, thresholds, classes)
+        pfe.performance_evaluation_continuous(tmp_mss, thresholds, classes, wsize=wsize)
     plt.show()
     print("End!")

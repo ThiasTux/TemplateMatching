@@ -95,6 +95,8 @@ if __name__ == '__main__':
 
     optimizer = GAParamsOptimizer(chosen_templates, instances, labels, classes,
                                   file="{}/param_thres_{}".format(output_folder, st),
+                                  bits_parameters=bits_params,
+                                  bits_threshold=bits_thresholds,
                                   num_individuals=num_individuals, rank=rank,
                                   elitism=elitism,
                                   iterations=iterations,

@@ -89,7 +89,7 @@ def performance_evaluation_continuous(matching_scores, thresholds, classes, wsiz
     predicted_labels = np.array([], dtype=int)
     actual_labels = np.array([], dtype=int)
     time = np.array([])
-    start_time = matching_scores[0, 0]
+    start_time = matching_scores[1, 0]
     end_time = matching_scores[-1, 0]
     matching_scores[:, 1:-1] = (matching_scores[:, 1:-1] - thresholds) / thresholds
     for i in np.arange(start_time, end_time, int(wsize * w_overlap)):
@@ -101,10 +101,10 @@ def performance_evaluation_continuous(matching_scores, thresholds, classes, wsiz
             tmp = x_scores[:, 1:-1]
             tmp[tmp < 0] = 0
             time_x_scores = x_scores[:, 0].reshape(len(x_scores))
-            tmp = np.trapz(tmp, time_x_scores - time_x_scores[0], axis=0)
-            if np.sum(tmp) > 0:
-                pred_class = classes[np.argmax(tmp)]
-                multiple_matches += np.count_nonzero(tmp == np.max(tmp)) - 1
+            accumulated_wscores = np.trapz(tmp, time_x_scores - time_x_scores[0], axis=0)
+            if np.sum(accumulated_wscores) > 0:
+                pred_class = classes[np.argmax(accumulated_wscores)]
+                multiple_matches += np.count_nonzero(accumulated_wscores == np.max(accumulated_wscores)) - 1
             else:
                 pred_class = 0
             predicted_labels = np.append(predicted_labels, pred_class)
@@ -159,7 +159,7 @@ def mat_eval(detected_events_dict, ground_truth_events_dict, classes, temporal_m
         print("Merged events by temporal filter: {}".format(merged_events))
         for dte in m_detected_events_list:
             color = colors[colors_key[classes.index(dte[2])]]
-            plt.axvspan(dte[0], dte[1], 0, 0, color=color)
+            plt.axvspan(dte[0], dte[1], 0, 0.33, color=color)
         plt.axhline(y=0.33, color='k', linestyle='-')
         plt.axhline(y=0.66, color='k', linestyle='-')
         # tolerance windows after a ground truth event
