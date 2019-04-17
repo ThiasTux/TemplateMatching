@@ -13,7 +13,7 @@ from training.params.ga_params_optimizer import GAParamsOptimizer
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 300
+    dataset_choice = 201
 
     num_test = 1
     use_null = False
@@ -21,11 +21,11 @@ if __name__ == '__main__':
     user = None
 
     num_individuals = 32
-    bits_params = 5
-    bits_thresholds = 10
+    bits_params = 6
+    bits_thresholds = 11
     rank = 10
     elitism = 3
-    iterations = 200
+    iterations = 1000
     fitness_function = 5
     crossover_probability = 0.3
     mutation_probability = 0.1
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     optimizer = GAParamsOptimizer(chosen_templates, instances, labels, classes,
                                   file="{}/param_thres_{}".format(output_folder, st),
                                   bits_parameters=bits_params,
-                                  bits_threshold=bits_thresholds,
+                                  bits_thresholds=bits_thresholds,
                                   num_individuals=num_individuals, rank=rank,
                                   elitism=elitism,
                                   iterations=iterations,
@@ -148,6 +148,8 @@ if __name__ == '__main__':
     mss = np.concatenate((mss, tmp_labels), axis=1)
     plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes,
                                   title="Isolated matching score - Params opt. - {}".format(dataset_choice))
+    plt_creator.plot_scores([output_file_path.replace(".txt", "")],
+                            title="Fitness scores evolution - {}".format(dataset_choice))
     fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes)
     print(fitness_score)
     plt.show()
