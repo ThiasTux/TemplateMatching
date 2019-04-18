@@ -16,17 +16,17 @@ if __name__ == '__main__':
     dataset_choice = 201
 
     num_test = 1
-    use_null = True
+    use_null = False
     write_to_file = True
     user = None
     params = list()
     thresholds = list()
-    null_class_percentage = 0.6
+    null_class_percentage = 0.5
 
     num_individuals = 128
-    rank = 20
+    rank = 64
     elitism = 3
-    iterations = 1000
+    iterations = 750
     fitness_function = 83
     crossover_probability = 0.3
     mutation_probability = 0.1
@@ -53,13 +53,13 @@ if __name__ == '__main__':
     elif dataset_choice == 200 or dataset_choice == 201 or dataset_choice == 202 or dataset_choice == 203 \
             or dataset_choice == 204 or dataset_choice == 205 or dataset_choice == 211:
         use_encoding = False
-        # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
+        classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
         # classes = [406516, 408512, 405506]
-        classes = [407521, 406520, 406505, 406519]
+        # classes = [407521, 406520, 406505, 406519]
         user = 3
         output_folder = "outputs/training/cuda/opportunity/templates"
         null_class_percentage = 0.5
-        params = [14, 1, 5]
+        params = [54, 8, 3]
         thresholds = [327, 1021, 636, 505]
         bit_values = 128
     elif dataset_choice == 210:

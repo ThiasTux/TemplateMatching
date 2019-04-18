@@ -47,7 +47,8 @@ if __name__ == '__main__':
     elif dataset_choice == 200 or dataset_choice == 201 or dataset_choice == 202 or dataset_choice == 203 \
             or dataset_choice == 204 or dataset_choice == 205 or dataset_choice == 211:
         use_encoding = False
-        classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
+        # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
+        classes = [406516, 404516, 406505, 404505, 406519, 404519, 407521, 405506]
         # classes = [406516, 408512, 405506]
         # classes = [407521, 406520, 406505, 406519]
         user = 3
