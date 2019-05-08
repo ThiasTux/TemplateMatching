@@ -9,7 +9,7 @@ import numpy as np
 from data_processing import data_loader as dl
 from performance_evaluation import fitness_functions as ftf
 from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
-from training.templates.es_templates_generator import ESTemplateGenerator, ESTemplateThresholdsGenerator
+from training.es_optimizer import ESOptimizer
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
@@ -37,18 +37,14 @@ if __name__ == '__main__':
         use_encoding = False
         classes = [3001, 3003, 3013, 3018]
         # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
-        output_folder = "outputs/training/cuda/skoda/templates"
+        output_folder = "outputs/training/cuda/skoda/all"
         null_class_percentage = 0.6
-        params = [31, 0, 0]
-        thresholds = [471, 523, 441, 423]
         bit_values = 27
     elif dataset_choice == 101:
         use_encoding = False
         classes = [3001, 3003, 3013, 3018]
         # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
-        output_folder = "outputs/training/cuda/skoda_old/templates"
-        params = [31, 0, 0]
-        thresholds = [471, 523, 441, 423]
+        output_folder = "outputs/training/cuda/skoda_old/all"
         bit_values = 27
     elif dataset_choice == 200 or dataset_choice == 201 or dataset_choice == 202 or dataset_choice == 203 \
             or dataset_choice == 204 or dataset_choice == 205 or dataset_choice == 211:
@@ -57,53 +53,45 @@ if __name__ == '__main__':
         # classes = [406516, 408512, 405506]
         # classes = [407521, 406520, 406505, 406519]
         user = 3
-        output_folder = "outputs/training/cuda/opportunity/templates"
+        output_folder = "outputs/training/cuda/opportunity/all"
         null_class_percentage = 0.5
-        params = [30, 5, 4]
-        thresholds = [327, 1021, 636, 505]
         bit_values = 128
     elif dataset_choice == 210:
         use_encoding = False
         # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
         # classes = [406516, 408512, 405506]
         # classes = [407521, 406520, 406505, 406519]
-        output_folder = "outputs/training/cuda/opportunity/templates"
+        output_folder = "outputs/training/cuda/opportunity/all"
         sensor = None
         null_class_percentage = 0.8
     elif dataset_choice == 300:
         use_encoding = False
         classes = [49, 50]
-        output_folder = "outputs/training/cuda/hci_guided/templates"
-        params = [31, 11, 4]
-        thresholds = [304, 649, 512, 693, 890]
+        output_folder = "outputs/training/cuda/hci_guided/all"
         bit_values = 128
         null_class_percentage = 0.5
     elif dataset_choice == 400:
         use_encoding = False
         classes = [49, 50, 51, 52, 53]
-        output_folder = "outputs/training/cuda/hci_freehand/templates"
+        output_folder = "outputs/training/cuda/hci_freehand/all"
         sensor = 52
     elif dataset_choice == 500:
         use_encoding = False
         classes = [0, 7]
-        output_folder = "outputs/training/cuda/notmnist/templates"
+        output_folder = "outputs/training/cuda/notmnist/all"
         sensor = 0
         null_class_percentage = 0
     elif dataset_choice == 700:
         use_encoding = False
         classes = [1001, 1002, 1003, 1004]
-        output_folder = "outputs/training/cuda/synthetic/templates"
+        output_folder = "outputs/training/cuda/synthetic/all"
         null_class_percentage = 0
-        params = [7, 5, 1]
-        thresholds = [-3466, -1576, -15231, -4022]
         bit_values = 128
     elif dataset_choice == 701:
         use_encoding = False
         classes = [1001, 1002]
-        output_folder = "outputs/training/cuda/synthetic2/templates"
+        output_folder = "outputs/training/cuda/synthetic2/all"
         null_class_percentage = 0
-        params = [28, 2, 0]
-        thresholds = [994, 753]
         bit_values = 128
 
     if inject_templates:
@@ -119,9 +107,8 @@ if __name__ == '__main__':
                                                      null_class_percentage=null_class_percentage)
         chosen_templates = [None for _ in range(len(classes))]
 
-    if optimize_thresholds:
-        thresholds = [None for _ in range(len(classes))]
-        best_thresholds = list()
+    thresholds = [None for _ in range(len(classes))]
+    best_params = list()
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
     best_templates = list()
     scores = list()
@@ -138,10 +125,9 @@ if __name__ == '__main__':
     print("Optimize threshold: {}".format(optimize_thresholds))
     print("Num tests: {}".format(num_test))
     print("Fitness function: {}".format(fitness_function))
-    print("Params: {}".format(params))
-    print("Thresholds: {}".format(thresholds))
     print("Null class extraction: {}".format(use_null))
     print("Null class percentage: {}".format(null_class_percentage))
+
     for i, c in enumerate(classes):
         tmp_labels = np.copy(labels)
         tmp_labels[tmp_labels != c] = 0
@@ -150,40 +136,26 @@ if __name__ == '__main__':
         else:
             chromosomes = int(np.ceil(np.average([len(t) for t in instances if t[0, -2] == c]).astype(int)))
         print("{} - {}".format(c, chromosomes))
-        if optimize_thresholds:
-            optimizer = ESTemplateThresholdsGenerator(instances, tmp_labels, params, c, chromosomes, bit_values,
-                                                      file="{}/templates_{}".format(output_folder, st),
-                                                      chosen_template=chosen_templates[i],
-                                                      num_individuals=num_individuals, rank=rank,
-                                                      elitism=elitism,
-                                                      iterations=iterations,
-                                                      fitness_function=fitness_function,
-                                                      cr_p=crossover_probability,
-                                                      mt_p=mutation_probability)
-        else:
-            optimizer = ESTemplateGenerator(instances, tmp_labels, params, thresholds[i], c, chromosomes, bit_values,
-                                            file="{}/templates_{}".format(output_folder, st),
-                                            chosen_template=chosen_templates[i],
-                                            num_individuals=num_individuals, rank=rank,
-                                            elitism=elitism,
-                                            iterations=iterations,
-                                            fitness_function=fitness_function,
-                                            cr_p=crossover_probability,
-                                            mt_p=mutation_probability)
+        optimizer = ESOptimizer(instances, tmp_labels, c, chromosomes, bit_values,
+                                file="{}/all_{}".format(output_folder, st),
+                                chosen_template=chosen_templates[i],
+                                num_individuals=num_individuals, rank=rank,
+                                elitism=elitism,
+                                iterations=iterations,
+                                fitness_function=fitness_function,
+                                cr_p=crossover_probability,
+                                mt_p=mutation_probability)
         optimizer.optimize()
 
-        if optimize_thresholds:
-            best_templates += [np.array(r[-2]) for r in optimizer.get_results()]
-            best_thresholds += [r[-1] for r in optimizer.get_results()]
-        else:
-            best_templates += [np.array(r[-1]) for r in optimizer.get_results()]
+        best_templates += [np.array(r[-2]) for r in optimizer.get_results()]
+        best_params += [r[-1] for r in optimizer.get_results()]
 
     best_templates = [np.stack((np.arange(len(r)), r), axis=1) for r in best_templates]
     output_file_path = join(output_folder,
-                            "templates_{}.txt".format(st))
+                            "all_{}.txt".format(st))
     elapsed_time = time.time() - start_time
     output_config_path = join(output_folder,
-                              "templates_{}_conf.txt".format(st))
+                              "all_{}_conf.txt".format(st))
     with open(output_config_path, 'w') as outputconffile:
         outputconffile.write("Dataset choice: {}\n".format(dataset_choice))
         outputconffile.write("Classes: {}\n".format(' '.join([str(c) for c in classes])))
@@ -198,26 +170,22 @@ if __name__ == '__main__':
         outputconffile.write("Num tests: {}\n".format(num_test))
         outputconffile.write("Fitness function: {}\n".format(fitness_function))
         outputconffile.write("Chromosomes: {}\n".format(chromosomes))
-        outputconffile.write("Params: {}\n".format(params))
-        outputconffile.write("Thresholds: {}\n".format(thresholds))
         outputconffile.write("Null class extraction: {}\n".format(use_null))
         outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
         outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
 
-    m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, instances, 1, False)
-    mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
-    m_wlcss_cuda.cuda_freemem()
-
-    tmp_labels = np.array(labels).reshape((len(instances), 1))
-    mss = np.concatenate((mss, tmp_labels), axis=1)
-    if optimize_thresholds:
-        thresholds = best_thresholds
-    fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes, parameter_to_optimize=4)
-    print(fitness_score)
-    print(output_file_path.replace(".txt", ""))
+    # m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, instances, 1, False)
+    # mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
+    # m_wlcss_cuda.cuda_freemem()
+    #
+    # tmp_labels = np.array(labels).reshape((len(instances), 1))
+    # mss = np.concatenate((mss, tmp_labels), axis=1)
+    # fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes, parameter_to_optimize=4)
+    # print(fitness_score)
+    # print(output_file_path.replace(".txt", ""))
     plt_creator.plot_templates_scores(output_file_path.replace(".txt", ""))
-    plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes,
-                                  title="Isolated matching score - Template gen. - {}".format(dataset_choice))
+    # plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes,
+    #                               title="Isolated matching score - All params optimization - {}".format(dataset_choice))
     print("Results written")
     plt.show()
     print("End!")

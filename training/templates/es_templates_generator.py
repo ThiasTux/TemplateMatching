@@ -211,6 +211,7 @@ class ESTemplateThresholdsGenerator:
             if self.__elitism > 0:
                 templates_pop[0:self.__elitism] = top_templates_individuals[0:self.__elitism]
                 thresholds_pop[0:self.__elitism] = top_thresholds_individuals[0:self.__elitism]
+                templates_pop, thresholds_pop = self.__shuffle_pop(templates_pop, thresholds_pop)
             fit_scores = self.__compute_fitness_cuda(templates_pop, thresholds_pop)
             if self.__maximize:
                 top_idx = np.argmax(fit_scores)
@@ -256,18 +257,16 @@ class ESTemplateThresholdsGenerator:
         top_templates_individuals = top_templates_individuals[0:rnk]
         reproduced_templates_individuals = np.array(
             [top_templates_individuals[i % len(top_templates_individuals)] for i in range(self.__num_individuals)])
-        random_idx = np.arange(0, self.__num_individuals)
-        np.random.shuffle(random_idx)
         top_thresholds_individuals = top_thresholds_individuals[0:rnk]
         reproduced_thresholds_individuals = np.array(
             [top_thresholds_individuals[i % len(top_thresholds_individuals)] for i in range(self.__num_individuals)])
-        return reproduced_templates_individuals[random_idx], reproduced_thresholds_individuals[random_idx]
+        return self.__shuffle_pop(reproduced_templates_individuals, reproduced_thresholds_individuals)
 
     def __crossover(self, templates_pop, thresholds_pop, cp):
         new_templates_pop = np.empty(templates_pop.shape, dtype=int)
         for i in range(0, len(templates_pop) - 1, 2):
             if np.random.random() < cp:
-                crossover_position = random.randint(0, self.__templates_chromosomes - 2)
+                crossover_position = random.randint(2, self.__templates_chromosomes - 2)
                 new_templates_pop[i] = np.append(templates_pop[i][0:crossover_position],
                                                  templates_pop[i + 1][crossover_position:])
                 new_templates_pop[i + 1] = np.append(templates_pop[i + 1][0:crossover_position],
@@ -278,7 +277,7 @@ class ESTemplateThresholdsGenerator:
         new_thresholds_pop = np.empty(thresholds_pop.shape, dtype=int)
         for i in range(0, len(thresholds_pop) - 1, 2):
             if np.random.random() < cp:
-                crossover_position = random.randint(0, self.__threshold_chromosomes - 2)
+                crossover_position = random.randint(2, self.__threshold_chromosomes - 2)
                 new_thresholds_pop[i] = np.append(thresholds_pop[i][0:crossover_position],
                                                   thresholds_pop[i + 1][crossover_position:])
                 new_thresholds_pop[i + 1] = np.append(thresholds_pop[i + 1][0:crossover_position],
@@ -291,7 +290,7 @@ class ESTemplateThresholdsGenerator:
     def __mutation(self, templates_pop, thresholds_pop, mp):
         tmpl_sizes = templates_pop.shape
         mask = np.random.rand(templates_pop.shape[0], templates_pop.shape[1]) < mp
-        new_templates_pop_mask = np.random.normal(0, 32, size=tmpl_sizes) * mask
+        new_templates_pop_mask = np.random.normal(0, 8, size=tmpl_sizes) * mask
         new_templates_pop = np.remainder(np.copy(templates_pop) + new_templates_pop_mask, self.__bit_values)
 
         mask = np.random.rand(thresholds_pop.shape[0], thresholds_pop.shape[1]) < mp
@@ -310,6 +309,11 @@ class ESTemplateThresholdsGenerator:
                                    for k in
                                    range(self.__num_individuals)])
         return fitness_scores
+
+    def __shuffle_pop(self, templates_pop, thresholds_pop):
+        random_idx = np.arange(0, self.__num_individuals)
+        np.random.shuffle(random_idx)
+        return templates_pop[random_idx], thresholds_pop[random_idx]
 
     def __np_to_int(self, chromosome):
         out = 0

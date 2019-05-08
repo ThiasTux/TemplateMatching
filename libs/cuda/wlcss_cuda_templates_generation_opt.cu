@@ -90,7 +90,7 @@ extern "C"{
         // Allocate memory for templates array
         gpuErrchk( cudaMalloc((void **) &d_ts, h_ts_length * sizeof(int32_t)) );
 
-        //Allocate memory for templates lengths
+        // Allocate memory for templates lengths
         gpuErrchk( cudaMalloc((void **) &d_tlen, num_templates * sizeof(int32_t)) );
         gpuErrchk( cudaMemcpy(d_tlen, h_tlen, num_templates * sizeof(int32_t), cudaMemcpyHostToDevice) );
 
@@ -105,7 +105,7 @@ extern "C"{
         // Allocate memory for matching scores
         gpuErrchk( cudaMalloc((void **) &d_mss, h_mss_length * sizeof(int32_t)) );
 
-        //Allocate memory for matching scores offsets
+        // Allocate memory for matching scores offsets
         gpuErrchk( cudaMalloc((void **) &d_mss_offsets, num_streams*num_templates*num_params_sets * sizeof(int32_t)) );
         gpuErrchk( cudaMemcpy(d_mss_offsets, h_mss_offsets, num_streams*num_templates*num_params_sets * sizeof(int32_t), cudaMemcpyHostToDevice) );
 

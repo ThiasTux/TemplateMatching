@@ -9,7 +9,7 @@ from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining, WLCSSCud
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 201
+    dataset_choice = 300
 
     isolated_case = True  # True for isolate, False for continuous
     save_img = False
@@ -48,17 +48,17 @@ if __name__ == '__main__':
         # classes = [407521, 406520, 406505, 406519]
         output_folder = "outputs/training/cuda/opportunity/params"
         user = 3
-        params = [29, 3, 2]
+        params = [28, 3, 2]
         thresholds = [206, 456, 906, 1005, 588, 892, 996, 794, 815, 254, 586]
         wsize = 500
-        es_results_file = "outputs/training/cuda/opportunity/templates/templates_2019-04-11_17-01-25"
+        es_results_file = "outputs/training/cuda/opportunity/templates/templates_2019-04-17_16-33-36"
     elif dataset_choice == 300:
         use_encoding = False
-        classes = [49, 50, 51, 52, 53]
+        classes = [49, 50]
         output_folder = "outputs/training/cuda/hci_guided/params"
         user = 1
-        params = [31, 12, 2]
-        thresholds = [2, 118, 397, 396, 477]
+        params = [31, 11, 4]
+        thresholds = [2, 118]
         wsize = 5
         temporal_merging_window = 5
         null_class_percentage = 0.5
@@ -88,7 +88,7 @@ if __name__ == '__main__':
         null_class_percentage = 0
         params = [28, 2, 0]
         thresholds = [991, 567]
-        es_results_file = "outputs/training/cuda/synthetic2/templates/templates_2019-03-25_13-31-16"
+        es_results_file = "outputs/training/cuda/synthetic2/templates/templates_2019-04-11_16-58-37"
 
     if isolated_case:
         chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice, user=user,
