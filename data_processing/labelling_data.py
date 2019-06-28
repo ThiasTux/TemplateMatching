@@ -12,13 +12,13 @@ import numpy as np
 DOWNSAMPLING_RATE = 1
 
 
-def create_merge_file(input_path):
-    input_path = join(input_path, "raw")
+def create_merge_file(input_path, user):
+    input_path = join(input_path, "raw", user)
     files = list()
-    files.append([file for file in glob.glob(input_path + "/torso*.LOG") if os.stat(file).st_size != 0][0])
-    files.append([file for file in glob.glob(input_path + "/uarm*.LOG") if os.stat(file).st_size != 0][0])
-    files.append([file for file in glob.glob(input_path + "/larm*.LOG") if os.stat(file).st_size != 0][0])
-    files.append([file for file in glob.glob(input_path + "/hand*.LOG") if os.stat(file).st_size != 0][0])
+    files.append([file for file in glob.glob(input_path + "/torso*.txt") if os.stat(file).st_size != 0][0])
+    files.append([file for file in glob.glob(input_path + "/uarm*.txt") if os.stat(file).st_size != 0][0])
+    files.append([file for file in glob.glob(input_path + "/larm*.txt") if os.stat(file).st_size != 0][0])
+    files.append([file for file in glob.glob(input_path + "/hand*.txt") if os.stat(file).st_size != 0][0])
     data = list()
     for f in files:
         data.append(np.loadtxt(f))
@@ -29,15 +29,16 @@ def create_merge_file(input_path):
     larm_data = data[2][:100, 1:]
     hand_data = data[3][:100, 1:]
     output_data = eng.dtcMerge(matlab.double([5]), matlab.logical([False]),
-                               matlab.double(torso_data.tolist()), matlab.int64([1]), matlab.double(uarm_data.tolist()),
-                               matlab.int64([1]),
-                               matlab.double(larm_data.tolist()), matlab.int64([1]), matlab.double(hand_data.tolist()),
-                               matlab.int64([1]),
+                               matlab.double(torso_data.tolist()), matlab.int64([2]), matlab.double(uarm_data.tolist()),
+                               matlab.int64([2]),
+                               matlab.double(larm_data.tolist()), matlab.int64([2]), matlab.double(hand_data.tolist()),
+                               matlab.int64([2]),
                                nargout=1)
     eng.quit()
     output_data = np.array(output_data)
     notnan_data = output_data[~np.isnan(output_data).any(axis=1)]
-    np.savetxt(join(input_path, "merged_data_cleaned.txt"), notnan_data, fmt="%.4f " * notnan_data.shape[1])
+    np.savetxt(join(input_path.replace("raw", "processed"), "merged_data_cleaned.txt"), notnan_data,
+               fmt="%.4f " * notnan_data.shape[1])
     print("Done: {}".format(output_data.shape))
 
 
@@ -142,7 +143,22 @@ def create_labelling_project_files(input_path):
 
     xml_label_track = SubElement(xml_label_config, 'LabelTrack')
     xml_label_file = SubElement(xml_label_track, 'LabelTrackFile')
-    labels_path = join(input_path, "project", "project_track0.xml")
+    labels_path = join(input_path, "project", "project_track1.xml")
+    xml_label_file.text = labels_path
+
+    xml_label_track = SubElement(xml_label_config, 'LabelTrack')
+    xml_label_file = SubElement(xml_label_track, 'LabelTrackFile')
+    labels_path = join(input_path, "project", "project_track2.xml")
+    xml_label_file.text = labels_path
+
+    xml_label_track = SubElement(xml_label_config, 'LabelTrack')
+    xml_label_file = SubElement(xml_label_track, 'LabelTrackFile')
+    labels_path = join(input_path, "project", "project_track3.xml")
+    xml_label_file.text = labels_path
+
+    xml_label_track = SubElement(xml_label_config, 'LabelTrack')
+    xml_label_file = SubElement(xml_label_track, 'LabelTrackFile')
+    labels_path = join(input_path, "project", "project_track4.xml")
     xml_label_file.text = labels_path
 
     output_path = join(input_path, "project", "project.xml")
@@ -155,3 +171,9 @@ def prettify(elem):
     rough_string = ElementTree.tostring(elem, 'utf-8')
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent="  ")
+
+
+def create_processed_data(input_path):
+    users = ["user2", "user3", "user4"]
+    for user in users:
+        create_merge_file(input_path, user)

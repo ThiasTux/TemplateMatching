@@ -88,6 +88,11 @@ if __name__ == '__main__':
         classes = [1001, 1002]
         output_folder = "outputs/training/cuda/synthetic2/params"
         null_class_percentage = 0
+    elif dataset_choice == 702:
+        use_encoding = False
+        classes = [1001, 1002]
+        output_folder = "outputs/training/cuda/synthetic3/params"
+        null_class_percentage = 0
 
     chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice,
                                                                    classes=classes, user=user, extract_null=use_null,

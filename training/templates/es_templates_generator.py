@@ -194,7 +194,7 @@ class ESTemplateThresholdsGenerator:
         bar = progressbar.ProgressBar(max_value=self.__iterations)
         fit_scores = self.__compute_fitness_cuda(templates_pop, thresholds_pop)
         i = 0
-        while i < self.__iterations and np.max(fit_scores) < 0:
+        while i < self.__iterations:
             pop_sort_idx = np.argsort(-fit_scores if self.__maximize else fit_scores)
             top_templates_individuals = templates_pop[pop_sort_idx]
             top_thresholds_individuals = thresholds_pop[pop_sort_idx]

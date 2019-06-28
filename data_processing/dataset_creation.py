@@ -456,6 +456,42 @@ def generate_sawtooth(num_gestures, gesture_length):
     return generated_data
 
 
+def create_synthetic3_dataset(num_gestures=10, gesture_length=20):
+    gestures = list()
+    dataset_name = "synthetic3"
+    gestures += generate_triangle(num_gestures, gesture_length)
+    gestures += generate_square(num_gestures, gesture_length)
+    with open(join(OUTPUT_FOLDER, dataset_name, "all_data_isolated.pickle"), "wb") as output_file:
+        pickle.dump(gestures, output_file)
+
+
+def generate_triangle(num_gestures, gesture_length):
+    one_third_point = int(gesture_length / 3)
+    data = [np.zeros(gesture_length) for _ in range(num_gestures)]
+    for i in range(num_gestures):
+        spike_point = np.random.randint(one_third_point, one_third_point * 2)
+        data[i][0:spike_point] = np.linspace(0, 64, spike_point, dtype=int)
+        data[i][spike_point:] = np.linspace(64, 0, gesture_length - spike_point, dtype=int)
+    time = np.arange(gesture_length)
+    label = np.array([1001 for _ in range(gesture_length)])
+    user_no = np.array([0 for _ in range(gesture_length)])
+    generated_data = [np.stack((time, d, label, user_no), axis=-1) for d in data]
+    return generated_data
+
+
+def generate_square(num_gestures, gesture_length):
+    one_third_point = int(gesture_length / 3)
+    data = [np.zeros(gesture_length) for _ in range(num_gestures)]
+    for i in range(num_gestures):
+        square_point = np.random.randint(2, one_third_point)
+        data[i][square_point:square_point + one_third_point] = np.array([64 for _ in range(one_third_point)])
+    time = np.arange(gesture_length)
+    label = np.array([1002 for _ in range(gesture_length)])
+    user_no = np.array([0 for _ in range(gesture_length)])
+    generated_data = [np.stack((time, d, label, user_no), axis=-1) for d in data]
+    return generated_data
+
+
 def generate_normal_dist(num_gestures, gesture_length):
     t_mean = np.random.randint(int(gesture_length / 5), int(gesture_length / 5 * 3), size=num_gestures)
     t_std = np.random.randint(int(gesture_length / 7 / 10), int(gesture_length / 7 / 10 * 3), size=num_gestures)

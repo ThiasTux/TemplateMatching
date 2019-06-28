@@ -29,9 +29,9 @@ if __name__ == '__main__':
     iterations = 1000
     fitness_function = 86
     crossover_probability = 0.3
-    mutation_probability = 0.15
+    mutation_probability = 0.1
     inject_templates = False
-    optimize_thresholds = True
+    optimize_thresholds = False
 
     if dataset_choice == 100:
         use_encoding = False
@@ -105,6 +105,14 @@ if __name__ == '__main__':
         params = [28, 2, 0]
         thresholds = [994, 753]
         bit_values = 128
+    elif dataset_choice == 702:
+        use_encoding = False
+        classes = [1001, 1002]
+        output_folder = "outputs/training/cuda/synthetic3/templates"
+        null_class_percentage = 0
+        params = [60, 2, 6]
+        thresholds = [342, 364]
+        bit_values = 64
 
     if inject_templates:
         chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice,

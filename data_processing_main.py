@@ -8,5 +8,6 @@ if __name__ == '__main__':
     # dtc.extract_old_skoda()
     # dtc.create_synthetic_dataset()
     # dtc.create_synthetic2_dataset()
+    dtc.create_synthetic3_dataset()
     # dtc.extract_unilever_drinking()
-    dtc.load_hci_dataset()
+    # dtc.load_hci_dataset()
