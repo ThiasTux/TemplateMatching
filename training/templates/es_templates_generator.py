@@ -53,7 +53,8 @@ class ESTemplateGenerator:
         best_templates = list()
         templates_pop = self.__generate_population()
         bar = progressbar.ProgressBar(max_value=self.__iterations)
-        fit_scores = self.__compute_fitness_cuda(templates_pop)
+        fit_scores_distances = self.__compute_fitness_cuda(templates_pop)
+        fit_scores = fit_scores_distances[:, 0]
         for i in range(self.__iterations):
             pop_sort_idx = np.argsort(-fit_scores if self.__maximize else fit_scores)
             top_templates_individuals = templates_pop[pop_sort_idx]
@@ -63,13 +64,17 @@ class ESTemplateGenerator:
             templates_pop = self.__mutation(templates_crossovered_population, self.__mutation_probability)
             if self.__elitism > 0:
                 templates_pop[0:self.__elitism] = top_templates_individuals[0:self.__elitism]
-            fit_scores = self.__compute_fitness_cuda(templates_pop)
+            fit_scores_distances = self.__compute_fitness_cuda(templates_pop)
+            fit_scores = fit_scores_distances[:, 0]
+            good_distances = fit_scores_distances[:, 1]
+            bad_distances = fit_scores_distances[:, 2]
             if self.__maximize:
                 top_idx = np.argmax(fit_scores)
             else:
                 top_idx = np.argmin(fit_scores)
             best_template = templates_pop[top_idx]
-            scores.append([np.mean(fit_scores), np.max(fit_scores), np.min(fit_scores), np.std(fit_scores)])
+            scores.append([np.mean(fit_scores), np.max(fit_scores), np.min(fit_scores), np.std(fit_scores),
+                           good_distances[top_idx], bad_distances[top_idx]])
             best_templates.append(best_template)
             bar.update(i)
         bar.finish()
@@ -192,7 +197,8 @@ class ESTemplateThresholdsGenerator:
         best_thresholds = list()
         templates_pop, thresholds_pop = self.__generate_population()
         bar = progressbar.ProgressBar(max_value=self.__iterations)
-        fit_scores = self.__compute_fitness_cuda(templates_pop, thresholds_pop)
+        fit_scores_distances = self.__compute_fitness_cuda(templates_pop, thresholds_pop)
+        fit_scores = fit_scores_distances[:, 0]
         i = 0
         while i < self.__iterations:
             pop_sort_idx = np.argsort(-fit_scores if self.__maximize else fit_scores)
@@ -212,14 +218,18 @@ class ESTemplateThresholdsGenerator:
                 templates_pop[0:self.__elitism] = top_templates_individuals[0:self.__elitism]
                 thresholds_pop[0:self.__elitism] = top_thresholds_individuals[0:self.__elitism]
                 templates_pop, thresholds_pop = self.__shuffle_pop(templates_pop, thresholds_pop)
-            fit_scores = self.__compute_fitness_cuda(templates_pop, thresholds_pop)
+            fit_scores_distances = self.__compute_fitness_cuda(templates_pop, thresholds_pop)
+            fit_scores = fit_scores_distances[:, 0]
+            good_distances = fit_scores_distances[:, 1]
+            bad_distances = fit_scores_distances[:, 2]
             if self.__maximize:
                 top_idx = np.argmax(fit_scores)
             else:
                 top_idx = np.argmin(fit_scores)
             best_template = templates_pop[top_idx]
             best_threshold = self.__np_to_int(thresholds_pop[top_idx]) - self.__scaling_factor
-            scores.append([np.mean(fit_scores), np.max(fit_scores), np.min(fit_scores), np.std(fit_scores)])
+            scores.append([np.mean(fit_scores), np.max(fit_scores), np.min(fit_scores), np.std(fit_scores),
+                           good_distances[top_idx], bad_distances[top_idx]])
             best_templates.append(best_template)
             best_thresholds.append(best_threshold)
             i += 1

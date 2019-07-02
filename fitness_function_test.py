@@ -1,3 +1,6 @@
+import glob
+import os
+
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
@@ -91,12 +94,50 @@ if __name__ == '__main__':
     fig = plt.figure()
     ax = fig.gca(projection='3d')
 
-    X = np.arange(-3000, 3000, 20)
-    Y = np.arange(-3000, 3000, 20)
+    X = np.arange(-5000, 5000, 20)
+    Y = np.arange(-5000, 5000, 20)
     X, Y = np.meshgrid(X, Y)
     Z = (fitness_function5(X, Y))
 
-    ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+    theCM = cm.coolwarm
+    theCM._init()
+    alphas = np.abs(np.linspace(-1.0, 1.0, theCM.N))
+    theCM._lut[:-3, -1] = alphas
+    ax.plot_surface(X, Y, Z, cmap=theCM, linewidth=0, antialiased=False, zorder=1)
+
+    input_path = "outputs/training/cuda/synthetic2/templates/templates_2019-07-02_10-10-51"
+
+    markers = ['o', '^', '*']
+    conf_path = input_path + "_conf.txt"
+    with open(conf_path, 'r') as conf_file:
+        classes_line_num = 2
+        for _ in range(classes_line_num):
+            classes_line = conf_file.readline()
+
+        classes = classes_line.split(":")[1].strip().split(" ")
+    for j, c in enumerate(classes):
+        scores_file = [file for file in glob.glob(input_path + "*_{}_scores.txt".format(c)) if
+                       os.stat(file).st_size != 0][0]
+        scores = np.loadtxt(scores_file, delimiter=",")
+        good_distances = scores[:, -2]
+        bad_distances = scores[:, -1]
+        trace = np.zeros((len(good_distances)))
+        t = np.arange(len(good_distances))
+        for i in t:
+            good_distance = good_distances[i]
+            bad_distance = bad_distances[i]
+            if good_distance >= 0 and bad_distance >= 0:
+                trace[i] = -(good_distance + bad_distance)
+            elif good_distance >= 0 >= bad_distance:
+                trace[i] = good_distance + (-bad_distance)
+            elif good_distance <= 0 and bad_distance <= 0:
+                trace[i] = good_distance + bad_distance
+            elif good_distance <= 0 <= bad_distance:
+                trace[i] = good_distance + (-bad_distance)
+        ax.scatter(good_distances, bad_distances, trace, c=t, marker=markers[j], zorder=20, label=c)
+
+    ax.legend()
+
 
     ax.set_xlabel('Good distance')
     ax.set_ylabel('Bad distance')

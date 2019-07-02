@@ -175,6 +175,8 @@ def plot_templates(input_path, num_templates=20, save_img=False, title=None, out
                         subplt = fig.add_subplot(num_rows - 1, num_cols + 2, j)
                         subplt.plot(t)
                         subplt.set_title("{}".format(i))
+                        subplt.set_yticklabels([])
+                        subplt.set_xticklabels([])
                         j += 1
 
 
