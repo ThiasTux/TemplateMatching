@@ -6,6 +6,9 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colors as mcolors, patches
+from template_matching import wlcss_c as wlcss
+from data_processing import data_loader as dl
+from utils import utils
 
 from utils import filter_data as fd
 
@@ -41,8 +44,8 @@ def plot_gestures(data, col=1, classes=None, use_labels_color=False, save_fig=Fa
             color = COLORS[int(data[i][0, -1])]
             if use_labels_color:
                 color = "k"
-            sub.set_xticks([])
-            sub.set_xticklabels([])
+            # sub.set_xticks([])
+            # sub.set_xticklabels([])
             # sub.set_yticklabels([])
             # sub.set_ylim(-100, 100)
             sub.plot(instance, linewidth=1.5, color=color)
@@ -304,3 +307,42 @@ def plot_continuous_mss(mss, classes, thresholds, peaks=None, title=""):
             y = mss[peaks[i], i + 1]
             x = mss[peaks[i], 0]
             subplt.plot(x, y, 'x', color='r', markersize=5)
+
+
+def plot_wlcss_heatmap(input_path):
+    conf_path = input_path + "_conf.txt"
+    dataset_name = input_path.split("/")[3]
+    with open(conf_path, 'r') as conf_file:
+        for i, line in enumerate(conf_file.readlines()):
+            if i == 1:
+                classes_line = line
+            elif i == 13:
+                params_line = line
+    classes = [int(c) for c in classes_line.split(":")[1].strip().split(" ")]
+    params = [int(x) for x in params_line.split(":")[1].strip().strip('][').split(', ')]
+    dataset_choice = utils.translate_dataset_name(dataset_name)
+    instances = dl.load_dataset(dataset_choice, classes)
+    mss = [[None for _ in instances] for _ in classes]
+    min_mss = None
+    max_mss = None
+    for j, c in enumerate(classes):
+        template_input_path = input_path + "_00_{}_templates.txt".format(c)
+        t_data = np.loadtxt(template_input_path)
+        template = t_data[-1, 0:-1]
+        for k, i in enumerate(instances):
+            _, mss[j][k] = wlcss.compute_wlcss(template, i[:, 1], params[1], params[0], params[2])
+            if min_mss == None or min_mss > np.min(mss[j][k]):
+                min_mss = np.min(mss[j][k])
+            if max_mss == None or max_mss < np.max(mss[j][k]):
+                max_mss = np.max(mss[j][k])
+    for j, c in enumerate(classes):
+        fig = plt.figure()
+        fig.suptitle("{} - {}".format(dataset_name, c))
+        num_inst_label_root = math.sqrt(len(instances))
+        num_rows = math.floor(num_inst_label_root) if num_inst_label_root % math.floor(
+            num_inst_label_root) < 0.5 else math.ceil(num_inst_label_root)
+        num_cols = math.ceil(num_inst_label_root)
+        for k, i in enumerate(instances):
+            sub = fig.add_subplot(num_rows, num_cols, k + 1)
+            sub.imshow(mss[j][k][1:, 1:], vmin=min_mss, vmax=max_mss)
+            sub.set_title("{} - {}".format(int(i[0, 2]), mss[j][k][-1, -1]))

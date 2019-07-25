@@ -24,4 +24,6 @@ if __name__ == '__main__':
     elif plot_choice == 5:
         input_path = "/home/mathias/Documents/Datasets/BeachVolleyball/08032019_150000/raw/"
         plt_creator.plot_bluesense_data(input_path, 2)
+    elif plot_choice == 6:
+        plt_creator.plot_wlcss_heatmap(input_file)
     plt.show()
