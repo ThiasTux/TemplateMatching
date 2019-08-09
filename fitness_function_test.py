@@ -32,8 +32,8 @@ def fitness_function2(X, Y):
         for j in range(columns):
             good_distance = X[i, j]
             bad_distance = Y[i, j]
-            if good_distance >= 1 >= bad_distance:
-                Z[i, j] = good_distance * (-bad_distance)
+            if good_distance >= 0 >= bad_distance:
+                Z[i, j] = (good_distance + (-bad_distance)) * 100000
             else:
                 Z[i, j] = -(good_distance ** 2 + bad_distance ** 2)
     return Z
@@ -94,8 +94,8 @@ if __name__ == '__main__':
     fig = plt.figure()
     ax = fig.gca(projection='3d')
 
-    X = np.arange(-5000, 5000, 20)
-    Y = np.arange(-5000, 5000, 20)
+    X = np.arange(-25000, 25000, 200)
+    Y = np.arange(-25000, 25000, 200)
     X, Y = np.meshgrid(X, Y)
     Z = (fitness_function5(X, Y))
 
@@ -105,16 +105,16 @@ if __name__ == '__main__':
     theCM._lut[:-3, -1] = alphas
     ax.plot_surface(X, Y, Z, cmap=theCM, linewidth=0, antialiased=False, zorder=1)
 
-    input_path = "outputs/training/cuda/synthetic2/templates/templates_2019-07-02_10-10-51"
+    input_path = "outputs/training/cuda/synthetic2/templates/templates_2019-07-08_15-41-00"
 
-    markers = ['o', '^', '*']
+    # markers = ['o', '^', '*']
     conf_path = input_path + "_conf.txt"
     with open(conf_path, 'r') as conf_file:
         classes_line_num = 2
         for _ in range(classes_line_num):
             classes_line = conf_file.readline()
-
         classes = classes_line.split(":")[1].strip().split(" ")
+    # classes = [407521]
     for j, c in enumerate(classes):
         scores_file = [file for file in glob.glob(input_path + "*_{}_scores.txt".format(c)) if
                        os.stat(file).st_size != 0][0]
@@ -134,7 +134,7 @@ if __name__ == '__main__':
                 trace[i] = good_distance + bad_distance
             elif good_distance <= 0 <= bad_distance:
                 trace[i] = good_distance + (-bad_distance)
-        ax.scatter(good_distances, bad_distances, trace, c=t, marker=markers[j], zorder=20, label=c)
+        ax.scatter(good_distances, bad_distances, trace, c=t, zorder=20, label=c)
 
     ax.legend()
 

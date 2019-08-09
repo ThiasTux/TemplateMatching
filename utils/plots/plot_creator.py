@@ -63,7 +63,7 @@ def plot_scores(input_paths, save_img=False, title=None, output_file=""):
     subplt = fig.add_subplot(111)
     for input_path in input_paths:
         scores_files = [file for file in glob.glob(input_path + "*_scores.txt") if os.stat(file).st_size != 0]
-        dataset_name = input_path.split("/")[2]
+        dataset_name = input_path.split("/")[3]
         max_scores = None
         for i in range(len(scores_files)):
             file = scores_files[i]

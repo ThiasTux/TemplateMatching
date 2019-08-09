@@ -39,27 +39,36 @@ class WLCSSCudaParamsTraining:
         self.num_streams = len(self.h_s)  # Num block on Y
         self.num_params_sets = num_individuals  # Num thread per block
 
-        h_tlen = np.array([len(t) for t in self.h_t]).astype(np.int32)
-        h_toffsets = np.cumsum(h_tlen).astype(np.int32)
-        h_toffsets = np.insert(h_toffsets[0:-1], 0, 0)
+        self.h_tlen = np.array([len(t) for t in self.h_t]).astype(np.int32)
+        self.h_toffsets = np.cumsum(self.h_tlen).astype(np.int32)
+        self.h_toffsets = np.insert(self.h_toffsets[0:-1], 0, 0)
 
-        h_slen = np.array([len(s) for s in self.h_s]).astype(np.int32)
-        h_soffsets = np.cumsum(h_slen).astype(np.int32)
-        h_soffsets = np.insert(h_soffsets[0:-1], 0, 0)
+        self.h_slen = np.array([len(s) for s in self.h_s]).astype(np.int32)
+        self.h_soffsets = np.cumsum(self.h_slen).astype(np.int32)
+        self.h_soffsets = np.insert(self.h_soffsets[0:-1], 0, 0)
 
         # Template as numpy array
         h_ts = np.array([item for sublist in self.h_t for item in sublist[:, 1]]).astype(np.int32)
         # Stream as numpy array
         h_ss = np.array([item for sublist in self.h_s for item in sublist[:, 1]]).astype(np.int32)
 
+        self.h_tmp_windows = np.zeros(
+            [(len(h_ts) + 2 * self.num_templates) * self.num_params_sets * self.num_streams]).astype(
+            np.int32)
+        h_tmp_windows_len = [t + 2 for _ in range(self.num_params_sets) for t in self.h_tlen for _ in
+                             range(self.num_streams)]
+        # h_tmp_windows_len = np.tile(np.array([t+2 for t in self.h_tlen]), self.num_params_sets * self.num_streams)
+        self.h_tmp_windows_offsets = np.cumsum(h_tmp_windows_len).astype(np.int32)
+        self.h_tmp_windows_offsets = np.insert(self.h_tmp_windows_offsets[0:-1], 0, 0)
+
         self.h_mss = np.zeros((len(h_ss) * self.num_params_sets * self.num_templates)).astype(np.int32)
-        h_mss_offsets = np.cumsum(np.tile(h_slen, self.num_params_sets * self.num_templates)).astype(np.int32)
+        h_mss_offsets = np.cumsum(np.tile(self.h_slen, self.num_params_sets * self.num_templates)).astype(np.int32)
         self.h_mss_offsets = np.insert(h_mss_offsets, 0, 0)
-        self._wlcss_init(self.h_mss.ctypes.data_as(POINTER(c_int32)),
+        self._wlcss_init(self.h_tmp_windows_offsets.ctypes.data_as(POINTER(c_int32)),
                          self.h_mss_offsets.ctypes.data_as(POINTER(c_int32)),
                          h_ts.ctypes.data_as(POINTER(c_int32)), h_ss.ctypes.data_as(POINTER(c_int32)),
-                         h_tlen.ctypes.data_as(POINTER(c_int32)), h_toffsets.ctypes.data_as(POINTER(c_int32)),
-                         h_slen.ctypes.data_as(POINTER(c_int32)), h_soffsets.ctypes.data_as(POINTER(c_int32)),
+                         self.h_tlen.ctypes.data_as(POINTER(c_int32)), self.h_toffsets.ctypes.data_as(POINTER(c_int32)),
+                         self.h_slen.ctypes.data_as(POINTER(c_int32)), self.h_soffsets.ctypes.data_as(POINTER(c_int32)),
                          int(self.num_templates), int(self.num_streams), int(self.num_params_sets), int(len(h_ts)),
                          int(len(h_ss)),
                          int(len(self.h_mss)))
@@ -74,7 +83,8 @@ class WLCSSCudaParamsTraining:
         """
         h_params = np.array(parameters).astype(np.int32)
         self._wlcss_cuda(h_params.ctypes.data_as(POINTER(c_int32)),
-                         self.h_mss.ctypes.data_as(POINTER(c_int32)))
+                         self.h_mss.ctypes.data_as(POINTER(c_int32)),
+                         self.h_tmp_windows.ctypes.data_as(POINTER(c_int32)))
         tmp_mss = np.array([self.h_mss[offset - 1] for offset in self.h_mss_offsets[1:]])
         mss = [np.reshape(np.ravel(x), (self.num_streams, self.num_templates), order='F') for x in
                np.reshape(tmp_mss, (self.num_params_sets, self.num_streams, self.num_templates))]

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import datetime
+import socket
 import time
 from os.path import join
 
@@ -13,7 +14,7 @@ from training.templates.es_templates_generator import ESTemplateGenerator, ESTem
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 300
+    dataset_choice = 201
 
     num_test = 1
     use_null = False
@@ -23,15 +24,15 @@ if __name__ == '__main__':
     thresholds = list()
     null_class_percentage = 0.5
 
-    num_individuals = 256
-    rank = 32
-    elitism = 3
-    iterations = 1000
+    num_individuals = 1024
+    rank = 256
+    elitism = 5
+    iterations = 3000
     fitness_function = 86
-    crossover_probability = 0.3
-    mutation_probability = 0.1
-    inject_templates = False
-    optimize_thresholds = False
+    crossover_probability = 0.25
+    mutation_probability = 0.07
+    inject_templates = True
+    optimize_thresholds = True
 
     if dataset_choice == 100:
         use_encoding = False
@@ -56,11 +57,11 @@ if __name__ == '__main__':
         classes = [406516, 404516, 406505, 404505, 406519, 404519, 407521, 405506]
         # classes = [406516, 408512, 405506]
         # classes = [407521, 406520, 406505, 406519]
-        user = 3
+        user = None
         output_folder = "outputs/training/cuda/opportunity/templates"
         null_class_percentage = 0.5
-        params = [30, 5, 4]
-        thresholds = [327, 1021, 636, 505]
+        params = [42, 6, 4]
+        thresholds = [460, 979, 968, 1733, 1657, 1784, 1199, 976]
         bit_values = 128
     elif dataset_choice == 210:
         use_encoding = False
@@ -72,10 +73,10 @@ if __name__ == '__main__':
         null_class_percentage = 0.8
     elif dataset_choice == 300:
         use_encoding = False
-        classes = [49, 50]
+        classes = [49, 50, 51, 52, 53]
         output_folder = "outputs/training/cuda/hci_guided/templates"
-        params = [31, 11, 4]
-        thresholds = [304, 649, 512, 693, 890]
+        params = [61, 24, 2]
+        thresholds = [3, 321, 365, 1024, 1412]
         bit_values = 128
         null_class_percentage = 0.5
     elif dataset_choice == 400:
@@ -134,6 +135,7 @@ if __name__ == '__main__':
     best_templates = list()
     scores = list()
     start_time = time.time()
+    hostname = socket.gethostname().lower()
     print("Dataset choice: {}".format(dataset_choice))
     print("Classes: {}".format(' '.join([str(c) for c in classes])))
     print("Population: {}".format(num_individuals))
@@ -160,7 +162,7 @@ if __name__ == '__main__':
         print("{} - {}".format(c, chromosomes))
         if optimize_thresholds:
             optimizer = ESTemplateThresholdsGenerator(instances, tmp_labels, params, c, chromosomes, bit_values,
-                                                      file="{}/templates_{}".format(output_folder, st),
+                                                      file="{}/{}_templates_{}".format(output_folder, hostname, st),
                                                       chosen_template=chosen_templates[i],
                                                       num_individuals=num_individuals, rank=rank,
                                                       elitism=elitism,
@@ -170,7 +172,7 @@ if __name__ == '__main__':
                                                       mt_p=mutation_probability)
         else:
             optimizer = ESTemplateGenerator(instances, tmp_labels, params, thresholds[i], c, chromosomes, bit_values,
-                                            file="{}/templates_{}".format(output_folder, st),
+                                            file="{}/{}_templates_{}".format(output_folder, hostname, st),
                                             chosen_template=chosen_templates[i],
                                             num_individuals=num_individuals, rank=rank,
                                             elitism=elitism,
@@ -188,10 +190,10 @@ if __name__ == '__main__':
 
     best_templates = [np.stack((np.arange(len(r)), r), axis=1) for r in best_templates]
     output_file_path = join(output_folder,
-                            "templates_{}.txt".format(st))
+                            "{}_templates_{}.txt".format(hostname, st))
     elapsed_time = time.time() - start_time
     output_config_path = join(output_folder,
-                              "templates_{}_conf.txt".format(st))
+                              "{}_templates_{}_conf.txt".format(hostname, st))
     with open(output_config_path, 'w') as outputconffile:
         outputconffile.write("Dataset choice: {}\n".format(dataset_choice))
         outputconffile.write("Classes: {}\n".format(' '.join([str(c) for c in classes])))

@@ -12,29 +12,29 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=f
    }
 }
 
-int32_t *d_mss, *d_mss_offsets, *d_ts, *d_ss, *d_tlen, *d_toffsets, *d_slen, *d_soffsets, *d_params;
-int num_templates, num_streams, num_params_sets, h_ts_length, h_ss_length, h_mss_length;
+int32_t *d_mss, *d_mss_offsets, *d_ts, *d_ss, *d_tlen, *d_toffsets, *d_slen, *d_soffsets, *d_params, *d_tmp_windows, *d_tmp_windows_offsets;
+int num_templates, num_streams, num_params_sets, h_ts_length, h_ss_length, h_mss_length, len_h_tmp_windows;
 
-__global__ void wlcss_cuda_kernel(int32_t *d_mss, int32_t *d_mss_offsets, int32_t *d_ts, int32_t *d_ss, int32_t *d_tlen, int32_t *d_toffsets, int32_t *d_slen, int32_t *d_soffsets, int32_t *d_params){
+__global__ void wlcss_cuda_kernel(int32_t *d_mss, int32_t *d_mss_offsets, int32_t *d_ts, int32_t *d_ss, int32_t *d_tlen, int32_t *d_toffsets, int32_t *d_slen, int32_t *d_soffsets, int32_t *d_params, int32_t *d_tmp_windows, int32_t *d_tmp_windows_offsets){
 
-    int params_idx = threadIdx.x;
-    int template_idx = blockIdx.x;
-    int stream_idx = blockIdx.y;
+    int32_t params_idx = threadIdx.x;
+    int32_t template_idx = blockIdx.x;
+    int32_t stream_idx = blockIdx.y;
 
-    int t_len = d_tlen[template_idx];
-    int s_len = d_slen[stream_idx];
+    int32_t t_len = d_tlen[template_idx];
+    int32_t s_len = d_slen[stream_idx];
 
-    int t_offset = d_toffsets[template_idx];
-    int s_offset = d_soffsets[stream_idx];
+    int32_t t_offset = d_toffsets[template_idx];
+    int32_t s_offset = d_soffsets[stream_idx];
 
-    int d_mss_offset = d_mss_offsets[params_idx*gridDim.x*gridDim.y+template_idx*gridDim.y+stream_idx];
+    int32_t d_mss_offset = d_mss_offsets[params_idx*gridDim.x*gridDim.y+template_idx*gridDim.y+stream_idx];
+    int32_t d_tmp_windows_offset = d_tmp_windows_offsets[params_idx*gridDim.x*gridDim.y+template_idx*gridDim.y+stream_idx];
 
-    int32_t *tmp_window = new int32_t[(t_len + 2)]();
+    int32_t *tmp_window = &d_tmp_windows[d_tmp_windows_offset];
+    int32_t *mss = &d_mss[d_mss_offset];
 
     int32_t *t = &d_ts[t_offset];
     int32_t *s = &d_ss[s_offset];
-
-    int32_t *mss = &d_mss[d_mss_offset];
 
     int32_t reward = d_params[params_idx*3];
     int32_t penalty = d_params[params_idx*3+1];
@@ -59,11 +59,11 @@ __global__ void wlcss_cuda_kernel(int32_t *d_mss, int32_t *d_mss_offsets, int32_
         mss[j] = tmp_window[t_len+1];
         tmp_window[t_len+1] = 0;
     }
-    delete [] tmp_window;
 }
 
 extern "C"{
-    void wlcss_cuda_init(int32_t *h_mss, int32_t *h_mss_offsets, 
+    void wlcss_cuda_init(int32_t *h_tmp_windows_offsets,
+                         int32_t *h_mss_offsets, 
                          int32_t *h_ts, int32_t *h_ss, 
                          int32_t *h_tlen, int32_t *h_toffsets, 
                          int32_t *h_slen, int32_t *h_soffsets, 
@@ -110,16 +110,24 @@ extern "C"{
 
         // Allocate memory for d_params
         gpuErrchk( cudaMalloc((void **) &d_params, num_params_sets * 3 * sizeof(int32_t)) );
+        
+        // Allocate memory for tmp_windows
+        len_h_tmp_windows = (h_ts_len + 2 * num_templates) * num_params_sets * num_streams;
+        gpuErrchk( cudaMalloc((void **) &d_tmp_windows, len_h_tmp_windows * sizeof(int32_t)) );
+        
+        int len_h_tmp_windows_offsets = num_templates * num_params_sets * num_streams;
+        gpuErrchk( cudaMalloc((void **) &d_tmp_windows_offsets, len_h_tmp_windows_offsets * sizeof(int32_t)) );
+        gpuErrchk( cudaMemcpy(d_tmp_windows_offsets, h_tmp_windows_offsets, len_h_tmp_windows_offsets * sizeof(int32_t), cudaMemcpyHostToDevice) );
 
     }
 
-    void wlcss_cuda(int32_t *h_params, int32_t *h_mss){
+    void wlcss_cuda(int32_t *h_params, int32_t *h_mss, int32_t *h_tmp_windows){
 
         gpuErrchk( cudaMemcpy(d_params, h_params, num_params_sets * 3 * sizeof(int32_t), cudaMemcpyHostToDevice) );
         gpuErrchk( cudaMemcpy(d_mss, h_mss, h_mss_length * sizeof(int32_t), cudaMemcpyHostToDevice) );
+        gpuErrchk( cudaMemcpy(d_tmp_windows, h_tmp_windows, len_h_tmp_windows * sizeof(int32_t), cudaMemcpyHostToDevice) );
 
-        wlcss_cuda_kernel<<<dim3(num_templates, num_streams), num_params_sets>>>(d_mss, d_mss_offsets, d_ts, d_ss, d_tlen, d_toffsets, d_slen, d_soffsets, d_params);
-
+        wlcss_cuda_kernel<<<dim3(num_templates, num_streams), num_params_sets>>>(d_mss, d_mss_offsets, d_ts, d_ss, d_tlen, d_toffsets, d_slen, d_soffsets, d_params, d_tmp_windows, d_tmp_windows_offsets);
         gpuErrchk( cudaPeekAtLastError() );
         gpuErrchk( cudaDeviceSynchronize() );
 
@@ -138,6 +146,9 @@ extern "C"{
         
         cudaFree(d_mss);
         cudaFree(d_mss_offsets);
-        gpuErrchk( cudaFree(d_params) );
+        cudaFree(d_params);
+        
+        cudaFree(d_tmp_windows);
+        cudaFree(d_tmp_windows_offsets);
     }
 }

@@ -11,9 +11,10 @@ from performance_evaluation import fitness_functions as ftf
 from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
 from training.params.ga_params_optimizer import GAParamsOptimizer
 from utils.plots import plot_creator as plt_creator
+import socket
 
 if __name__ == '__main__':
-    dataset_choice = 201
+    dataset_choice = 702
 
     num_test = 1
     use_null = False
@@ -22,7 +23,7 @@ if __name__ == '__main__':
 
     num_individuals = 32
     bits_params = 6
-    bits_thresholds = 11
+    bits_thresholds = 13
     rank = 10
     elitism = 3
     iterations = 1000
@@ -64,7 +65,7 @@ if __name__ == '__main__':
         null_class_percentage = 0.8
     elif dataset_choice == 300:
         use_encoding = False
-        classes = [49, 50]
+        classes = [49, 50, 51]
         output_folder = "outputs/training/cuda/hci_guided/params"
         null_class_percentage = 0.5
     elif dataset_choice == 400:
@@ -98,9 +99,10 @@ if __name__ == '__main__':
                                                                    classes=classes, user=user, extract_null=use_null,
                                                                    null_class_percentage=null_class_percentage)
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
+    hostname = socket.gethostname().lower()
 
     optimizer = GAParamsOptimizer(chosen_templates, instances, labels, classes,
-                                  file="{}/param_thres_{}".format(output_folder, st),
+                                  file="{}/{}_param_thres_{}".format(output_folder, hostname, st),
                                   bits_parameters=bits_params,
                                   bits_thresholds=bits_thresholds,
                                   num_individuals=num_individuals, rank=rank,
@@ -116,9 +118,9 @@ if __name__ == '__main__':
     elapsed_time = time.time() - start_time
     results = optimizer.get_results()
     output_file_path = join(output_folder,
-                            "param_thres_{}.txt".format(st))
+                            "{}_param_thres_{}.txt".format(hostname, st))
     output_config_path = join(output_folder,
-                              "param_thres_{}_conf.txt".format(st))
+                              "{}_param_thres_{}_conf.txt".format(hostname, st))
     with open(output_config_path, 'w') as outputconffile:
         outputconffile.write("Dataset choice: {}\n".format(dataset_choice))
         outputconffile.write("Classes: {}\n".format(' '.join([str(c) for c in classes])))
