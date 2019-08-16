@@ -422,7 +422,7 @@ def create_synthetic2_dataset(num_gestures=20, gesture_length=150):
         pickle.dump(gestures, output_file)
 
 
-def generate_sinusoid(num_gestures, gesture_length):
+def generate_sinusoid(num_gestures, gesture_length, label=1001):
     sin_length = int(gesture_length / 3)
     data = [np.zeros(gesture_length) for _ in range(num_gestures)]
     f = 1
@@ -431,16 +431,16 @@ def generate_sinusoid(num_gestures, gesture_length):
         start_idx = randint(0, sin_length)
         end_idx = randint(sin_length * 2, gesture_length)
         t = np.linspace(0, 1, end_idx - start_idx)
-        tmp_sin = np.sin(w * t) * np.random.uniform(48, 64)
+        tmp_sin = np.sin(w * t) * np.random.uniform(16, 32)
         data[i][start_idx:end_idx] = tmp_sin
     time = np.arange(gesture_length)
-    label = np.array([1001 for _ in range(gesture_length)])
+    labels = np.array([label for _ in range(gesture_length)])
     user_no = np.array([0 for _ in range(gesture_length)])
-    generated_data = [np.stack((time, d + 64, label, user_no), axis=-1) for d in data]
+    generated_data = [np.stack((time, d + 32, labels, user_no), axis=-1) for d in data]
     return generated_data
 
 
-def generate_sawtooth(num_gestures, gesture_length):
+def generate_sawtooth(num_gestures, gesture_length, label=1002):
     interval_length = int(gesture_length / 3)
     data = [np.zeros(gesture_length) for _ in range(num_gestures)]
     for i in range(num_gestures):
@@ -448,11 +448,11 @@ def generate_sawtooth(num_gestures, gesture_length):
         end_idx = randint(interval_length * 2, gesture_length)
         t = np.linspace(0, 1, end_idx - start_idx)
         tmp_data = signal.sawtooth(2 * np.pi * t, width=end_idx / gesture_length)
-        data[i][start_idx:end_idx] = tmp_data * np.random.uniform(48, 64)
+        data[i][start_idx:end_idx] = tmp_data * np.random.uniform(16, 32)
     time = np.arange(gesture_length)
-    label = np.array([1002 for _ in range(gesture_length)])
+    labels = np.array([label for _ in range(gesture_length)])
     user_no = np.array([0 for _ in range(gesture_length)])
-    generated_data = [np.stack((time, d + 64, label, user_no), axis=-1) for d in data]
+    generated_data = [np.stack((time, d + 32, labels, user_no), axis=-1) for d in data]
     return generated_data
 
 
@@ -465,7 +465,18 @@ def create_synthetic3_dataset(num_gestures=10, gesture_length=20):
         pickle.dump(gestures, output_file)
 
 
-def generate_triangle(num_gestures, gesture_length):
+def create_synthetic4_dataset(num_gestures=20, gesture_length=150):
+    gestures = list()
+    dataset_name = "synthetic4"
+    gestures += generate_triangle(num_gestures, gesture_length, label=1001)
+    gestures += generate_square(num_gestures, gesture_length, label=1002)
+    gestures += generate_sinusoid(num_gestures, gesture_length, label=1003)
+    gestures += generate_sawtooth(num_gestures, gesture_length, label=1004)
+    with open(join(OUTPUT_FOLDER, dataset_name, "all_data_isolated.pickle"), "wb") as output_file:
+        pickle.dump(gestures, output_file)
+
+
+def generate_triangle(num_gestures, gesture_length, label=1001):
     one_third_point = int(gesture_length / 3)
     data = [np.zeros(gesture_length) for _ in range(num_gestures)]
     for i in range(num_gestures):
@@ -473,22 +484,22 @@ def generate_triangle(num_gestures, gesture_length):
         data[i][0:spike_point] = np.linspace(0, 64, spike_point, dtype=int)
         data[i][spike_point:] = np.linspace(64, 0, gesture_length - spike_point, dtype=int)
     time = np.arange(gesture_length)
-    label = np.array([1001 for _ in range(gesture_length)])
+    labels = np.array([label for _ in range(gesture_length)])
     user_no = np.array([0 for _ in range(gesture_length)])
-    generated_data = [np.stack((time, d, label, user_no), axis=-1) for d in data]
+    generated_data = [np.stack((time, d, labels, user_no), axis=-1) for d in data]
     return generated_data
 
 
-def generate_square(num_gestures, gesture_length):
+def generate_square(num_gestures, gesture_length, label=1002):
     one_third_point = int(gesture_length / 3)
     data = [np.zeros(gesture_length) for _ in range(num_gestures)]
     for i in range(num_gestures):
         square_point = np.random.randint(2, one_third_point)
         data[i][square_point:square_point + one_third_point] = np.array([64 for _ in range(one_third_point)])
     time = np.arange(gesture_length)
-    label = np.array([1002 for _ in range(gesture_length)])
+    labels = np.array([label for _ in range(gesture_length)])
     user_no = np.array([0 for _ in range(gesture_length)])
-    generated_data = [np.stack((time, d, label, user_no), axis=-1) for d in data]
+    generated_data = [np.stack((time, d, labels, user_no), axis=-1) for d in data]
     return generated_data
 
 

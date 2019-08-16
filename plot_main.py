@@ -4,10 +4,10 @@ from data_processing import data_loader as dl
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    plot_choice = 3
-    input_file = "outputs/training/cuda/synthetic2/templates/templates_2019-04-10_14-54-14"
-    dataset_choice = 300
-    classes = [49, 50, 51, 52, 53]
+    plot_choice = 4
+    input_file = "outputs/training/cuda/synthetic4/templates/poseidon_templates_2019-08-16_13-03-36"
+    dataset_choice = 704
+    classes = [1001, 1002, 1003, 1004]
     if plot_choice == 0:
         data = dl.load_dataset(dataset_choice, classes)
         plt_creator.plot_gestures(data, classes=classes)

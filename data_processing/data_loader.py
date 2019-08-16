@@ -29,6 +29,8 @@ def load_dataset(dataset_choice=100, classes=None, num_gestures=None, user=None)
         data = pickle.load(open("outputs/datasets/synthetic2/all_data_isolated.pickle", "rb"))
     elif dataset_choice == 702:
         data = pickle.load(open("outputs/datasets/synthetic3/all_data_isolated.pickle", "rb"))
+    elif dataset_choice == 704:
+        data = pickle.load(open("outputs/datasets/synthetic4/all_data_isolated.pickle", "rb"))
     elif dataset_choice == 800:
         data = pickle.load(open("outputs/datasets/unilever_drinking/all_data_isolated.pickle", "rb"))
     if user is None:
@@ -101,6 +103,8 @@ def load_training_dataset(dataset_choice=700, classes=None, num_gestures=None, u
         data = pickle.load(open("outputs/datasets/synthetic2/all_data_isolated.pickle", "rb"))
     elif dataset_choice == 702:
         data = pickle.load(open("outputs/datasets/synthetic3/all_data_isolated.pickle", "rb"))
+    elif dataset_choice == 704:
+        data = pickle.load(open("outputs/datasets/synthetic4/all_data_isolated.pickle", "rb"))
     elif dataset_choice == 800:
         data = pickle.load(open("outputs/datasets/unilever_drinking/all_data_isolated.pickle", "rb"))
     if user is None:

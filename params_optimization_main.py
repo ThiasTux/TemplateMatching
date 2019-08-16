@@ -14,22 +14,22 @@ from utils.plots import plot_creator as plt_creator
 import socket
 
 if __name__ == '__main__':
-    dataset_choice = 702
+    dataset_choice = 704
 
     num_test = 1
     use_null = False
     write_to_file = True
     user = None
 
-    num_individuals = 32
+    num_individuals = 128
     bits_params = 6
     bits_thresholds = 13
-    rank = 10
+    rank = 20
     elitism = 3
     iterations = 1000
     fitness_function = 5
-    crossover_probability = 0.3
-    mutation_probability = 0.1
+    crossover_probability = 0.25
+    mutation_probability = 0.07
 
     if dataset_choice == 100:
         use_encoding = False
@@ -93,6 +93,11 @@ if __name__ == '__main__':
         use_encoding = False
         classes = [1001, 1002]
         output_folder = "outputs/training/cuda/synthetic3/params"
+        null_class_percentage = 0
+    elif dataset_choice == 704:
+        use_encoding = False
+        classes = [1001, 1002, 1003, 1004]
+        output_folder = "outputs/training/cuda/synthetic4/params"
         null_class_percentage = 0
 
     chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice,

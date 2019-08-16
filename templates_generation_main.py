@@ -14,7 +14,7 @@ from training.templates.es_templates_generator import ESTemplateGenerator, ESTem
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 201
+    dataset_choice = 704
 
     num_test = 1
     use_null = False
@@ -27,12 +27,12 @@ if __name__ == '__main__':
     num_individuals = 1024
     rank = 256
     elitism = 5
-    iterations = 3000
+    iterations = 1000
     fitness_function = 86
-    crossover_probability = 0.25
-    mutation_probability = 0.07
-    inject_templates = True
-    optimize_thresholds = True
+    crossover_probability = 0.3
+    mutation_probability = 0.1
+    inject_templates = False
+    optimize_thresholds = False
 
     if dataset_choice == 100:
         use_encoding = False
@@ -103,8 +103,8 @@ if __name__ == '__main__':
         classes = [1001, 1002]
         output_folder = "outputs/training/cuda/synthetic2/templates"
         null_class_percentage = 0
-        params = [28, 2, 0]
-        thresholds = [994, 753]
+        params = [43, 2, 63]
+        thresholds = [5886, 4756]
         bit_values = 128
     elif dataset_choice == 702:
         use_encoding = False
@@ -113,6 +113,14 @@ if __name__ == '__main__':
         null_class_percentage = 0
         params = [60, 2, 6]
         thresholds = [342, 364]
+        bit_values = 64
+    elif dataset_choice == 704:
+        use_encoding = False
+        classes = [1001, 1002, 1003, 1004]
+        output_folder = "outputs/training/cuda/synthetic4/templates"
+        null_class_percentage = 0
+        params = [60, 4, 0]
+        thresholds = [5534, 165, 3058, 4534]
         bit_values = 64
 
     if inject_templates:

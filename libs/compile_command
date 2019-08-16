@@ -1,4 +1,4 @@
 gcc -shared -O3 -Wall -fPIC -o libwlcss.so wlcss.c distances.o
 
-nvcc -Xcompiler -fPIC -shared -o lib_wlcss_cuda.so wlcss_cuda.cu
+nvcc -Xcompiler -fPIC -shared --ptxas-options=-v -lineinfo -o lib_wlcss_cuda_params_training_optimized.so wlcss_cuda_params_training_opt.cu
 

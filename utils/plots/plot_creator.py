@@ -176,10 +176,10 @@ def plot_templates(input_path, num_templates=20, save_img=False, title=None, out
                     if i % templates_reduction_factor == 0:
                         t = [int(v) for v in line.split(" ")[:-1]]
                         subplt = fig.add_subplot(num_rows - 1, num_cols + 2, j)
-                        subplt.plot(t)
+                        subplt.plot(t, linewidth=.5)
                         subplt.set_title("{}".format(i))
-                        subplt.set_yticklabels([])
-                        subplt.set_xticklabels([])
+                        # subplt.set_yticklabels([])
+                        # subplt.set_xticklabels([])
                         j += 1
 
 
@@ -309,7 +309,7 @@ def plot_continuous_mss(mss, classes, thresholds, peaks=None, title=""):
             subplt.plot(x, y, 'x', color='r', markersize=5)
 
 
-def plot_wlcss_heatmap(input_path):
+def plot_wlcss_heatmap(input_path, templates=None):
     conf_path = input_path + "_conf.txt"
     dataset_name = input_path.split("/")[3]
     with open(conf_path, 'r') as conf_file:
@@ -331,9 +331,9 @@ def plot_wlcss_heatmap(input_path):
         template = t_data[-1, 0:-1]
         for k, i in enumerate(instances):
             _, mss[j][k] = wlcss.compute_wlcss(template, i[:, 1], params[1], params[0], params[2])
-            if min_mss == None or min_mss > np.min(mss[j][k]):
+            if min_mss is None or min_mss > np.min(mss[j][k]):
                 min_mss = np.min(mss[j][k])
-            if max_mss == None or max_mss < np.max(mss[j][k]):
+            if max_mss is None or max_mss < np.max(mss[j][k]):
                 max_mss = np.max(mss[j][k])
     for j, c in enumerate(classes):
         fig = plt.figure()

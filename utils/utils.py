@@ -7,5 +7,7 @@ def translate_dataset_name(dataset_name):
         return 201
     elif dataset_name == "synthetic3":
         return 702
+    elif dataset_name == "synthetic4":
+        return 704
     elif dataset_name == "skoda":
         return 100
