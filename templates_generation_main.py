@@ -32,7 +32,7 @@ if __name__ == '__main__':
     crossover_probability = 0.3
     mutation_probability = 0.1
     inject_templates = False
-    optimize_thresholds = False
+    optimize_thresholds = True
 
     if dataset_choice == 100:
         use_encoding = False

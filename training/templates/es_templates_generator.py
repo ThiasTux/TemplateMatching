@@ -193,14 +193,17 @@ class ESTemplateThresholdsGenerator:
 
     def __execute_ga(self, num_test):
         scores = list()
+        max_scores = np.array([])
         best_templates = list()
         best_thresholds = list()
         templates_pop, thresholds_pop = self.__generate_population()
         bar = progressbar.ProgressBar(max_value=self.__iterations)
         fit_scores_distances = self.__compute_fitness_cuda(templates_pop, thresholds_pop)
         fit_scores = fit_scores_distances[:, 0]
+        num_zero_grad = 0
+        compute_grad = False
         i = 0
-        while i < self.__iterations:
+        while i < self.__iterations and num_zero_grad < 10:
             pop_sort_idx = np.argsort(-fit_scores if self.__maximize else fit_scores)
             top_templates_individuals = templates_pop[pop_sort_idx]
             top_thresholds_individuals = thresholds_pop[pop_sort_idx]
@@ -232,6 +235,12 @@ class ESTemplateThresholdsGenerator:
                            good_distances[top_idx], bad_distances[top_idx]])
             best_templates.append(best_template)
             best_thresholds.append(best_threshold)
+            max_scores = np.append(max_scores, np.max(fit_scores))
+            if i > (self.__iterations / 100):
+                compute_grad = True
+            if compute_grad:
+                if np.gradient(max_scores)[-1] < 0.05:
+                    num_zero_grad += 1
             i += 1
             bar.update(i)
         bar.finish()

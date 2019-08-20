@@ -49,10 +49,14 @@ class GAParamsOptimizer:
 
     def __execute_ga(self, num_test):
         scores = list()
+        max_scores = np.array([])
         pop = self.__generate_population()
         bar = progressbar.ProgressBar(max_value=self.__iterations)
         fit_scores = self.__compute_fitness_cuda(pop)
-        for i in range(self.__iterations):
+        num_zero_grad = 0
+        compute_grad = False
+        i = 0
+        while i < self.__iterations and num_zero_grad < 10:
             pop_sort_idx = np.argsort(-fit_scores if self.__maximize else fit_scores)
             top_individuals = pop[pop_sort_idx]
             selected_population = self.__selection(top_individuals, self.__rank)
@@ -75,6 +79,13 @@ class GAParamsOptimizer:
                           in range(len(self.__templates))]
             scores.append([np.mean(fit_scores), np.max(fit_scores), np.min(fit_scores), np.std(fit_scores),
                            [reward, penalty, accepted_distance, thresholds]])
+            max_scores = np.append(max_scores, np.max(fit_scores))
+            if i > (self.__iterations / 100):
+                compute_grad = True
+            if compute_grad:
+                if np.gradient(max_scores)[-1] < 0.05:
+                    num_zero_grad += 1
+            i += 1
             bar.update(i)
         bar.finish()
         if self.__maximize:
