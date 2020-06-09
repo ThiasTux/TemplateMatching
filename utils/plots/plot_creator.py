@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colors as mcolors, patches
 from template_matching import wlcss_c as wlcss
-from data_processing import data_loader as dl
+from data_processing import data_loader_old as dl
 from utils import utils
 
 from utils import filter_data as fd
@@ -16,7 +16,7 @@ COLORS = list(mcolors.BASE_COLORS.keys())
 OUTPUT_PATH = "/home/mathias/Documents/Academic/PhD/Publications/2019/ABC/WLCSSLearn/figures"
 
 
-def plot_gestures(data, col=1, classes=None, use_labels_color=False, save_fig=False):
+def plot_gestures_old(data, col=1, classes=None, use_labels_color=False, save_fig=False):
     """
     Plot signal of multiple gestures, one subplot per gesture
 
@@ -52,6 +52,29 @@ def plot_gestures(data, col=1, classes=None, use_labels_color=False, save_fig=Fa
         if save_fig:
             fig.savefig(
                 "./figures/xy_training_gestures_bad.eps", bbox_inches='tight', format='eps', dpi=1000)
+
+
+def plot_gestures(data, labels, classes=None, use_labels_color=False, save_fig=False):
+    if classes is None:
+        classes = np.unique(labels)
+    for c in classes:
+        fig = plt.figure(figsize=(10, 5))
+        fig.suptitle("Class: {}".format(c))
+        fig.canvas.set_window_title("{}".format(c))
+        gestures_idx = np.where(labels == c)[0]
+        gesture_data = [data[d] for d in gestures_idx]
+        num_instances_root = math.sqrt(len(gesture_data))
+        num_rows = (math.floor(num_instances_root) if num_instances_root % math.floor(
+            num_instances_root) < 0.5 else math.ceil(num_instances_root))
+        num_cols = math.ceil(num_instances_root)
+        for i, e in enumerate(gesture_data):
+            sub = fig.add_subplot(num_rows, num_cols + 2, i + 1)
+            sub.set_title("{}".format(i))
+            # sub.set_xticks([])
+            # sub.set_xticklabels([])
+            # sub.set_yticks([i for i in range(9)])
+            # sub.set_ylim(-1, 9)
+            sub.plot(e)
 
 
 def plot_scores(input_paths, save_img=False, title=None, output_file=""):
@@ -166,21 +189,20 @@ def plot_templates(input_path, num_templates=20, save_img=False, title=None, out
         num_instances_root) < 0.5 else math.ceil(num_instances_root))
     num_cols = math.ceil(num_instances_root)
     for c in classes:
-        for t in range(num_test):
-            templates_file_path = input_path + ("_{:02d}_{}_templates.txt".format(t, c))
-            fig = plt.figure()
-            fig.suptitle("{} - {}".format(c, t))
-            with open(templates_file_path, 'r') as templates_file:
-                j = 1
-                for i, line in enumerate(templates_file.readlines()):
-                    if i % templates_reduction_factor == 0:
-                        t = [int(v) for v in line.split(" ")[:-1]]
-                        subplt = fig.add_subplot(num_rows - 1, num_cols + 2, j)
-                        subplt.plot(t, linewidth=.5)
-                        subplt.set_title("{}".format(i))
-                        # subplt.set_yticklabels([])
-                        # subplt.set_xticklabels([])
-                        j += 1
+        templates_file_path = input_path + ("_{}_templates.txt".format(c))
+        fig = plt.figure()
+        fig.suptitle("{}".format(c))
+        with open(templates_file_path, 'r') as templates_file:
+            j = 1
+            for i, line in enumerate(templates_file.readlines()):
+                if i % templates_reduction_factor == 0:
+                    t = [int(v) for v in line.split(" ")[:-1]]
+                    subplt = fig.add_subplot(num_rows - 1, num_cols + 2, j)
+                    subplt.plot(t, linewidth=.5)
+                    subplt.set_title("{}".format(i))
+                    # subplt.set_yticklabels([])
+                    # subplt.set_xticklabels([])
+                    j += 1
 
 
 def lighten_color(color, amount=0.5):
@@ -203,9 +225,9 @@ def lighten_color(color, amount=0.5):
     return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
 
 
-def plot_isolated_mss(mss, thresholds, dataset_choice, classes, title=None):
+def plot_isolated_mss(mss, thresholds, dataset_choice, classes, stream_labels=None, title=None):
     num_instances = mss.shape[0]
-    num_templates = mss.shape[1] - 1
+    num_templates = mss.shape[1]
     if len(thresholds) != num_templates:
         print("Not enough thresholds!")
         return None
@@ -214,9 +236,13 @@ def plot_isolated_mss(mss, thresholds, dataset_choice, classes, title=None):
         fig.suptitle("Isolated matching scores - {}".format(dataset_choice))
     else:
         fig.suptitle(title)
+    x = np.arange(len(mss))
     for t in range(num_templates):
         subplt = fig.add_subplot(num_templates, 1, t + 1)
-        subplt.plot(mss[:, t], '.', markersize=3)
+        if stream_labels is None:
+            subplt.scatter(x, mss[:, t], markersize=3)
+        else:
+            subplt.scatter(x, mss[:, t], c=stream_labels, s=10)
         subplt.set_title("{}".format(classes[t]))
         subplt.axes.axhline(thresholds[t], color='orange')
 
