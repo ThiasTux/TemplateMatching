@@ -8,17 +8,14 @@ from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
 
 
 class GAParamsOptimizer:
-    def __init__(self, templates, instances, instances_labels, classes, file=None, use_encoding=False, num_processes=1,
-                 iterations=500,
-                 num_individuals=32,
-                 bits_parameters=5, bits_thresholds=10, cr_p=0.3, mt_p=0.1, elitism=3, rank=10, maximize=True,
-                 fitness_function=5):
+    def __init__(self, templates, streams, streams_labels, classes, use_encoding=False,
+                 iterations=500, num_individuals=32, bits_parameters=5, bits_thresholds=10, cr_p=0.3, mt_p=0.1,
+                 elitism=3, rank=10, maximize=True, fitness_function='f1_acc', use_gradient=False):
         self.__templates = templates
-        self.__instances = instances
-        self.__instances_labels = np.array(instances_labels).reshape((len(instances), 1))
+        self.__streams = streams
+        self.__streams_labels = streams_labels
         self.__classes = classes
         self.__use_encoding = use_encoding
-        self.__num_processes = num_processes
         self.__iterations = iterations
         self.__num_individuals = num_individuals
         self.__bits_parameters = bits_parameters
@@ -34,20 +31,15 @@ class GAParamsOptimizer:
         self.__total_genes = self.__bits_parameters * self.__chromosomes
         self.__chromosomes += len(templates)
         self.__total_genes += self.__bits_thresholds * len(templates)
-        self.__m_wlcss_cuda = WLCSSCudaParamsTraining(self.__templates, self.__instances, self.__num_individuals,
+        self.__use_gradient = use_gradient
+        self.__m_wlcss_cuda = WLCSSCudaParamsTraining(self.__templates, self.__streams, self.__num_individuals,
                                                       self.__use_encoding)
         self.__results = list()
-        if file is None:
-            self.__write_to_file = False
-        else:
-            self.__write_to_file = True
-            self.__output_file = file
 
     def optimize(self):
-        for t in range(self.__num_processes):
-            self.__results.append(self.__execute_ga(t))
+        self.__execute_ga()
 
-    def __execute_ga(self, num_test):
+    def __execute_ga(self):
         scores = list()
         max_scores = np.array([])
         pop = self.__generate_population()
@@ -80,11 +72,12 @@ class GAParamsOptimizer:
             scores.append([np.mean(fit_scores), np.max(fit_scores), np.min(fit_scores), np.std(fit_scores),
                            [reward, penalty, accepted_distance, thresholds]])
             max_scores = np.append(max_scores, np.max(fit_scores))
-            if i > (self.__iterations / 100):
-                compute_grad = True
-            if compute_grad:
-                if np.gradient(max_scores)[-1] < 0.05:
-                    num_zero_grad += 1
+            if self.__use_gradient:
+                if i > (self.__iterations / 100):
+                    compute_grad = True
+                if compute_grad:
+                    if np.gradient(max_scores)[-1] < 0.05:
+                        num_zero_grad += 1
             i += 1
             bar.update(i)
         bar.finish()
@@ -99,13 +92,8 @@ class GAParamsOptimizer:
         thresholds = [self.__np_to_int(pop[top_idx][self.__bits_parameters * 3 + (
                 j * self.__bits_thresholds):self.__bits_parameters * 3 + (j + 1) * self.__bits_thresholds]) for j in
                       range(len(self.__templates))]
-        if self.__write_to_file:
-            output_scores_path = "{}_{:02d}_scores.txt".format(self.__output_file, num_test)
-            with open(output_scores_path, 'w') as f:
-                for item in scores:
-                    f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
         self.__m_wlcss_cuda.cuda_freemem()
-        return [reward, penalty, accepted_distance, thresholds, top_score]
+        self.__results = [reward, penalty, accepted_distance, thresholds, top_score, scores]
 
     def __generate_population(self):
         return (np.random.rand(self.__num_individuals, self.__total_genes) < 0.5).astype(int)
@@ -144,10 +132,10 @@ class GAParamsOptimizer:
                 j * self.__bits_thresholds):self.__bits_parameters * 3 + (j + 1) * self.__bits_thresholds]) for j in
                        range(len(self.__templates))] for p in pop]
         matching_scores = self.__m_wlcss_cuda.compute_wlcss(params)
-        matching_scores = [np.concatenate((ms, self.__instances_labels), axis=1) for ms in matching_scores]
-        fitness_scores = np.array([fit_fun.isolated_fitness_function_params(matching_scores[k], thresholds[k],
-                                                                            self.__classes,
-                                                                            parameter_to_optimize=5) for k in
+        fitness_scores = np.array([fit_fun.isolated_fitness_function_params(matching_scores[k], self.__streams_labels,
+                                                                            thresholds[k], self.__classes,
+                                                                            parameter_to_optimize=self.__fitness_function)
+                                   for k in
                                    range(self.__num_individuals)])
         return fitness_scores
 

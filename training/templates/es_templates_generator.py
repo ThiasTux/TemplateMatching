@@ -9,7 +9,7 @@ from template_matching.wlcss_cuda_class import WLCSSCudaTemplatesTraining
 
 
 class ESTemplateGenerator:
-    def __init__(self, instances, instances_labels, params, threshold, cls, chromosomes, bit_values, file=None,
+    def __init__(self, steams, stream_labels, params, threshold, cls, chromosomes, bit_values,
                  chosen_template=None,
                  use_encoding=False,
                  num_processes=1,
@@ -17,8 +17,8 @@ class ESTemplateGenerator:
                  num_individuals=32,
                  cr_p=0.3, mt_p=0.1,
                  elitism=3, rank=10, fitness_function=7, maximize=True):
-        self.__instances = instances
-        self.__instances_labels = np.array(instances_labels).reshape((len(instances), 1))
+        self.__streams = steams
+        self.__streams_labels = np.array(stream_labels).reshape((len(steams), 1))
         self.__params = params
         self.__threshold = threshold
         self.__class = cls
@@ -35,20 +35,14 @@ class ESTemplateGenerator:
         self.__fitness_function = fitness_function
         self.__maximize = maximize
         self.__templates_chromosomes = chromosomes
-        self.__m_wlcss_cuda = WLCSSCudaTemplatesTraining(self.__instances, self.__params, self.__templates_chromosomes,
+        self.__m_wlcss_cuda = WLCSSCudaTemplatesTraining(self.__streams, self.__params, self.__templates_chromosomes,
                                                          self.__num_individuals, self.__use_encoding)
         self.__results = list()
-        if file is None:
-            self.__write_to_file = False
-        else:
-            self.__write_to_file = True
-            self.__output_file = file
 
     def optimize(self):
-        for t in range(self.__num_processes):
-            self.__results.append(self.__execute_ga(t))
+        self.__execute_ga()
 
-    def __execute_ga(self, num_test):
+    def __execute_ga(self):
         scores = list()
         best_templates = list()
         templates_pop = self.__generate_population()
@@ -84,17 +78,8 @@ class ESTemplateGenerator:
             top_idx = np.argmin(fit_scores)
         top_score = fit_scores[top_idx]
         best_template = templates_pop[top_idx]
-        if self.__write_to_file:
-            output_scores_path = "{}_{:02d}_{}_scores.txt".format(self.__output_file, num_test, self.__class)
-            with open(output_scores_path, 'w') as f:
-                for item in scores:
-                    f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
-            output_templates_path = "{}_{:02d}_{}_templates.txt".format(self.__output_file, num_test, self.__class)
-            with open(output_templates_path, 'w') as f:
-                for i, item in enumerate(best_templates):
-                    f.write("{}\n".format(" ".join([str(x) for x in item.tolist()])))
         self.__m_wlcss_cuda.cuda_freemem()
-        return [top_score, best_template]
+        self.__results = [top_score, best_template, scores, best_templates]
 
     def __generate_population(self):
         templates_pop = np.random.randint(0, self.__bit_values,
@@ -134,7 +119,7 @@ class ESTemplateGenerator:
 
     def __compute_fitness_cuda(self, templates_pop):
         matching_scores = self.__m_wlcss_cuda.compute_wlcss(templates_pop)
-        matching_scores = [np.concatenate((ms, self.__instances_labels), axis=1) for ms in matching_scores]
+        matching_scores = [np.concatenate((ms, self.__streams_labels), axis=1) for ms in matching_scores]
         fitness_scores = np.array([fit_fun.isolated_fitness_function_templates(matching_scores[0][:, k],
                                                                                matching_scores[0][:, -1],
                                                                                self.__threshold,
@@ -151,22 +136,16 @@ class ESTemplateGenerator:
 
 
 class ESTemplateThresholdsGenerator:
-    def __init__(self, instances, instances_labels, params, cls, chromosomes, bit_values, file=None,
-                 chosen_template=None,
-                 use_encoding=False,
-                 num_processes=1,
-                 iterations=500,
-                 num_individuals=32,
-                 cr_p=0.3, mt_p=0.1,
-                 elitism=3, rank=10, fitness_function=7, maximize=True):
-        self.__instances = instances
-        self.__instances_labels = np.array(instances_labels).reshape((len(instances), 1))
+    def __init__(self, streams, streams_labels, params, cls, chromosomes, bit_values, chosen_template=None,
+                 use_encoding=False, iterations=500, num_individuals=32, cr_p=0.3, mt_p=0.1, elitism=3, rank=10,
+                 fitness_function=7, maximize=True):
+        self.__streams = streams
+        self.__streams_labels = streams_labels
         self.__params = params
         self.__class = cls
         self.__bit_values = bit_values
         self.__use_encoding = use_encoding
         self.__chosen_template = chosen_template
-        self.__num_processes = num_processes
         self.__iterations = iterations
         self.__num_individuals = num_individuals
         self.__crossover_probability = cr_p
@@ -178,20 +157,14 @@ class ESTemplateThresholdsGenerator:
         self.__templates_chromosomes = chromosomes
         self.__threshold_chromosomes = int(ceil(log2(params[0] * self.__templates_chromosomes))) + 2
         self.__scaling_factor = 2 ** (self.__threshold_chromosomes - 1)
-        self.__m_wlcss_cuda = WLCSSCudaTemplatesTraining(self.__instances, self.__params, self.__templates_chromosomes,
+        self.__m_wlcss_cuda = WLCSSCudaTemplatesTraining(self.__streams, self.__params, self.__templates_chromosomes,
                                                          self.__num_individuals, self.__use_encoding)
         self.__results = list()
-        if file is None:
-            self.__write_to_file = False
-        else:
-            self.__write_to_file = True
-            self.__output_file = file
 
     def optimize(self):
-        for t in range(self.__num_processes):
-            self.__results.append(self.__execute_ga(t))
+        self.__execute_ga()
 
-    def __execute_ga(self, num_test):
+    def __execute_ga(self):
         scores = list()
         max_scores = np.array([])
         best_templates = list()
@@ -203,7 +176,7 @@ class ESTemplateThresholdsGenerator:
         num_zero_grad = 0
         compute_grad = False
         i = 0
-        while i < self.__iterations and num_zero_grad < 10:
+        while i < self.__iterations:
             pop_sort_idx = np.argsort(-fit_scores if self.__maximize else fit_scores)
             top_templates_individuals = templates_pop[pop_sort_idx]
             top_thresholds_individuals = thresholds_pop[pop_sort_idx]
@@ -251,24 +224,14 @@ class ESTemplateThresholdsGenerator:
         top_score = fit_scores[top_idx]
         best_template = templates_pop[top_idx]
         best_threshold = self.__np_to_int(thresholds_pop[top_idx]) - self.__scaling_factor
-        if self.__write_to_file:
-            output_scores_path = "{}_{:02d}_{}_scores.txt".format(self.__output_file, num_test, self.__class)
-            with open(output_scores_path, 'w') as f:
-                for item in scores:
-                    f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
-            output_templates_path = "{}_{:02d}_{}_templates.txt".format(self.__output_file, num_test, self.__class)
-            with open(output_templates_path, 'w') as f:
-                for i, item in enumerate(best_templates):
-                    f.write("{} {}\n".format(" ".join([str(x) for x in item.tolist()]),
-                                             best_thresholds[i]))
         self.__m_wlcss_cuda.cuda_freemem()
-        return [top_score, best_template, best_threshold]
+        self.__results = [top_score, best_template, best_threshold, scores, best_templates, best_thresholds]
 
     def __generate_population(self):
         templates_pop = np.random.randint(0, self.__bit_values,
                                           size=(self.__num_individuals, self.__templates_chromosomes))
         if self.__chosen_template is not None:
-            templates_pop[0] = self.__chosen_template[:, 1]
+            templates_pop[0] = self.__chosen_template
         thresholds_pop = (np.random.rand(self.__num_individuals, self.__threshold_chromosomes) < 0.5).astype(int)
         return templates_pop, thresholds_pop
 
@@ -319,9 +282,8 @@ class ESTemplateThresholdsGenerator:
 
     def __compute_fitness_cuda(self, templates_pop, threshold_pop):
         matching_scores = self.__m_wlcss_cuda.compute_wlcss(templates_pop)
-        matching_scores = [np.concatenate((ms, self.__instances_labels), axis=1) for ms in matching_scores]
         fitness_scores = np.array([fit_fun.isolated_fitness_function_templates(matching_scores[0][:, k],
-                                                                               matching_scores[0][:, -1],
+                                                                               self.__streams_labels,
                                                                                self.__np_to_int(threshold_pop[
                                                                                                     k]) - self.__scaling_factor,
                                                                                parameter_to_optimize=self.__fitness_function)

@@ -2,19 +2,15 @@ import numpy as np
 from scipy.special import expit
 
 
-def isolated_fitness_function_params(matching_scores, thresholds, classes, parameter_to_optimize=5):
-    num_classes = matching_scores.shape[1] - 1
-    num_instances = matching_scores.shape[0]
-    thresholds = np.append(thresholds, 0)
-    scores = matching_scores - thresholds
-    # true_positive = np.array(
-    #     [np.count_nonzero(scores[np.where(scores[:, i] >= 0)[0]][:, -1] == classes[i]) for i in range(num_classes)])
-    # false_positive = np.array(
-    #     [np.count_nonzero(scores[np.where(scores[:, i] >= 0)[0]][:, -1] != classes[i]) for i in range(num_classes)])
-    # true_negative = np.array(
-    #     [np.count_nonzero(scores[np.where(scores[:, i] < 0)[0]][:, -1] != classes[i]) for i in range(num_classes)])
-    # false_negative = np.array(
-    #     [np.count_nonzero(scores[np.where(scores[:, i] < 0)[0]][:, -1] == classes[i]) for i in range(num_classes)])
+def isolated_fitness_function_params(matching_scores, labels, thresholds, classes, parameter_to_optimize='f1_acc'):
+    num_classes = len(classes)
+    num_instances = len(matching_scores)
+    # scores = (matching_scores - thresholds) / thresholds
+    # pred_labels = np.zeros(num_instances)
+    # for i in range(num_instances):
+    #     max_score = np.max(scores[i])
+    #     if max_score > 0:
+    #         pred_labels[i] = classes[np.argmax(scores[i])]
     true_positive = np.zeros([num_classes])
     false_positive = np.zeros([num_classes])
     true_negative = np.zeros([num_classes])
@@ -22,7 +18,7 @@ def isolated_fitness_function_params(matching_scores, thresholds, classes, param
     for i in range(num_instances):
         for j in range(num_classes):
             act = classes[j]
-            label = matching_scores[i, -1]
+            label = labels[i]
             test_matching_scores = matching_scores[i, j]
             if test_matching_scores >= thresholds[j] and act == label:
                 true_positive[j] += 1
@@ -32,10 +28,10 @@ def isolated_fitness_function_params(matching_scores, thresholds, classes, param
                 false_positive[j] += 1
             elif test_matching_scores < thresholds[j] and act != label:
                 true_negative[j] += 1
-    if parameter_to_optimize == 1:
+    if parameter_to_optimize == 'acc':
         # Accuracy
         return (np.sum(true_positive) + np.sum(true_negative)) / (num_classes * num_instances)
-    elif parameter_to_optimize == 2:
+    elif parameter_to_optimize == 'prec':
         # Precision
         tps = np.sum(true_positive)
         fps = np.sum(false_positive)
@@ -43,7 +39,7 @@ def isolated_fitness_function_params(matching_scores, thresholds, classes, param
             return tps / (tps + fps)
         else:
             return 0
-    elif parameter_to_optimize == 3:
+    elif parameter_to_optimize == 'recall':
         # Recall
         tps = np.sum(true_positive)
         fns = np.sum(false_negative)
@@ -51,7 +47,7 @@ def isolated_fitness_function_params(matching_scores, thresholds, classes, param
             return tps / (tps + fns)
         else:
             return 0
-    elif parameter_to_optimize == 4:
+    elif parameter_to_optimize == 'f1':
         tps = np.sum(true_positive)
         fps = np.sum(false_positive)
         fns = np.sum(false_negative)
@@ -66,10 +62,9 @@ def isolated_fitness_function_params(matching_scores, thresholds, classes, param
             recall = 0
         if precision != 0 and recall != 0:
             f1 = 2 / (1 / recall + 1 / precision)
-            return f1
         else:
             return 0
-    elif parameter_to_optimize == 5:
+    elif parameter_to_optimize == 'f1_acc':
         tps = np.sum(true_positive)
         fps = np.sum(false_positive)
         fns = np.sum(false_negative)
@@ -145,7 +140,8 @@ def isolated_fitness_function_templates(scores, labels, threshold, parameter_to_
             return good_distance * (-bad_distance) / 1000
         else:
             a = 4000
-            return (a / ((1 + np.e ** ((-good_distance - 1000) * .005)) * (1 + np.e ** ((bad_distance - 1000) * .005)))) - a
+            return (a / ((1 + np.e ** ((-good_distance - 1000) * .005)) * (
+                    1 + np.e ** ((bad_distance - 1000) * .005)))) - a
     elif parameter_to_optimize == 84:
         min_good = np.min(good_scores)
         max_bad = np.max(bad_scores)

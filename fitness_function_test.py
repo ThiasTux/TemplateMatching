@@ -1,3 +1,6 @@
+"""
+Plot Fitness Function for Template Generation
+"""
 import glob
 import os
 
@@ -105,7 +108,7 @@ if __name__ == '__main__':
     theCM._lut[:-3, -1] = alphas
     ax.plot_surface(X, Y, Z, cmap=theCM, linewidth=0, antialiased=False, zorder=1)
 
-    input_path = "outputs/training/cuda/synthetic2/templates/templates_2019-07-08_15-41-00"
+    input_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda/synthetic4/templates/zeus_templates_2020-02-03_16-21-20"
 
     # markers = ['o', '^', '*']
     conf_path = input_path + "_conf.txt"
@@ -137,7 +140,6 @@ if __name__ == '__main__':
         ax.scatter(good_distances, bad_distances, trace, c=t, zorder=20, label=c)
 
     ax.legend()
-
 
     ax.set_xlabel('Good distance')
     ax.set_ylabel('Bad distance')

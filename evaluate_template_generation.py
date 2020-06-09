@@ -1,3 +1,6 @@
+"""
+Evaluate Template Generation loading ES parameter from csv file.
+"""
 import datetime
 import socket
 import time
@@ -10,7 +13,7 @@ from performance_evaluation import fitness_functions as ftf
 from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
 from training.templates.es_templates_generator import ESTemplateGenerator, ESTemplateThresholdsGenerator
 
-test_filepath = "test/test_1.csv"
+test_filepath = "test/test_synthetic4_1.csv"
 test_info = ["dataset_choice", "num_test", "use_null", "write_to_file", "user", "params", "thresholds",
              "null_class_percentage", "num_individuals", "rank", "elitism", "iterations", "fitness_function",
              "crossover_probability", "mutation_probability", "inject_templates", "optimize_thresholds", "use_encoding",
@@ -39,17 +42,22 @@ for index, td in test_data.iterrows():
         if prev_dataset is None or dataset_choice != prev_dataset:
             prev_dataset = dataset_choice
             if inject_templates:
-                chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice,
-                                                                               classes=classes, user=user,
-                                                                               extract_null=use_null,
-                                                                               template_choice_method=1,
-                                                                               null_class_percentage=null_class_percentage)
+                templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
+                                                                              classes=classes, user=user,
+                                                                              extract_null=use_null,
+                                                                              template_choice_method='random',
+                                                                              null_class_percentage=null_class_percentage)
             else:
-                instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice,
-                                                             classes=classes, user=user, extract_null=use_null,
-                                                             template_choice_method=0,
-                                                             null_class_percentage=null_class_percentage)
-                chosen_templates = [None for _ in range(len(classes))]
+                streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
+                                                                   classes=classes, user=user, extract_null=use_null,
+                                                                   template_choice_method=None,
+                                                                   null_class_percentage=null_class_percentage)
+                templates = [None for _ in range(len(classes))]
+
+            # Group streams by labels
+            streams_labels_sorted_idx = streams_labels.argsort()
+            streams = [streams[i] for i in streams_labels_sorted_idx]
+            streams_labels = streams_labels[streams_labels_sorted_idx]
 
         if optimize_thresholds:
             thresholds = [None for _ in range(len(classes))]
@@ -76,18 +84,18 @@ for index, td in test_data.iterrows():
         print("Null class extraction: {}".format(use_null))
         print("Null class percentage: {}".format(null_class_percentage))
         for i, c in enumerate(classes):
-            tmp_labels = np.copy(labels)
+            tmp_labels = np.copy(streams_labels)
             tmp_labels[tmp_labels != c] = 0
             if inject_templates:
-                chromosomes = len(chosen_templates[i])
+                chromosomes = len(templates[i])
             else:
-                chromosomes = int(
-                    np.ceil(np.average([len(t) for t in instances if t[0, -2] == c]).astype(int)) / scaling_length)
+                chromosomes = int(np.ceil(
+                    np.average([len(streams[i]) for i, sl in enumerate(streams_labels) if sl == c]).astype(
+                        int)) / scaling_length)
             print("{} - {}".format(c, chromosomes))
             if optimize_thresholds:
-                optimizer = ESTemplateThresholdsGenerator(instances, tmp_labels, params, c, chromosomes, bit_values,
-                                                          file="{}/{}_templates_{}".format(output_folder, hostname, st),
-                                                          chosen_template=chosen_templates[i],
+                optimizer = ESTemplateThresholdsGenerator(streams, tmp_labels, params, c, chromosomes, bit_values,
+                                                          chosen_template=templates[i],
                                                           num_individuals=num_individuals, rank=rank,
                                                           elitism=elitism,
                                                           iterations=iterations,
@@ -95,10 +103,9 @@ for index, td in test_data.iterrows():
                                                           cr_p=crossover_probability,
                                                           mt_p=mutation_probability)
             else:
-                optimizer = ESTemplateGenerator(instances, tmp_labels, params, thresholds[i], c, chromosomes,
+                optimizer = ESTemplateGenerator(streams, tmp_labels, params, thresholds[i], c, chromosomes,
                                                 bit_values,
-                                                file="{}/{}_templates_{}".format(output_folder, hostname, st),
-                                                chosen_template=chosen_templates[i],
+                                                chosen_template=templates[i],
                                                 num_individuals=num_individuals, rank=rank,
                                                 elitism=elitism,
                                                 iterations=iterations,
@@ -107,11 +114,31 @@ for index, td in test_data.iterrows():
                                                 mt_p=mutation_probability)
             optimizer.optimize()
 
+            results = optimizer.get_results()
+            output_file = "{}/{}_templates_{}".format(output_folder, hostname, st)
+            output_scores_path = "{}_{}_scores.txt".format(output_file, c)
+
             if optimize_thresholds:
-                best_templates += [np.array(r[-2]) for r in optimizer.get_results()]
-                best_thresholds += [r[-1] for r in optimizer.get_results()]
+                best_templates.append(results[1])
+                best_thresholds.append(results[2])
+                with open(output_scores_path, 'w') as f:
+                    for item in results[-3]:
+                        f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
+                output_templates_path = "{}_{}_templates.txt".format(output_file, c)
+                with open(output_templates_path, 'w') as f:
+                    for k, item in enumerate(results[-2]):
+                        f.write("{} {}\n".format(" ".join([str(x) for x in item.tolist()]),
+                                                 results[-1][k]))
             else:
-                best_templates += [np.array(r[-1]) for r in optimizer.get_results()]
+                best_templates.append(results[1])
+                with open(output_scores_path, 'w') as f:
+                    for item in results[-2]:
+                        f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
+                output_templates_path = "{}_{}_templates.txt".format(output_file, c)
+                with open(output_templates_path, 'w') as f:
+                    for k, item in enumerate(results[-1]):
+                        f.write("{}\n".format(" ".join([str(x) for x in item.tolist()])))
+
         best_templates = [np.stack((np.arange(len(r)), r), axis=1) for r in best_templates]
         output_file_path = join(output_folder,
                                 "{}_templates_{}.txt".format(hostname, st))
@@ -137,15 +164,14 @@ for index, td in test_data.iterrows():
             outputconffile.write("Null class extraction: {}\n".format(use_null))
             outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
             outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
-        m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, instances, 1, False)
+        m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, streams, 1, False)
         mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
         m_wlcss_cuda.cuda_freemem()
 
-        tmp_labels = np.array(labels).reshape((len(instances), 1))
-        mss = np.concatenate((mss, tmp_labels), axis=1)
         if optimize_thresholds:
             thresholds = best_thresholds
-        fitness_score = ftf.isolated_fitness_function_params(mss, thresholds, classes, parameter_to_optimize=4)
+        fitness_score = ftf.isolated_fitness_function_params(mss, streams_labels, thresholds, classes,
+                                                             parameter_to_optimize='f1')
         results_scores.append(fitness_score)
         results_paths.append(output_file_path.replace(".txt", ""))
     test_data.loc[index, 'results_paths'] = str(results_paths)
