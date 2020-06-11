@@ -138,7 +138,9 @@ if __name__ == '__main__':
         use_encoding = '2d'
         classes = [i for i in range(1, 5)]
         output_folder = "{}/hci_table/params".format(outputs_path)
-        null_class_percentage = 0.5
+        params = [55, 54, 0]
+        thresholds = [918, 929, 842, 883]
+        bit_values = 8
 
     if inject_templates:
         templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
@@ -260,11 +262,12 @@ if __name__ == '__main__':
         outputconffile.write("Thresholds: {}\n".format(thresholds))
         outputconffile.write("Null class extraction: {}\n".format(use_null))
         outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
+        outputconffile.write("Use encoding: {}\n".format(use_encoding))
         outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
     print("Results written")
     print(output_file_path.replace(".txt", ""))
 
-    m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, streams, 1, False)
+    m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, streams, 1, use_encoding)
     mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
     m_wlcss_cuda.cuda_freemem()
 

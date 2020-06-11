@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from data_processing import data_loader as dl
+from data_processing import data_loader_old as dl
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':

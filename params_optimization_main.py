@@ -119,6 +119,19 @@ if __name__ == '__main__':
 
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
     hostname = socket.gethostname().lower()
+    print("Dataset choice: {}".format(dataset_choice))
+    print("Classes: {}".format(' '.join([str(c) for c in classes])))
+    print("Population: {}".format(num_individuals))
+    print("Iteration: {}".format(iterations))
+    print("Crossover: {}".format(crossover_probability))
+    print("Mutation: {}".format(mutation_probability))
+    print("Elitism: {}".format(elitism))
+    print("Rank: {}".format(rank))
+    print("Num tests: {}".format(num_test))
+    print("Fitness function: {}".format(fitness_function))
+    print("Null class extraction: {}".format(use_null))
+    print("Null class percentage: {}".format(null_class_percentage))
+    print("Use encoding: {}".format(use_encoding))
 
     optimizer = GAParamsOptimizer(templates, streams, streams_labels, classes,
                                   use_encoding=use_encoding,
@@ -171,7 +184,7 @@ if __name__ == '__main__':
     params = results[0:3]
     thresholds = results[3]
 
-    m_wlcss_cuda = WLCSSCudaParamsTraining(templates, streams, 1, False)
+    m_wlcss_cuda = WLCSSCudaParamsTraining(templates, streams, 1, use_encoding)
     mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
     m_wlcss_cuda.cuda_freemem()
 
