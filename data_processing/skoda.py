@@ -49,7 +49,7 @@ class Skoda(Dataset):
     def load_continuous_dataset(self):
         pass
 
-    def load_encode_dataset(self):
+    def load_encode_dataset(self, use_torso=False):
         files = [file for file in glob.glob(join(self.__dataset_path, "subject{}_*.txt".format(self.__default_user)))]
         encoded_templates = list()
         templates_labels = np.array([])
@@ -63,8 +63,11 @@ class Skoda(Dataset):
             rua_quat = [Quaternion(q) for q in data[:, 29:33]]
             rla_quat = [Quaternion(q) for q in data[:, 45:49]]
             rha_quat = [Quaternion(q) for q in data[:, 61:65]]
-            torso_vectors = [q.rotate(v_torso) for q in torso_quat]
-            rua_vectors = [rua_quat[i].rotate(v_others) for i in range(len(rua_quat))]
+            if use_torso:
+                torso_vectors = [q.rotate(v_torso) for q in torso_quat]
+                rua_vectors = [rua_quat[i].rotate(v_others) + torso_vectors[i] for i in range(len(rua_quat))]
+            else:
+                rua_vectors = [rua_quat[i].rotate(v_others) for i in range(len(rua_quat))]
             rla_vectors = [rla_quat[i].rotate(v_others) + rua_vectors[i] for i in range(len(rla_quat))]
             rha_vectors = np.array([rha_quat[i].rotate(v_hand) + rla_vectors[i] for i in range(len(rha_quat))])
             rha_vectors[:, 0] = butter_lowpass_filter(rha_vectors[:, 0], 2.5, 30)

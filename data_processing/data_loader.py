@@ -5,7 +5,6 @@ from data_processing.skoda_mini import SkodaMini
 from data_processing.synthetic import Synthetic1, Synthetic2, Synthetic3, Synthetic4
 from data_processing.utd_mhad import UTDMhad
 from data_processing.hci import HCIGuided
-from data_processing.pku_mmd import PKUMmd
 
 import numpy as np
 
@@ -24,8 +23,6 @@ def load_training_dataset(dataset_choice='opportunity', template_choice_method='
         dataset = UTDMhad()
     elif dataset_choice == 'hci_guided':
         dataset = HCIGuided()
-    elif dataset_choice == 'pku_mmd':
-        dataset = PKUMmd()
     elif dataset_choice == 'hci_table':
         dataset = HCITable()
     elif dataset_choice == 'synthetic1':

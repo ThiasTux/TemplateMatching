@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from data_processing.dataset_interface import Dataset
-from template_matching.encode_trajectories import normalize, encode
+from template_matching.encode_trajectories import normalize, encode_2d
 from utils.filter_data import butter_lowpass_filter
 from utils.plots import plot_creator
 
@@ -60,7 +60,7 @@ class HCITable(Dataset):
                 end_point = gesture_points[i + step]
                 v_displacement = end_point - start_point
                 v_displacement_norm = normalize(v_displacement)
-                v_displacement_encoded = encode(v_displacement_norm)
+                v_displacement_encoded = encode_2d(v_displacement_norm)
                 gesture_trajectory.append(v_displacement_encoded)
             encoded_gestures.append(gesture_trajectory)
         return encoded_gestures
