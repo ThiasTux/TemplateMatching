@@ -45,7 +45,7 @@ __global__ void wlcss_cuda_kernel(int32_t *d_mss, int32_t *d_mss_offsets, int32_
 
     for(int32_t j=0;j<s_len;j++){
         for(int32_t i=0;i<t_len;i++){
-            int32_t distance = d_3d_cost_matrix[s[j]*27 + t[i]];;
+            int32_t distance = d_3d_cost_matrix[s[j]*26 + t[i]];;
             if (distance <= accepteddist){
                 tmp = tmp_window[i]+reward;
             } else{
@@ -77,8 +77,8 @@ extern "C"{
         h_mss_length = h_mss_len;
 
         //Allocate memory for cost matrix
-        gpuErrchk( cudaMalloc((void **) &d_3d_cost_matrix, 729 * sizeof(int32_t)) );
-        gpuErrchk( cudaMemcpy(d_3d_cost_matrix, h_3d_cost_matrix, 729 * sizeof(int32_t), cudaMemcpyHostToDevice) );
+        gpuErrchk( cudaMalloc((void **) &d_3d_cost_matrix, 676 * sizeof(int32_t)) );
+        gpuErrchk( cudaMemcpy(d_3d_cost_matrix, h_3d_cost_matrix, 676 * sizeof(int32_t), cudaMemcpyHostToDevice) );
 
         // Allocate memory for streams array
         gpuErrchk( cudaMalloc((void **) &d_ss, h_ss_length * sizeof(int32_t)) );
