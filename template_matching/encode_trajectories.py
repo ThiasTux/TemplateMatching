@@ -16,14 +16,14 @@ codebook_builder = {7: {  # 0: [0., 0., 0.],
         4: [0., 1., 0.],
         5: [0., 0., 1.],
         6: [0., 0., -1],
-        7: [-0.5773502691896257, 0.5773502691896258, -0.5773502691896257],
-        8: [-0.5773502691896258, -0.5773502691896257, -0.5773502691896257],
-        9: [0.5773502691896256, -0.5773502691896258, -0.5773502691896257],
-        10: [0.5773502691896258, 0.5773502691896257, -0.5773502691896257],
-        11: [-0.5773502691896257, 0.5773502691896258, 0.5773502691896257],
-        12: [-0.5773502691896258, -0.5773502691896257, 0.5773502691896257],
-        13: [0.5773502691896256, -0.5773502691896258, 0.5773502691896257],
-        14: [0.5773502691896258, 0.5773502691896257, 0.5773502691896257]},
+        7: [-1, 1, -1],
+        8: [-1, -1, -1],
+        9: [1, -1, -1],
+        10: [1, 1, -1],
+        11: [-1, 1, 1],
+        12: [-1, -1, 1],
+        13: [1, -1, 1],
+        14: [1, 1, 1]},
     27: {  # 0: [0., 0., 0.],
         1: [-1., 0., 0.],
         2: [0., -1., 0.],
@@ -31,26 +31,26 @@ codebook_builder = {7: {  # 0: [0., 0., 0.],
         4: [0., 1., 0.],
         5: [0., 0., 1.],
         6: [0., 0., -1],
-        7: [-0.5773502691896257, 0.5773502691896258, -0.5773502691896257],
-        8: [-0.5773502691896258, -0.5773502691896257, -0.5773502691896257],
-        9: [0.5773502691896256, -0.5773502691896258, -0.5773502691896257],
-        10: [0.5773502691896258, 0.5773502691896257, -0.5773502691896257],
-        11: [-0.5773502691896257, 0.5773502691896258, 0.5773502691896257],
-        12: [-0.5773502691896258, -0.5773502691896257, 0.5773502691896257],
-        13: [0.5773502691896256, -0.5773502691896258, 0.5773502691896257],
-        14: [0.5773502691896258, 0.5773502691896257, 0.5773502691896257],
-        15: [-0.7071067811865475, 0.0, -0.7071067811865476],
-        16: [0.0, -0.7071067811865476, -0.7071067811865476],
-        17: [0.7071067811865475, 0.0, -0.7071067811865476],
-        18: [0.0, 0.7071067811865475, -0.7071067811865476],
-        19: [-0.7071067811865475, -0.7071067811865475, 0.0],
-        20: [0.7071067811865475, -0.7071067811865475, 0.0],
-        21: [0.7071067811865475, 0.7071067811865475, 0.0],
-        22: [-0.7071067811865475, 0.7071067811865475, 0.0],
-        23: [-0.7071067811865475, 0.0, 0.7071067811865476],
-        24: [0.0, 0.7071067811865476, 0.7071067811865476],
-        25: [0.7071067811865475, 0.0, 0.7071067811865476],
-        26: [0.0, -0.7071067811865475, 0.7071067811865476]}}
+        7: [-1, 1, -1],
+        8: [-1, -1, -1],
+        9: [1, -1, -1],
+        10: [1, 1, -1],
+        11: [-1, 1, 1],
+        12: [-1, -1, 1],
+        13: [1, -1, 1],
+        14: [1, 1, 1],
+        15: [-1, 0.0, -1],
+        16: [0.0, -1, -1],
+        17: [1, 0.0, -1],
+        18: [0.0, 1, -1],
+        19: [-1, -1, 0.0],
+        20: [1, -1, 0.0],
+        21: [1, 1, 0.0],
+        22: [-1, 1, 0.0],
+        23: [-1, 0.0, 1],
+        24: [0.0, 1, 1],
+        25: [1, 0.0, 1],
+        26: [0.0, -1, 1]}}
 
 keys = {7: [0, 1, 2, 3, 4, 5, 6],
         15: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
@@ -67,7 +67,7 @@ def create_2d_codebook(num_vectors):
     if num_vectors == 4:
         v = [[1, 0], [0, 1], [-1, 0], [0, -1]]
     elif num_vectors == 8:
-        v = [[1, 0], [0.707, 0.707], [0, 1], [-0.707, 0.707], [-1, 0], [-0.707, -0.707], [0, -1], [0.707, -0.707]]
+        v = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [-1, -1], [1, -1]]
     elif num_vectors == 12:
         v = [[1, 0], [0.866, 0.5], [0.5, 0.866],
              [0, 1], [-0.5, 0.866], [-0.866, 0.5],
@@ -86,8 +86,8 @@ def normalize(v):
     return v / norm
 
 
-def encode(v, codebook=create_2d_codebook(8)):
-    distances = {k: angle_between(codebook.get(k), v) for k in codebook.keys()}
+def encode_2d(v, codebook=create_2d_codebook(8)):
+    distances = {k - 1: angle_between(codebook.get(k), v) for k in codebook.keys()}
     return min(distances, key=distances.get)
 
 
@@ -99,7 +99,7 @@ def eucl_dist(v1, v2):
 
 def encode_3d(v, alphabet=15):
     codebook = create_3d_codebook(alphabet)
-    distances = {k: eucl_dist(codebook.get(k), v) for k in codebook.keys()}
+    distances = {k - 1: angle_between(codebook.get(k), v) for k in codebook.keys()}
     return min(distances, key=distances.get)
 
 
@@ -121,3 +121,46 @@ def angle_between(v1, v2):
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+
+def compute_3d_distance_matrix(print_output=True):
+    codebook = create_3d_codebook(27)
+    codebook_keys = sorted(list(codebook.keys()))
+    matrix_distance = np.zeros((26, 26))
+    for k_i in codebook_keys:
+        v_1 = codebook[k_i]
+        for k_j in codebook_keys:
+            v_2 = codebook[k_j]
+            matrix_distance[k_i - 1, k_j - 1] = angle_between(v_1, v_2)
+    matrix_distance = (matrix_distance * 10).astype(int)
+    if print_output:
+        for i in range(26):
+            print("{", end="")
+            for j in range(25):
+                print(matrix_distance[i, j], end=", ")
+            print(matrix_distance[i, 25], end="},")
+            print()
+
+
+def compute_2d_distance_matrix(print_output=True):
+    codebook = create_2d_codebook(8)
+    codebook_keys = sorted(list(codebook.keys()))
+    matrix_distance = np.zeros((7, 7))
+    for k_i in codebook_keys:
+        v_1 = codebook[k_i]
+        for k_j in codebook_keys:
+            v_2 = codebook[k_j]
+            matrix_distance[k_i - 1, k_j - 1] = angle_between(v_1, v_2)
+    matrix_distance = (matrix_distance * 10).astype(int)
+    if print_output:
+        for i in range(7):
+            print("{", end="")
+            for j in range(6):
+                print(matrix_distance[i, j], end=", ")
+            print(matrix_distance[i, 6], end="},")
+            print()
+
+
+if __name__ == '__main__':
+    compute_3d_distance_matrix()
+    compute_2d_distance_matrix()
