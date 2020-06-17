@@ -1,10 +1,12 @@
 from data_processing.hcitable import HCITable
 from data_processing.opportunity import OpportunityDataset
+from data_processing.shl import SHLPreview
 from data_processing.skoda import Skoda
 from data_processing.skoda_mini import SkodaMini
 from data_processing.synthetic import Synthetic1, Synthetic2, Synthetic3, Synthetic4
 from data_processing.utd_mhad import UTDMhad
 from data_processing.hci import HCIGuided
+from utils import distance_measures as dtm
 
 import numpy as np
 
@@ -33,6 +35,8 @@ def load_training_dataset(dataset_choice='opportunity', template_choice_method='
         dataset = Synthetic3()
     elif dataset_choice == 'synthetic4':
         dataset = Synthetic4()
+    elif dataset_choice == 'shl_preview':
+        dataset = SHLPreview()
 
     streams, labels = dataset.load_isolated_dataset()
 
@@ -56,7 +60,19 @@ def load_training_dataset(dataset_choice='opportunity', template_choice_method='
         for c in classes:
             templates.append(streams[np.random.choice(np.where(labels == c)[0])])
     elif template_choice_method == 'mrt_lcs':
-        pass
+        for k, c in enumerate(classes):
+            tmp_templates = [streams[t] for t in np.where(labels == c)[0]]
+            matching_scores = np.zeros((len(tmp_templates), len(tmp_templates)), dtype=int)
+            for i in range(len(tmp_templates)):
+                for j in range(i + 1, len(tmp_templates)):
+                    d, c = dtm.LCS(tmp_templates[i], tmp_templates[j])
+                    matching_scores[i][j] = d
+                    matching_scores[j][i] = d
+            matching_scores_sums = np.sum(matching_scores, axis=0)
+            matching_scores_perc = np.array(
+                [matching_scores_sums[i] / len(tmp_templates[i]) for i in range(len(tmp_templates))])
+            ordered_indexes = np.argsort(matching_scores_perc)
+            templates.append(np.array(tmp_templates[ordered_indexes[-1]]))
     elif template_choice_method == 'mrt_dtw':
         pass
 

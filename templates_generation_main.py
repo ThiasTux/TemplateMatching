@@ -17,7 +17,7 @@ from training.templates.es_templates_generator import ESTemplateGenerator, ESTem
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 'synthetic4'
+    dataset_choice = 'skoda'
     outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     num_test = 1
@@ -28,24 +28,24 @@ if __name__ == '__main__':
     thresholds = list()
     null_class_percentage = 0.5
 
-    num_individuals = 256
-    rank = 256
+    num_individuals = 128
+    rank = 32
     elitism = 5
     iterations = 500
     fitness_function = 86
     crossover_probability = 0.3
     mutation_probability = 0.1
     inject_templates = False
-    optimize_thresholds = True
+    optimize_thresholds = False
 
     if dataset_choice == 'skoda':
         use_encoding = '3d'
-        classes = [3001, 3003, 3013, 3018]
-        # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
+        # classes = [3001, 3003, 3013, 3018]
+        classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
         output_folder = "{}/skoda/params".format(outputs_path)
         null_class_percentage = 0.6
-        params = [55, 6, 0]
-        thresholds = [186, 104, 195, 115]
+        params = [57, 2, 8]
+        thresholds = [370, 353, 220, 233, 307, 463, 228, 135]
         bit_values = 15
     elif dataset_choice == 'skoda_mini':
         use_encoding = False
@@ -141,6 +141,11 @@ if __name__ == '__main__':
         params = [55, 54, 0]
         thresholds = [918, 929, 842, 883]
         bit_values = 8
+    elif dataset_choice == 'shl_preview':
+        use_encoding = False
+        classes = [1, 2, 4, 7, 8]
+        output_folder = "{}/shl_preview/params".format(outputs_path)
+        null_class_percentage = 0.5
 
     if inject_templates:
         templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
@@ -191,11 +196,11 @@ if __name__ == '__main__':
             chromosomes = len(templates[i])
         else:
             chromosomes = int(np.ceil(
-                np.average([len(streams[i]) for i, sl in enumerate(streams_labels) if sl == c]).astype(int)) / 5)
+                np.average([len(streams[i]) for i, sl in enumerate(streams_labels) if sl == c]).astype(int)))
         print("{} - {}".format(c, chromosomes))
         if optimize_thresholds:
             optimizer = ESTemplateThresholdsGenerator(streams, tmp_labels, params, c, chromosomes, bit_values,
-                                                      chosen_template=templates[i],
+                                                      chosen_template=templates[i], use_encoding=use_encoding,
                                                       num_individuals=num_individuals, rank=rank,
                                                       elitism=elitism,
                                                       iterations=iterations,
@@ -204,7 +209,7 @@ if __name__ == '__main__':
                                                       mt_p=mutation_probability)
         else:
             optimizer = ESTemplateGenerator(streams, tmp_labels, params, thresholds[i], c, chromosomes, bit_values,
-                                            chosen_template=templates[i],
+                                            chosen_template=templates[i], use_encoding=use_encoding,
                                             num_individuals=num_individuals, rank=rank,
                                             elitism=elitism,
                                             iterations=iterations,
@@ -238,7 +243,6 @@ if __name__ == '__main__':
                 for k, item in enumerate(results[-1]):
                     f.write("{}\n".format(" ".join([str(x) for x in item.tolist()])))
 
-    best_templates = [np.stack((np.arange(len(r)), r), axis=1) for r in best_templates]
     output_file_path = join(output_folder,
                             "{}_templates_{}.txt".format(hostname, st))
     elapsed_time = time.time() - start_time
@@ -276,6 +280,20 @@ if __name__ == '__main__':
     fitness_score = ftf.isolated_fitness_function_params(mss, streams_labels, thresholds, classes,
                                                          parameter_to_optimize='f1')
     print(fitness_score)
+
+    for i, c in enumerate(classes):
+        tmp_labels = np.copy(streams_labels)
+        tmp_labels[tmp_labels != c] = 0
+        templates_fitness_score = ftf.isolated_fitness_function_templates(mss[:, i], tmp_labels, thresholds[i],
+                                                                          parameter_to_optimize=86)
+        print("Class: {} - Score: {:4.3f} - Good dist: {:4.3f} - Bad dist: {:4.3f} - Thres: {}".format(c,
+                                                                                                       templates_fitness_score[
+                                                                                                           0],
+                                                                                                       templates_fitness_score[
+                                                                                                           1],
+                                                                                                       templates_fitness_score[
+                                                                                                           2],
+                                                                                                       thresholds[i]))
 
     plt_creator.plot_templates_scores(output_file_path.replace(".txt", ""))
     plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes, streams_labels,

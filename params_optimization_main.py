@@ -34,9 +34,9 @@ if __name__ == '__main__':
     mutation_probability = 0.1
 
     if dataset_choice == 'skoda':
-        use_encoding = False
-        classes = [3001, 3003, 3013, 3018]
-        # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
+        use_encoding = '3d'
+        # classes = [3001, 3003, 3013, 3018]
+        classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
         output_folder = "{}/skoda/params".format(outputs_path)
         sensor = None
         null_class_percentage = 0.6
@@ -106,11 +106,17 @@ if __name__ == '__main__':
         null_class_percentage = 0
     elif dataset_choice == 'hci_table':
         use_encoding = '2d'
-        classes = [i for i in range(1, 5)]
+        classes = [i for i in range(1, 35)]
         output_folder = "{}/hci_table/params".format(outputs_path)
         null_class_percentage = 0.5
+    elif dataset_choice == 'shl_preview':
+        use_encoding = False
+        classes = [1, 2, 4, 7, 8]
+        output_folder = "{}/shl_preview/params".format(outputs_path)
+        null_class_percentage = 0.5
 
-    templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice, classes=classes)
+    templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice, classes=classes,
+                                                                  template_choice_method='mrt_lcs')
 
     # Group streams by labels
     streams_labels_sorted_idx = streams_labels.argsort()

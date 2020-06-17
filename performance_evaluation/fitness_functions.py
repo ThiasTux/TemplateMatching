@@ -63,7 +63,8 @@ def isolated_fitness_function_params(matching_scores, labels, thresholds, classe
         if precision != 0 and recall != 0:
             f1 = 2 / (1 / recall + 1 / precision)
         else:
-            return 0
+            f1 = 0
+        return f1
     elif parameter_to_optimize == 'f1_acc':
         tps = np.sum(true_positive)
         fps = np.sum(false_positive)

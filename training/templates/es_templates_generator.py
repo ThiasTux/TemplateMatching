@@ -18,7 +18,7 @@ class ESTemplateGenerator:
                  cr_p=0.3, mt_p=0.1,
                  elitism=3, rank=10, fitness_function=7, maximize=True):
         self.__streams = steams
-        self.__streams_labels = np.array(stream_labels).reshape((len(steams), 1))
+        self.__streams_labels = stream_labels
         self.__params = params
         self.__threshold = threshold
         self.__class = cls
@@ -119,9 +119,8 @@ class ESTemplateGenerator:
 
     def __compute_fitness_cuda(self, templates_pop):
         matching_scores = self.__m_wlcss_cuda.compute_wlcss(templates_pop)
-        matching_scores = [np.concatenate((ms, self.__streams_labels), axis=1) for ms in matching_scores]
         fitness_scores = np.array([fit_fun.isolated_fitness_function_templates(matching_scores[0][:, k],
-                                                                               matching_scores[0][:, -1],
+                                                                               self.__streams_labels,
                                                                                self.__threshold,
                                                                                parameter_to_optimize=self.__fitness_function)
                                    for k in
@@ -272,7 +271,7 @@ class ESTemplateThresholdsGenerator:
     def __mutation(self, templates_pop, thresholds_pop, mp):
         tmpl_sizes = templates_pop.shape
         mask = np.random.rand(templates_pop.shape[0], templates_pop.shape[1]) < mp
-        new_templates_pop_mask = np.random.normal(0, 8, size=tmpl_sizes) * mask
+        new_templates_pop_mask = np.random.normal(0, 2, size=tmpl_sizes) * mask
         new_templates_pop = np.remainder(np.copy(templates_pop) + new_templates_pop_mask, self.__bit_values)
 
         mask = np.random.rand(thresholds_pop.shape[0], thresholds_pop.shape[1]) < mp
