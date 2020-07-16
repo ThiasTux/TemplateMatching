@@ -53,7 +53,6 @@ for index, td in test_data.iterrows():
                                                                    template_choice_method=None,
                                                                    null_class_percentage=null_class_percentage)
                 templates = [None for _ in range(len(classes))]
-
             # Group streams by labels
             streams_labels_sorted_idx = streams_labels.argsort()
             streams = [streams[i] for i in streams_labels_sorted_idx]
@@ -139,7 +138,7 @@ for index, td in test_data.iterrows():
                     for k, item in enumerate(results[-1]):
                         f.write("{}\n".format(" ".join([str(x) for x in item.tolist()])))
 
-        best_templates = [np.stack((np.arange(len(r)), r), axis=1) for r in best_templates]
+        # best_templates = [np.stack((np.arange(len(r)), r), axis=1) for r in best_templates]
         output_file_path = join(output_folder,
                                 "{}_templates_{}.txt".format(hostname, st))
         elapsed_time = time.time() - start_time
@@ -163,6 +162,7 @@ for index, td in test_data.iterrows():
             outputconffile.write("Thresholds: {}\n".format(thresholds))
             outputconffile.write("Null class extraction: {}\n".format(use_null))
             outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
+            outputconffile.write("Use encoding: {}\n".format(use_encoding))
             outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
         m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, streams, 1, False)
         mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
@@ -176,5 +176,6 @@ for index, td in test_data.iterrows():
         results_paths.append(output_file_path.replace(".txt", ""))
     test_data.loc[index, 'results_paths'] = str(results_paths)
     test_data.loc[index, 'results_scores'] = str(results_scores)
-    test_data.to_csv(test_filepath.replace(".csv", "_results.csv"))
+    test_data.to_csv(test_filepath.replace(".csv", "{}_results.csv".format(
+        datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S'))))
 print("Done!")
