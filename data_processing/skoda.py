@@ -31,7 +31,7 @@ class Skoda(Dataset):
         self.__labels = sorted(list(self.__labels_dict.keys()))
         self.__default_user = 'H'
         self.__default_session_id = '1'
-        self.__frequency = 30
+        self.__frequency = 50
 
     def load_isolated_dataset(self, quick_load=False, load_encoded=True):
         if quick_load:
@@ -46,8 +46,30 @@ class Skoda(Dataset):
             if load_encoded:
                 return self.load_encode_dataset()
 
-    def load_continuous_dataset(self):
-        pass
+    def load_continuous_dataset(self, use_torso=False):
+        file = join(self.__dataset_path, "subject{}_{}.txt".format(self.__default_user, self.__default_session_id))
+        data = np.loadtxt(file)
+        timestamps = data[:, 0]
+        labels = data[:, -1]
+        v_torso = np.array([-6, 0, 0])
+        v_others = np.array([3, 0, 0])
+        v_hand = np.array([1, 0, 0])
+        torso_quat = [Quaternion(q) for q in data[:, 13:17]]
+        rua_quat = [Quaternion(q) for q in data[:, 29:33]]
+        rla_quat = [Quaternion(q) for q in data[:, 45:49]]
+        rha_quat = [Quaternion(q) for q in data[:, 61:65]]
+        if use_torso:
+            torso_vectors = [q.rotate(v_torso) for q in torso_quat]
+            rua_vectors = [rua_quat[i].rotate(v_others) + torso_vectors[i] for i in range(len(rua_quat))]
+        else:
+            rua_vectors = [rua_quat[i].rotate(v_others) for i in range(len(rua_quat))]
+        rla_vectors = [rla_quat[i].rotate(v_others) + rua_vectors[i] for i in range(len(rla_quat))]
+        rha_vectors = np.array([rha_quat[i].rotate(v_hand) + rla_vectors[i] for i in range(len(rha_quat))])
+        rha_vectors[:, 0] = butter_lowpass_filter(rha_vectors[:, 0], 2.5, 30)
+        rha_vectors[:, 1] = butter_lowpass_filter(rha_vectors[:, 1], 2.5, 30)
+        rha_vectors[:, 2] = butter_lowpass_filter(rha_vectors[:, 2], 2.5, 30)
+        encoded_stream, labels, timestamps = self.encode_continuous_trajectory(rha_vectors, labels, timestamps)
+        return encoded_stream, labels, timestamps
 
     def load_encode_dataset(self, use_torso=False):
         files = [file for file in glob.glob(join(self.__dataset_path, "subject{}_*.txt".format(self.__default_user)))]
@@ -76,11 +98,13 @@ class Skoda(Dataset):
             templates, tmp_templates_labels = Dataset.segment_data(rha_vectors, labels)
             templates = [templates[t] for t in np.where(tmp_templates_labels > 0)[0]]
             tmp_templates_labels = tmp_templates_labels[np.where(tmp_templates_labels > 0)[0]]
-            encoded_templates += self.encode_trajectory(templates)
+            encoded_templates += self.encode_isolated_trajectories(templates)
             templates_labels = np.append(templates_labels, tmp_templates_labels)
         return encoded_templates, templates_labels
 
-    def encode_trajectory(self, gestures, frequency=98, sample_freq=10):
+    def encode_isolated_trajectories(self, gestures, frequency=None, sample_freq=10):
+        if frequency is None:
+            frequency = self.__frequency
         step = int(frequency / sample_freq)
         encoded_gestures = list()
         for gesture_points in gestures:
@@ -94,6 +118,27 @@ class Skoda(Dataset):
                 gesture_trajectory.append(v_displacement_encoded)
             encoded_gestures.append(gesture_trajectory)
         return encoded_gestures
+
+    def encode_continuous_trajectory(self, stream, stream_labels=None, stream_timestamps=None, frequency=None,
+                                     sample_freq=10):
+        if frequency is None:
+            frequency = self.__frequency
+        step = int(frequency / sample_freq)
+        trajectory = list()
+        gesture_trajectory = list()
+        for i in range(0, len(stream) - step, step):
+            start_point = stream[i]
+            end_point = stream[i + step]
+            v_displacement = end_point - start_point
+            v_displacement_norm = normalize(v_displacement)
+            v_displacement_encoded = encode_3d(v_displacement_norm)
+            gesture_trajectory.append(v_displacement_encoded)
+        if stream_labels is not None:
+            stream_labels = [stream_labels[i] for i in range(0, len(stream) - step, step)]
+            stream_timestamps = [stream_timestamps[i] for i in range(0, len(stream) - step, step)]
+            return np.array(gesture_trajectory), np.array(stream_labels), np.array(stream_timestamps)
+        else:
+            return np.array(gesture_trajectory)
 
     def plot_live_gestures(self):
         file = join(self.__dataset_path, "subject{}_{}.txt".format(self.__default_user, self.__default_session_id))
@@ -157,5 +202,13 @@ def plot_isolate_gestures():
     plt.show()
 
 
+def plot_continuous_data():
+    dataset = Skoda()
+    stream, labels, timestamps = dataset.load_continuous_dataset()
+    plot_creator.plot_continuous_data(stream, labels, timestamps)
+    plt.show()
+
+
 if __name__ == '__main__':
     plot_isolate_gestures()
+    # plot_continuous_data()

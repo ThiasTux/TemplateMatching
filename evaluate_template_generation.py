@@ -13,7 +13,7 @@ from performance_evaluation import fitness_functions as ftf
 from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
 from training.templates.es_templates_generator import ESTemplateGenerator, ESTemplateThresholdsGenerator
 
-test_filepath = "test/test_synthetic4_1.csv"
+test_filepath = "test/templates/test_synthetic4_1.csv"
 test_info = ["dataset_choice", "num_test", "use_null", "write_to_file", "user", "params", "thresholds",
              "null_class_percentage", "num_individuals", "rank", "elitism", "iterations", "fitness_function",
              "crossover_probability", "mutation_probability", "inject_templates", "optimize_thresholds", "use_encoding",
@@ -36,6 +36,7 @@ for index, td in test_data.iterrows():
     classes = [int(c) for c in classes.replace("[", "").replace("]", "").split(",")]
     params = [int(p) for p in params.replace("[", "").replace("]", "").split(",")]
     thresholds = [int(t) for t in thresholds.replace("[", "").replace("]", "").split(",")]
+    timestamp_tests = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
     # Run tests
     for test in range(num_test):
         # Load data (only if data are not loaded already)
@@ -94,7 +95,7 @@ for index, td in test_data.iterrows():
             print("{} - {}".format(c, chromosomes))
             if optimize_thresholds:
                 optimizer = ESTemplateThresholdsGenerator(streams, tmp_labels, params, c, chromosomes, bit_values,
-                                                          chosen_template=templates[i],
+                                                          chosen_template=templates[i], use_encoding=use_encoding,
                                                           num_individuals=num_individuals, rank=rank,
                                                           elitism=elitism,
                                                           iterations=iterations,
@@ -104,7 +105,7 @@ for index, td in test_data.iterrows():
             else:
                 optimizer = ESTemplateGenerator(streams, tmp_labels, params, thresholds[i], c, chromosomes,
                                                 bit_values,
-                                                chosen_template=templates[i],
+                                                chosen_template=templates[i], use_encoding=use_encoding,
                                                 num_individuals=num_individuals, rank=rank,
                                                 elitism=elitism,
                                                 iterations=iterations,
@@ -176,6 +177,5 @@ for index, td in test_data.iterrows():
         results_paths.append(output_file_path.replace(".txt", ""))
     test_data.loc[index, 'results_paths'] = str(results_paths)
     test_data.loc[index, 'results_scores'] = str(results_scores)
-    test_data.to_csv(test_filepath.replace(".csv", "{}_results.csv".format(
-        datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S'))))
+    test_data.to_csv(test_filepath.replace(".csv", "{}_results.csv".format(timestamp_tests)))
 print("Done!")

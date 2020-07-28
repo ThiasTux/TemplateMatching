@@ -9,10 +9,12 @@ from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining, WLCSSCud
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 300
+    dataset_choice = 'skoda'
+    outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     isolated_case = True  # True for isolate, False for continuous
     save_img = False
+    use_encoding = False
 
     use_null = False
     user = None
@@ -20,121 +22,111 @@ if __name__ == '__main__':
     use_evolved_thresholds = False
 
     write_to_file = True
-    if dataset_choice == 100:
-        use_encoding = False
-        classes = [3001, 3003, 3013, 3018]
-        # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
-        output_folder = "outputs/training/cuda/skoda/params"
-        sensor = None
-        null_class_percentage = 0.6
-    elif dataset_choice == 101:
-        use_encoding = False
+    if dataset_choice == 'skoda':
+        use_encoding = '3d'
+        # classes = [3001, 3003, 3013, 3018]
         classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
-        # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
-        output_folder = "outputs/training/cuda/skoda/params"
-        sensor = None
+        output_folder = "{}/skoda/params".format(outputs_path)
+        params = [57, 2, 8]
+        thresholds = [370, 353, 220, 233, 307, 463, 228, 135]
+        null_class_percentage = 0.6
+        wsize = 500
+        temporal_merging_window = 50
+        tolerance_window = 10
+    elif dataset_choice == 'skoda_mini':
+        use_encoding = False
+        classes = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
+        output_folder = "{}/skoda_mini/params".format(outputs_path)
         null_class_percentage = 0.6
         params = [25, 6, 1]
         thresholds = [22, 169, 29, 283, 284, 311, 225, 138]
-        es_results_file = "outputs/training/cuda/skoda_old/templates/templates_2019-03-27_18-24-04"
+        es_results_file = "{}/skoda_mini/templates/templates_2019-03-27_18-24-04".format(outputs_path)
         wsize = 1000
         temporal_merging_window = 5
         tolerance_window = 5
-    elif dataset_choice == 200 or dataset_choice == 201 or dataset_choice == 202 or dataset_choice == 203 \
-            or dataset_choice == 204 or dataset_choice == 205 or dataset_choice == 211:
-        use_encoding = False
-        classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
+    elif dataset_choice == 'opportunity':
+        classes = [406516, 404516, 406505, 404505, 406519, 404519, 407521, 405506]
         # classes = [406516, 408512, 405506]
         # classes = [407521, 406520, 406505, 406519]
-        output_folder = "outputs/training/cuda/opportunity/params"
+        output_folder = "{}/opportunity/params".format(outputs_path)
         user = 3
-        params = [28, 3, 2]
-        thresholds = [206, 456, 906, 1005, 588, 892, 996, 794, 815, 254, 586]
+        params = [33, 9, 2]
+        thresholds = [480, 2036, 921, 2038, 815, 1477, 1797, 0]
         wsize = 500
-        es_results_file = "outputs/training/cuda/opportunity/templates/templates_2019-04-17_16-33-36"
-    elif dataset_choice == 300:
-        use_encoding = False
+        es_results_file = "{}/opportunity/templates/templates_2019-04-17_16-33-36".format(outputs_path)
+    elif dataset_choice == 'hci_guided':
         classes = [49, 50]
-        output_folder = "outputs/training/cuda/hci_guided/params"
-        user = 1
+        output_folder = "{}/hci_guided/params".format(outputs_path)
         params = [31, 11, 4]
         thresholds = [2, 118]
         wsize = 5
         temporal_merging_window = 5
         null_class_percentage = 0.5
-    elif dataset_choice == 400:
-        use_encoding = False
+        es_results_file = "{}/hci_guided/templates/templates_2019-07-09_15-13-01".format(outputs_path)
+    elif dataset_choice == 'hci_freehand':
         classes = [49, 50, 51, 52, 53]
-        output_folder = "outputs/training/cuda/hci_freehand/params"
-        sensor = 52
+        output_folder = "{}/hci_freehand/params".format(outputs_path)
     elif dataset_choice == 500:
-        use_encoding = False
         classes = [0, 7]
-        output_folder = "outputs/training/cuda/notmnist/params"
-        sensor = 0
+        output_folder = "{}/notmnist/params".format(outputs_path)
         null_class_percentage = 0
-    elif dataset_choice == 700:
-        use_encoding = False
+    elif dataset_choice == 'synthetic1':
         classes = [1001, 1002, 1003, 1004]
-        output_folder = "outputs/training/cuda/synthetic/params"
+        output_folder = "{}/synthetic/params".format(outputs_path)
         null_class_percentage = 0
         params = [7, 5, 1]
         thresholds = [-2500, -2000, -4000, -2200]
-        es_results_file = "outputs/training/cuda/synthetic/templates/templates_2019-03-08_12-04-51"
-    elif dataset_choice == 701:
-        use_encoding = False
+        es_results_file = "{}/synthetic/templates/templates_2019-03-08_12-04-51".format(outputs_path)
+    elif dataset_choice == 'synthetic2':
         classes = [1001, 1002]
-        output_folder = "outputs/training/cuda/synthetic2/params"
+        output_folder = "{}/synthetic2/params".format(outputs_path)
         null_class_percentage = 0
         params = [28, 2, 0]
         thresholds = [991, 567]
-        es_results_file = "outputs/training/cuda/synthetic2/templates/templates_2019-04-11_16-58-37"
+        es_results_file = "{}/synthetic2/ templates/templates_2019-04-11_16-58-37".format(outputs_path)
 
     if isolated_case:
-        chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice, user=user,
-                                                                       classes=classes, extract_null=use_null)
+        templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice, classes=classes,
+                                                                      template_choice_method='mrt_lcs')
+        # Group streams by labels
+        streams_labels_sorted_idx = streams_labels.argsort()
+        streams = [streams[i] for i in streams_labels_sorted_idx]
+        streams_labels = streams_labels[streams_labels_sorted_idx]
     else:
         if not use_evolved_templates:
-            chosen_templates, instances, labels = dl.load_training_dataset(dataset_choice=dataset_choice, user=user,
-                                                                           classes=classes, extract_null=use_null)
-        stream = dl.load_continuous_dataset(dataset_choice=dataset_choice, user=user)
+            templates, _, _ = dl.load_training_dataset(dataset_choice=dataset_choice, classes=classes,
+                                                       template_choice_method='mrt_lcs')
+        stream, labels, timestamps = dl.load_continuous_dataset(dataset_choice=dataset_choice, user=user)
 
     print("Data loaded!")
 
     if use_evolved_templates:
         if es_results_file is not None:
             if use_evolved_thresholds:
-                chosen_templates, thresholds = dl.load_evolved_templates(es_results_file, classes,
-                                                                         use_evolved_thresholds)
+                templates, thresholds = dl.load_evolved_templates(es_results_file, classes,
+                                                                  use_evolved_thresholds)
             else:
-                chosen_templates = dl.load_evolved_templates(es_results_file, classes)
-
-    print("Templates loaded!")
+                templates = dl.load_evolved_templates(es_results_file, classes)
+        print("Templates loaded!")
 
     if isolated_case:
-        m_wlcss_cuda = WLCSSCudaParamsTraining(chosen_templates, instances, 1, False)
+        m_wlcss_cuda = WLCSSCudaParamsTraining(templates, streams, 1, use_encoding)
         mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
         m_wlcss_cuda.cuda_freemem()
-        tmp_labels = np.array(labels).reshape((len(instances), 1))
-        mss = np.concatenate((mss, tmp_labels), axis=1)
-        pfe.performance_evaluation_isolated(mss, thresholds, classes)
-        plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes,
+        pfe.performance_evaluation_isolated(mss, streams_labels, thresholds, classes)
+        plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes, streams_labels=streams_labels,
                                       title="Dataset: {} - {} - Evolved_templ: {} - Evolved_thres: {}".format(
                                           dataset_choice, "Isolated", use_evolved_templates, use_evolved_thresholds))
         # plt_creator.plot_gestures(dl.load_dataset(dataset_choice, classes), classes=classes)
     else:
-        m_wlcss_cuda = WLCSSCudaContinuous(chosen_templates, [stream], 1, False)
+        m_wlcss_cuda = WLCSSCudaContinuous(templates, [stream], 1, use_encoding)
         mss = m_wlcss_cuda.compute_wlcss(np.array([params]))
         m_wlcss_cuda.cuda_freemem()
-        plt_creator.plot_continuous_data(stream, classes)
-        tmp_mss = np.empty((mss.shape[0], mss.shape[1] + 2))
-        tmp_mss[:, 0] = stream[:, 0]
-        tmp_mss[:, -1] = stream[:, 2]
-        tmp_mss[:, 1:-1] = mss
-        plt_creator.plot_continuous_mss(tmp_mss, classes, thresholds, peaks=find_peaks(tmp_mss),
+        plt_creator.plot_continuous_data(stream, labels, timestamps)
+        plt_creator.plot_continuous_mss(mss, labels, timestamps, classes, thresholds, peaks=find_peaks(mss),
                                         title="Dataset: {} - {} - Evolved_templ: {} - Evolved_thres: {}".format(
                                             dataset_choice, "Continuous", use_evolved_templates,
                                             use_evolved_thresholds))
-        pfe.performance_evaluation_continuous(tmp_mss, thresholds, classes, wsize=wsize)
+        pfe.performance_evaluation_continuous(mss, labels, timestamps, thresholds, classes, wsize=wsize)
     plt.show()
     print("End!")

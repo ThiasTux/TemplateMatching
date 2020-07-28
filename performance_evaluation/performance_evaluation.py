@@ -4,14 +4,14 @@ import itertools
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score, accuracy_score
 from sklearn.preprocessing import minmax_scale
 
 colors_key = ['blue', 'red', 'green', 'orange', 'magenta', 'brown', 'cyan', 'yellow', 'steelblue', 'crimson',
               'mediumspringgreen']
 
 
-def performance_evaluation_isolated(matching_scores, thresholds, classes, compute_conf_matrix=True,
+def performance_evaluation_isolated(matching_scores, streams_labels, thresholds, classes, compute_conf_matrix=True,
                                     print_results=True):
     num_classes = len(classes)
     num_instances = matching_scores.shape[0]
@@ -22,7 +22,7 @@ def performance_evaluation_isolated(matching_scores, thresholds, classes, comput
     for j in range(num_classes):
         for i in range(num_instances):
             act = classes[j]
-            label = matching_scores[i, -1]
+            label = streams_labels[i]
             test_matching_scores = matching_scores[i, j]
             if test_matching_scores >= thresholds[j] and act == label:
                 true_positive[j] += 1
@@ -41,7 +41,7 @@ def performance_evaluation_isolated(matching_scores, thresholds, classes, comput
     f1 = [2 / (1 / recall[k] + 1 / precision[k]) for k in range(num_classes)]
     f1.append(2 / (1 / recall[num_classes] + 1 / precision[num_classes]))
     if compute_conf_matrix:
-        cfm = compute_confusion_matrix_isolated(matching_scores, thresholds, classes)
+        cfm = compute_confusion_matrix_isolated(matching_scores, streams_labels, thresholds, classes)
     else:
         cfm = None
     if print_results:
@@ -52,17 +52,30 @@ def performance_evaluation_isolated(matching_scores, thresholds, classes, comput
     return [accuracy, precision, recall, f1, cfm]
 
 
-def compute_confusion_matrix_isolated(matching_scores, thresholds, classes, save_fig=False):
-    actual_labels = matching_scores[:, -1]
-    scores = matching_scores[:, :-1] - thresholds
-    perc_scores = minmax_scale(scores, axis=1)
-    labels = np.array([classes[i] for i in np.argmax(perc_scores, axis=1)])
-    cfm = confusion_matrix(actual_labels, labels.astype(int))
+def compute_confusion_matrix_isolated(matching_scores, streams_labels, thresholds, classes, save_fig=False):
+    tmp_streams_labels = np.copy(streams_labels)
+    for i in range(len(tmp_streams_labels)):
+        if not (tmp_streams_labels[i] in classes):
+            tmp_streams_labels[i] = 0
+    scores = matching_scores - thresholds
+    # perc_scores = minmax_scale(scores, axis=1)
+    perc_scores_clip = scores.clip(min=0)
+    labels = np.zeros(len(perc_scores_clip))
+    for i in range(len(perc_scores_clip)):
+        if sum(perc_scores_clip[i]) > 0:
+            labels[i] = classes[np.argmax(perc_scores_clip[i])]
+    # labels = np.array([classes[i] for i in np.argmax(perc_scores, axis=1)])
+    print("Acc: {}".format(accuracy_score(tmp_streams_labels, labels)))
+    print("Prec: {}".format(precision_score(tmp_streams_labels, labels, average='macro')))
+    print("Rec: {}".format(recall_score(tmp_streams_labels, labels, average='macro')))
+    print("F1: {}".format(f1_score(tmp_streams_labels, labels, average='macro')))
+    cfm = confusion_matrix(tmp_streams_labels, labels.astype(int))
     cfm = cfm.astype('float') / cfm.sum(axis=1)[:, np.newaxis]
     cfm = np.transpose(cfm)
     plt.figure()
     plt.imshow(cfm, interpolation='nearest', cmap=plt.cm.Blues)
     plt.title("Confusion matrix - Isolated ")
+    classes.append(0)
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes)
     plt.yticks(tick_marks, classes)
@@ -81,7 +94,7 @@ def compute_confusion_matrix_isolated(matching_scores, thresholds, classes, save
     return cfm
 
 
-def performance_evaluation_continuous(matching_scores, thresholds, classes, wsize=500,
+def performance_evaluation_continuous(matching_scores, labels, timestamps, thresholds, classes, wsize=500,
                                       temporal_merging_window=5, tolerance_window=5, compute_conf_matrix=True,
                                       print_results=True):
     multiple_matches = 0
@@ -89,19 +102,20 @@ def performance_evaluation_continuous(matching_scores, thresholds, classes, wsiz
     predicted_labels = np.array([], dtype=int)
     actual_labels = np.array([], dtype=int)
     time = np.array([])
-    start_time = matching_scores[1, 0]
-    end_time = matching_scores[-1, 0]
-    matching_scores[:, 1:-1] = (matching_scores[:, 1:-1] - thresholds) / thresholds
+    start_time = timestamps[0]
+    end_time = timestamps[-1]
+    matching_scores = (matching_scores - thresholds) / thresholds
     for i in np.arange(start_time, end_time, int(wsize * w_overlap)):
         end_w = i + wsize
-        x_scores = matching_scores[np.where((matching_scores[:, 0] > i) & (matching_scores[:, 0] < end_w))[0]]
+        x_scores = matching_scores[np.where((timestamps > i) & (timestamps < end_w))[0]]
         if len(x_scores) > 0:
-            time = np.append(time, x_scores[-1, 0])
-            actual_labels = np.append(actual_labels, x_scores[-1, -1])
-            tmp = x_scores[:, 1:-1]
+            x_label = labels[np.where((timestamps > i) & (timestamps < end_w))[0]]
+            x_times = timestamps[np.where((timestamps > i) & (timestamps < end_w))[0]]
+            time = np.append(time, x_times[-1])
+            actual_labels = np.append(actual_labels, x_label[-1])
+            tmp = x_scores
             tmp[tmp < 0] = 0
-            time_x_scores = x_scores[:, 0].reshape(len(x_scores))
-            accumulated_wscores = np.trapz(tmp, time_x_scores - time_x_scores[0], axis=0)
+            accumulated_wscores = np.trapz(tmp, x_times - x_times[0], axis=0)
             if np.sum(accumulated_wscores) > 0:
                 pred_class = classes[np.argmax(accumulated_wscores)]
                 multiple_matches += np.count_nonzero(accumulated_wscores == np.max(accumulated_wscores)) - 1
@@ -231,7 +245,7 @@ def mat_eval(detected_events_dict, ground_truth_events_dict, classes, temporal_m
     return [accuracy, precision, recall, f1, tpr, fpr, cfm]
 
 
-def compute_confusion_matrix_continuous(flagged_events, classes):
+def compute_confusion_matrix_continuous(flagged_events, classes, save_fig=False):
     num_classes = len(classes)
     # Main confusion matrix
     cf_matrix = np.zeros([num_classes + 1, num_classes + 1])
@@ -307,35 +321,39 @@ def compute_confusion_matrix_continuous(flagged_events, classes):
     print("FP-merge array: ")
     print(fpm_array)
 
-    plt.figure()
-    plt.imshow(cf_matrix_normalized, interpolation='nearest', cmap=plt.cm.Blues)
-    plt.title("Confusion matrix - Stream", y=1.05)
+    fig = plt.figure()
+    subplt = fig.add_subplot(111)
+    subplt.imshow(cf_matrix_normalized, interpolation='nearest', cmap=plt.cm.Blues)
+    fig.suptitle("Confusion matrix - Stream", y=1.05)
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes)
+    subplt.set_xticks(tick_marks)
+    subplt.set_xticklabels(classes)
     ax = plt.gca()
     ax.xaxis.tick_top()
-    plt.yticks(tick_marks, classes)
-    plt.xlabel('True label')
-    plt.ylabel('Predicted label')
-    plt.colorbar()
+    subplt.set_yticks(tick_marks)
+    subplt.set_yticklabels(classes)
+    subplt.set_xlabel('True label')
+    subplt.set_ylabel('Predicted label')
+    # plt.colorbar()
     thresh = cf_matrix.max() / 2.
     offset = 0.20
     for i, j in itertools.product(range(cf_matrix.shape[0]), range(cf_matrix.shape[1])):
         # True positive and False positive
-        plt.text(j, i, "{:04.2f}".format(cf_matrix[i, j]),
-                 horizontalalignment="center",
-                 color="white" if cf_matrix[i, j] > thresh else "black")
+        subplt.text(j, i, "{:04.2f}".format(cf_matrix[i, j]),
+                    horizontalalignment="center",
+                    color="white" if cf_matrix[i, j] > thresh else "black")
         if i == j and i != num_classes:
-            plt.text(j + offset, i - offset, "{:04.2f}".format(fpm_array[i]),
-                     horizontalalignment="center",
-                     color="white" if cf_matrix[i, j] > thresh else "blue")
+            subplt.text(j + offset, i - offset, "{:04.2f}".format(fpm_array[i]),
+                        horizontalalignment="center",
+                        color="white" if cf_matrix[i, j] > thresh else "blue")
     for i, j in itertools.product(range(fpi_matrix.shape[0]), range(fpi_matrix.shape[1])):
-        plt.text(j + offset, i + offset, "{:04.2f}".format(fpi_matrix[i, j]),
-                 horizontalalignment="center",
-                 color="yellow" if cf_matrix[i, j] > thresh else "red")
-    plt.savefig(
-        "/home/mathias/Documents/Academic/PhD/Publications/2018/ISWC/OptimizationWLCSS/figures/conf_matrix_continuous.eps",
-        bbox_inches='tight', format='eps', dpi=1000)
+        subplt.text(j + offset, i + offset, "{:04.2f}".format(fpi_matrix[i, j]),
+                    horizontalalignment="center",
+                    color="yellow" if cf_matrix[i, j] > thresh else "red")
+    if save_fig:
+        plt.savefig(
+            "/home/mathias/Documents/Academic/PhD/Publications/2018/ISWC/OptimizationWLCSS/figures/conf_matrix_continuous.eps",
+            bbox_inches='tight', format='eps', dpi=1000)
     return cf_matrix
 
 

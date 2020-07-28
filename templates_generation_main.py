@@ -17,7 +17,7 @@ from training.templates.es_templates_generator import ESTemplateGenerator, ESTem
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 'skoda'
+    dataset_choice = 'uwave_x'
     outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     num_test = 1
@@ -27,10 +27,11 @@ if __name__ == '__main__':
     params = list()
     thresholds = list()
     null_class_percentage = 0.5
+    encoding = False
 
-    num_individuals = 128
-    rank = 32
-    elitism = 5
+    num_individuals = 256
+    rank = 16
+    elitism = 3
     iterations = 500
     fitness_function = 86
     crossover_probability = 0.3
@@ -39,52 +40,52 @@ if __name__ == '__main__':
     optimize_thresholds = False
 
     if dataset_choice == 'skoda':
-        use_encoding = '3d'
+        encoding = '3d'
         # classes = [3001, 3003, 3013, 3018]
         classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
-        output_folder = "{}/skoda/params".format(outputs_path)
+        output_folder = "{}/skoda/templates".format(outputs_path)
         null_class_percentage = 0.6
         params = [57, 2, 8]
         thresholds = [370, 353, 220, 233, 307, 463, 228, 135]
         bit_values = 15
     elif dataset_choice == 'skoda_mini':
-        use_encoding = False
+        encoding = False
         classes = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
-        output_folder = "{}/skoda_mini/params".format(outputs_path)
+        output_folder = "{}/skoda_mini/templates".format(outputs_path)
         null_class_percentage = 0.6
         params = [31, 0, 0]
         thresholds = [471, 523, 441, 423]
         bit_values = 27
     elif dataset_choice == 'skoda_old':
-        use_encoding = False
+        encoding = False
         classes = [3001, 3003, 3013, 3018]
         # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
-        output_folder = "{}/skoda_old/params".format(outputs_path)
+        output_folder = "{}/skoda_old/templates".format(outputs_path)
         params = [31, 0, 0]
         thresholds = [471, 523, 441, 423]
         bit_values = 27
     elif dataset_choice == 'opportunity' or dataset_choice == 201 or dataset_choice == 202 or dataset_choice == 203 \
             or dataset_choice == 204 or dataset_choice == 205 or dataset_choice == 211:
-        use_encoding = False
+        encoding = False
         classes = [406516, 404516, 406505, 404505, 406519, 404519, 407521, 405506]
         # classes = [406516, 408512, 405506]
         # classes = [407521, 406520, 406505, 406519]
         user = None
-        output_folder = "{}/opportunity/params".format(outputs_path)
+        output_folder = "{}/opportunity/templates".format(outputs_path)
         null_class_percentage = 0.5
         params = [42, 6, 4]
         thresholds = [460, 979, 968, 1733, 1657, 1784, 1199, 976]
         bit_values = 128
     elif dataset_choice == 210:
-        use_encoding = False
+        encoding = False
         # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
         # classes = [406516, 408512, 405506]
         # classes = [407521, 406520, 406505, 406519]
-        output_folder = "{}/hci_guided/params".format(outputs_path)
+        output_folder = "{}/hci_guided/templates".format(outputs_path)
         sensor = None
         null_class_percentage = 0.8
     elif dataset_choice == 'hci_guided':
-        use_encoding = False
+        encoding = False
         classes = [49, 50, 51, 52, 53]
         output_folder = "outputs/training/cuda/hci_guided/templates"
         params = [61, 24, 2]
@@ -92,59 +93,66 @@ if __name__ == '__main__':
         bit_values = 128
         null_class_percentage = 0.5
     elif dataset_choice == 'hci_freehand':
-        use_encoding = False
+        encoding = False
         classes = [49, 50, 51, 52, 53]
-        output_folder = "{}/hci_freehand/params".format(outputs_path)
+        output_folder = "{}/hci_freehand/templates".format(outputs_path)
         sensor = 52
     elif dataset_choice == 500:
-        use_encoding = False
+        encoding = False
         classes = [0, 7]
-        output_folder = "{}/notmnist/params".format(outputs_path)
+        output_folder = "{}/notmnist/templates".format(outputs_path)
         sensor = 0
         null_class_percentage = 0
     elif dataset_choice == 'synthetic1':
-        use_encoding = False
+        encoding = False
         classes = [1001, 1002, 1003, 1004]
-        output_folder = "{}/synthetic/params".format(outputs_path)
+        output_folder = "{}/synthetic/templates".format(outputs_path)
         null_class_percentage = 0
         params = [7, 5, 1]
         thresholds = [-3466, -1576, -15231, -4022]
         bit_values = 128
     elif dataset_choice == 'synthetic2':
-        use_encoding = False
+        encoding = False
         classes = [1001, 1002]
-        output_folder = "{}/synthetic2/params".format(outputs_path)
+        output_folder = "{}/synthetic2/templates".format(outputs_path)
         null_class_percentage = 0
         params = [43, 2, 63]
         thresholds = [5886, 4756]
         bit_values = 128
     elif dataset_choice == 'synthetic3':
-        use_encoding = False
+        encoding = False
         classes = [1001, 1002]
-        output_folder = "{}/synthetic3/params".format(outputs_path)
+        output_folder = "{}/synthetic3/templates".format(outputs_path)
         null_class_percentage = 0
         params = [60, 2, 6]
         thresholds = [342, 364]
         bit_values = 64
     elif dataset_choice == 'synthetic4':
-        use_encoding = False
+        encoding = False
         classes = [1001, 1002, 1003, 1004]
-        output_folder = "{}/synthetic4/params".format(outputs_path)
+        output_folder = "{}/synthetic4/templates".format(outputs_path)
         null_class_percentage = 0
         params = [60, 4, 0]
         thresholds = [5534, 165, 3058, 4534]
         bit_values = 64
     elif dataset_choice == 'hci_table':
-        use_encoding = '2d'
+        encoding = '2d'
         classes = [i for i in range(1, 5)]
-        output_folder = "{}/hci_table/params".format(outputs_path)
+        output_folder = "{}/hci_table/templates".format(outputs_path)
         params = [55, 54, 0]
         thresholds = [918, 929, 842, 883]
         bit_values = 8
     elif dataset_choice == 'shl_preview':
-        use_encoding = False
+        encoding = False
         classes = [1, 2, 4, 7, 8]
-        output_folder = "{}/shl_preview/params".format(outputs_path)
+        output_folder = "{}/shl_preview/templates".format(outputs_path)
+        null_class_percentage = 0.5
+    elif dataset_choice == 'uwave_x':
+        output_folder = "{}/uwave_x/templates".format(outputs_path)
+        classes = [1]
+        params = [56, 4, 4]
+        thresholds = [1339]
+        bit_values = 64
         null_class_percentage = 0.5
 
     if inject_templates:
@@ -200,7 +208,7 @@ if __name__ == '__main__':
         print("{} - {}".format(c, chromosomes))
         if optimize_thresholds:
             optimizer = ESTemplateThresholdsGenerator(streams, tmp_labels, params, c, chromosomes, bit_values,
-                                                      chosen_template=templates[i], use_encoding=use_encoding,
+                                                      chosen_template=templates[i], use_encoding=encoding,
                                                       num_individuals=num_individuals, rank=rank,
                                                       elitism=elitism,
                                                       iterations=iterations,
@@ -209,7 +217,7 @@ if __name__ == '__main__':
                                                       mt_p=mutation_probability)
         else:
             optimizer = ESTemplateGenerator(streams, tmp_labels, params, thresholds[i], c, chromosomes, bit_values,
-                                            chosen_template=templates[i], use_encoding=use_encoding,
+                                            chosen_template=templates[i], use_encoding=encoding,
                                             num_individuals=num_individuals, rank=rank,
                                             elitism=elitism,
                                             iterations=iterations,
@@ -266,12 +274,12 @@ if __name__ == '__main__':
         outputconffile.write("Thresholds: {}\n".format(thresholds))
         outputconffile.write("Null class extraction: {}\n".format(use_null))
         outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
-        outputconffile.write("Use encoding: {}\n".format(use_encoding))
+        outputconffile.write("Use encoding: {}\n".format(encoding))
         outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
     print("Results written")
     print(output_file_path.replace(".txt", ""))
 
-    m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, streams, 1, use_encoding)
+    m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, streams, 1, encoding)
     mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
     m_wlcss_cuda.cuda_freemem()
 

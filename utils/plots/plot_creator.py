@@ -225,9 +225,11 @@ def lighten_color(color, amount=0.5):
     return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
 
 
-def plot_isolated_mss(mss, thresholds, dataset_choice, classes, stream_labels=None, title=None):
+def plot_isolated_mss(mss, thresholds, dataset_choice, classes, streams_labels=None, title=None):
     num_instances = mss.shape[0]
     num_templates = mss.shape[1]
+    stream_labels_values = sorted(np.unique(streams_labels))
+    color_stream_labels = [stream_labels_values.index(s) for s in streams_labels]
     if len(thresholds) != num_templates:
         print("Not enough thresholds!")
         return None
@@ -239,10 +241,10 @@ def plot_isolated_mss(mss, thresholds, dataset_choice, classes, stream_labels=No
     x = np.arange(len(mss))
     for t in range(num_templates):
         subplt = fig.add_subplot(num_templates, 1, t + 1)
-        if stream_labels is None:
-            subplt.scatter(x, mss[:, t], markersize=3)
+        if streams_labels is None:
+            subplt.scatter(x, mss[:, t], s=3)
         else:
-            subplt.scatter(x, mss[:, t], c=stream_labels, s=10)
+            subplt.scatter(x, mss[:, t], c=color_stream_labels, s=10, cmap=plt.get_cmap('tab20'))
         subplt.set_title("{}".format(classes[t]))
         subplt.axes.axhline(thresholds[t], color='orange')
 
@@ -277,61 +279,49 @@ def plot_bluesense_data(input_path, channel):
             # subplt.plot(data_time, x_data[::50], linewidth=0.5)
 
 
-def plot_continuous_data(data, classes, save_fig=False):
+def plot_continuous_data(data, labels, timestamps, save_fig=False):
     fig = plt.figure()
-    num_subplt = len(classes)
-    timestamps = data[:, 0]
-    for i, c in enumerate(classes):
-        labels = np.copy(data[:, -2])
-        labels[labels != c] = 0
-        tmp_labels = labels[1:] - labels[0:-1]
-        start_idx = np.where(tmp_labels > 0)[0]
-        end_idx = np.where(tmp_labels < 0)[0]
-        subplt = fig.add_subplot(num_subplt, 1, i + 1)
-        subplt.set_title("{}".format(c))
-        subplt.plot(timestamps, data[:, 1], linewidth=0.5)
-        for start_act, end_act in zip(start_idx, end_idx):
-            subplt.add_patch(
-                patches.Rectangle(
-                    (timestamps[start_act], -0.5),
-                    timestamps[end_act] - timestamps[start_act],
-                    128,
-                    facecolor="y",
-                    alpha=0.5,
-                    zorder=10
-                )
-            )
+    classes = sorted(np.unique(labels))
+    if classes[0] == 0:
+        classes[0] = classes[1] - 1
+        labels_null = np.where(labels == 0)[0]
+        labels[labels_null] = classes[1] - 1
+    data_subplt = fig.add_subplot(211)
+    labels_subplt = fig.add_subplot(212, sharex=data_subplt)
+    data_subplt.plot(timestamps, data, linewidth=0.5)
+    labels_subplt.plot(timestamps, labels, '.')
 
 
-def plot_continuous_mss(mss, classes, thresholds, peaks=None, title=""):
+def plot_continuous_mss(mss, labels, timestamps, classes, thresholds, peaks=None, title=""):
     fig = plt.figure()
     fig.suptitle(title)
     num_subplt = len(classes)
-    timestamps = mss[:, 0]
     for i, c in enumerate(classes):
-        labels = np.copy(mss[:, -2])
-        labels[labels != c] = 0
-        tmp_labels = labels[1:] - labels[0:-1]
-        start_idx = np.where(tmp_labels > 0)[0]
-        end_idx = np.where(tmp_labels < 0)[0]
+        tmp_labels = np.copy(labels)
+        tmp_labels[tmp_labels != c] = 0
+        tmp_labels_diffs = tmp_labels[1:] - tmp_labels[0:-1]
+        start_idx = np.where(tmp_labels_diffs > 0)[0]
+        end_idx = np.where(tmp_labels_diffs < 0)[0]
         subplt = fig.add_subplot(num_subplt, 1, i + 1)
         subplt.set_title("{}".format(c))
-        subplt.plot(timestamps, mss[:, i + 1], linewidth=0.5)
+        subplt.plot(timestamps, mss[:, i], linewidth=0.5)
+        min_mss = min(mss[:, i])
+        max_mss = max(mss[:, i])
         subplt.axes.axhline(thresholds[i], color='orange')
         for start_act, end_act in zip(start_idx, end_idx):
             subplt.add_patch(
                 patches.Rectangle(
-                    (timestamps[start_act], -0.5),
+                    (timestamps[start_act], min_mss),
                     timestamps[end_act] - timestamps[start_act],
-                    128,
+                    max_mss - min_mss,
                     facecolor="y",
                     alpha=0.5,
                     zorder=10
                 )
             )
         if peaks is not None:
-            y = mss[peaks[i], i + 1]
-            x = mss[peaks[i], 0]
+            y = mss[peaks[i], i]
+            x = timestamps[peaks[i]]
             subplt.plot(x, y, 'x', color='r', markersize=5)
 
 

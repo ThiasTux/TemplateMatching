@@ -4,7 +4,7 @@ from scipy.signal import find_peaks_cwt
 
 def find_peaks(matching_scores):
     # Peaks found using scipy signal library
-    peaks = [find_peaks_cwt(matching_scores[:, i], np.arange(70, 150)) for i in range(1, matching_scores.shape[1])]
+    peaks = [find_peaks_cwt(matching_scores[:, i], np.arange(70, 150)) for i in range(0, matching_scores.shape[1])]
     # Peaks found using Search Max for local maxima
     # peaks = wlcss.find_local_maxima(matching_scores[i], wsize=wsize)
     # if len(peaks) > 0:

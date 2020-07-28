@@ -1,9 +1,10 @@
 from data_processing.hcitable import HCITable
-from data_processing.opportunity import OpportunityDataset
+from data_processing.opportunity import OpportunityDataset, OpportunityDatasetEncoded
 from data_processing.shl import SHLPreview
 from data_processing.skoda import Skoda
 from data_processing.skoda_mini import SkodaMini
 from data_processing.synthetic import Synthetic1, Synthetic2, Synthetic3, Synthetic4
+from data_processing.ucr_dataset import UWaveGestureLibraryX
 from data_processing.utd_mhad import UTDMhad
 from data_processing.hci import HCIGuided
 from utils import distance_measures as dtm
@@ -21,6 +22,8 @@ def load_training_dataset(dataset_choice='opportunity', template_choice_method='
         dataset = SkodaMini()
     elif dataset_choice == 'opportunity':
         dataset = OpportunityDataset()
+    elif dataset_choice == 'opportunity_encoded':
+        dataset = OpportunityDatasetEncoded()
     elif dataset_choice == 'utd_mhad':
         dataset = UTDMhad()
     elif dataset_choice == 'hci_guided':
@@ -37,6 +40,8 @@ def load_training_dataset(dataset_choice='opportunity', template_choice_method='
         dataset = Synthetic4()
     elif dataset_choice == 'shl_preview':
         dataset = SHLPreview()
+    elif dataset_choice == 'uwave_x':
+        dataset = UWaveGestureLibraryX()
 
     streams, labels = dataset.load_isolated_dataset()
 
@@ -77,3 +82,38 @@ def load_training_dataset(dataset_choice='opportunity', template_choice_method='
         pass
 
     return templates, streams, labels
+
+
+def load_continuous_dataset(dataset_choice='opportunity', template_choice_method='random', classes=None, seed=42,
+                            extract_null=False, null_class_percentage=0.5, num_gestures=None, user=None):
+    # Load the dataset
+    if dataset_choice == 'skoda':
+        dataset = Skoda()
+    elif dataset_choice == 'skoda_mini':
+        dataset = SkodaMini()
+    elif dataset_choice == 'opportunity':
+        dataset = OpportunityDataset()
+    elif dataset_choice == 'utd_mhad':
+        dataset = UTDMhad()
+    elif dataset_choice == 'hci_guided':
+        dataset = HCIGuided()
+    elif dataset_choice == 'hci_table':
+        dataset = HCITable()
+    elif dataset_choice == 'synthetic1':
+        dataset = Synthetic1()
+    elif dataset_choice == 'synthetic2':
+        dataset = Synthetic2()
+    elif dataset_choice == 'synthetic3':
+        dataset = Synthetic3()
+    elif dataset_choice == 'synthetic4':
+        dataset = Synthetic4()
+    elif dataset_choice == 'shl_preview':
+        dataset = SHLPreview()
+
+    streams, labels, timestamps = dataset.load_continuous_dataset()
+
+    return streams, labels, timestamps
+
+
+def load_evolved_templates(es_results_file, classes, use_evolved_thresholds):
+    return None

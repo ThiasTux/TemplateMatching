@@ -21,40 +21,34 @@ if __name__ == '__main__':
     use_null = False
     write_to_file = True
     user = None
-    use_encoding = False
+    encoding = False
 
     num_individuals = 32
     bits_params = 6
     bits_thresholds = 11
-    rank = 10
+    rank = int(num_individuals / 3)
     elitism = 3
-    iterations = 1000
+    iterations = 250
     fitness_function = 'f1_acc'
     crossover_probability = 0.3
     mutation_probability = 0.1
 
     if dataset_choice == 'skoda':
-        use_encoding = '3d'
-        # classes = [3001, 3003, 3013, 3018]
-        classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
+        encoding = '3d'
+        classes = [3001, 3003, 3013, 3018]
+        # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
         output_folder = "{}/skoda/params".format(outputs_path)
-        sensor = None
         null_class_percentage = 0.6
     elif dataset_choice == 'skoda_mini':
         classes = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
         output_folder = "{}/skoda_mini/params".format(outputs_path)
-        sensor = None
         null_class_percentage = 0.6
     elif dataset_choice == 'skoda_old':
-        use_encoding = False
         classes = [3001, 3003, 3013, 3018]
         # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
         output_folder = "{}/skoda_old/params".format(outputs_path)
-        sensor = None
         null_class_percentage = 0.6
-    elif dataset_choice == 'opportunity' or dataset_choice == 201 or dataset_choice == 202 or dataset_choice == 203 \
-            or dataset_choice == 204 or dataset_choice == 205 or dataset_choice == 211:
-        use_encoding = False
+    elif dataset_choice == 'opportunity':
         # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
         classes = [406516, 404516, 406505, 404505, 406519, 404519, 407521, 405506]
         # classes = [406516, 408512, 405506]
@@ -62,37 +56,30 @@ if __name__ == '__main__':
         user = 3
         output_folder = "{}/opportunity/params".format(outputs_path)
         null_class_percentage = 0.5
-    elif dataset_choice == 210:
-        use_encoding = False
-        # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
-        # classes = [406516, 408512, 405506]
-        # classes = [407521, 406520, 406505, 406519]
-        output_folder = "{}/opportunity/params".format(outputs_path)
-        sensor = None
-        null_class_percentage = 0.8
+    elif dataset_choice == 'opportunity_encoded':
+        encoding = '3d'
+        classes = [406516, 404516, 406505, 404505, 406519, 404519, 407521, 405506]
+        user = 3
+        output_folder = "{}/opportunity_encoded/params".format(outputs_path)
+        null_class_percentage = 0.5
     elif dataset_choice == 'hci_guided':
-        use_encoding = False
         classes = [49, 50]
         output_folder = "{}/hci_guided/params".format(outputs_path)
         null_class_percentage = 0.5
     elif dataset_choice == 'hci_freehand':
-        use_encoding = False
         classes = [49, 50, 51, 52, 53]
         output_folder = "{}/hci_freehand/params".format(outputs_path)
         sensor = 52
     elif dataset_choice == 500:
-        use_encoding = False
         classes = [0, 7]
         output_folder = "{}/notmnist/params".format(outputs_path)
         sensor = 0
         null_class_percentage = 0
     elif dataset_choice == 'synthetic1':
-        use_encoding = False
         classes = [1001, 1002, 1003, 1004]
         output_folder = "{}/synthetic/params".format(outputs_path)
         null_class_percentage = 0
     elif dataset_choice == 'synthetic2':
-        use_encoding = False
         classes = [1001, 1002]
         output_folder = "{}/synthetic2/params".format(outputs_path)
         null_class_percentage = 0
@@ -105,14 +92,17 @@ if __name__ == '__main__':
         output_folder = "{}/synthetic4/params".format(outputs_path)
         null_class_percentage = 0
     elif dataset_choice == 'hci_table':
-        use_encoding = '2d'
+        encoding = '2d'
         classes = [i for i in range(1, 35)]
         output_folder = "{}/hci_table/params".format(outputs_path)
         null_class_percentage = 0.5
     elif dataset_choice == 'shl_preview':
-        use_encoding = False
         classes = [1, 2, 4, 7, 8]
         output_folder = "{}/shl_preview/params".format(outputs_path)
+        null_class_percentage = 0.5
+    elif dataset_choice == 'uwave_x':
+        output_folder = "{}/uwave_x/params".format(outputs_path)
+        classes = [1]
         null_class_percentage = 0.5
 
     templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice, classes=classes,
@@ -137,10 +127,10 @@ if __name__ == '__main__':
     print("Fitness function: {}".format(fitness_function))
     print("Null class extraction: {}".format(use_null))
     print("Null class percentage: {}".format(null_class_percentage))
-    print("Use encoding: {}".format(use_encoding))
+    print("Use encoding: {}".format(encoding))
 
     optimizer = GAParamsOptimizer(templates, streams, streams_labels, classes,
-                                  use_encoding=use_encoding,
+                                  use_encoding=encoding,
                                   bits_parameters=bits_params,
                                   bits_thresholds=bits_thresholds,
                                   num_individuals=num_individuals, rank=rank,
@@ -178,7 +168,7 @@ if __name__ == '__main__':
         outputconffile.write("Bit thresholds: {}\n".format(bits_thresholds))
         outputconffile.write("Null class extraction: {}\n".format(use_null))
         outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
-        outputconffile.write("Use encoding: {}\n".format(use_encoding))
+        outputconffile.write("Use encoding: {}\n".format(encoding))
         outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
 
     with open(output_file_path, 'w') as outputfile:
@@ -190,7 +180,7 @@ if __name__ == '__main__':
     params = results[0:3]
     thresholds = results[3]
 
-    m_wlcss_cuda = WLCSSCudaParamsTraining(templates, streams, 1, use_encoding)
+    m_wlcss_cuda = WLCSSCudaParamsTraining(templates, streams, 1, encoding)
     mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
     m_wlcss_cuda.cuda_freemem()
 
