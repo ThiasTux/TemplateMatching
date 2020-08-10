@@ -77,14 +77,19 @@ def plot_gestures(data, labels, classes=None, use_labels_color=False, save_fig=F
             sub.plot(e)
 
 
-def plot_scores(input_paths, save_img=False, title=None, output_file=""):
+def plot_gascores(input_paths, save_img=False, title=None, output_file=""):
     fig = plt.figure(figsize=(13, 3))
     if title is not None:
         fig.suptitle(title)
     else:
-        fig.suptitle("Scores: {}")
+        fig.suptitle("Scores")
     subplt = fig.add_subplot(111)
     for input_path in input_paths:
+        with open("{}_conf.txt".format(input_path)) as conf_file:
+            conf_file.readline()
+            conf_file.readline()
+            conf_file.readline()
+            iterations = int(conf_file.readline().split(":")[1].strip())
         scores_files = [file for file in glob.glob(input_path + "*_scores.txt") if os.stat(file).st_size != 0]
         dataset_name = input_path.split("/")[10]
         max_scores = None
@@ -95,29 +100,71 @@ def plot_scores(input_paths, save_img=False, title=None, output_file=""):
                 max_scores = np.zeros([scores.shape[0], len(scores_files)])
             max_scores[:, i] = scores[:, 1]
         mean_scores = np.mean(max_scores, axis=1)
-        perc90 = np.percentile(mean_scores, 50)
-        perc90_idx = np.argmax(mean_scores >= perc90)
         std_scores = np.std(max_scores, axis=1)
         t = np.arange(len(mean_scores))
         p = subplt.plot(t, mean_scores, label=dataset_name)
         subplt.set_ylabel("Fitness score")
         subplt.set_xlabel("GA Iterations")
-        subplt.hlines(y=perc90, xmin=-25, xmax=t[perc90_idx], color='k', linestyle='dashed', zorder=10)
-        subplt.axvline(x=t[perc90_idx], ymax=perc90, color='k', linestyle='dashed')
-        # y = 0.86 for params, 0.66 for thresholds
-        subplt.text(t[perc90_idx] + (0 if dataset_name == "opportunity" else -12), -0.10, "{}".format(t[perc90_idx]),
-                    fontsize=14)
-        # x = -15 for params
-        dt = - 0.01 if dataset_name == "skoda" else 0.07
-        subplt.text(-23, perc90 - dt, "{:4.2f}".format(perc90), fontsize=14)
         subplt.fill_between(t, (mean_scores + std_scores / 2), (mean_scores - std_scores / 2),
                             color=lighten_color(p[0].get_color()))
-    subplt.set_ylim(0, 1)
-    subplt.set_xlim(-25, 520)
-    subplt.set_xticks(np.arange(0, 600, 100))
+    subplt.set_ylim(0, 1.1)
+    subplt.set_xlim(-10, iterations + int(iterations * 0.1))
+    subplt.set_xticks(np.arange(0, iterations + int(iterations * 0.1), int(iterations / 5)))
     plt.legend(loc=4)
     if save_img:
         plt.savefig(join(OUTPUT_PATH, output_file), bbox_inches='tight', format='eps', dpi=1200)
+
+
+def plot_perclass_gascores(input_paths, save_img=False, title=None, output_file=""):
+    fig = plt.figure(figsize=(13, 3))
+    if title is not None:
+        fig.suptitle(title)
+    else:
+        fig.suptitle("Scores")
+    subplt = fig.add_subplot(111)
+    for input_path in input_paths:
+        with open("{}_conf.txt".format(input_path)) as conf_file:
+            conf_file.readline()
+            classes = [int(i) for i in conf_file.readline().split(":")[1].strip().split(" ")]
+            conf_file.readline()
+            iterations = int(conf_file.readline().split(":")[1].strip())
+        for i, c in enumerate(classes):
+            scores_files = [file for file in glob.glob(input_path + "*_scores_{}.txt".format(c)) if
+                            os.stat(file).st_size != 0]
+            dataset_name = input_path.split("/")[10]
+            max_scores = None
+            for i in range(len(scores_files)):
+                file = scores_files[i]
+                scores = np.loadtxt(file, delimiter=",")
+                if max_scores is None:
+                    max_scores = np.zeros([scores.shape[0], len(scores_files)])
+                max_scores[:, i] = scores[:, 1]
+            mean_scores = np.mean(max_scores, axis=1)
+            std_scores = np.std(max_scores, axis=1)
+            t = np.arange(len(mean_scores))
+            p = subplt.plot(t, mean_scores, label=c)
+            perc90 = np.percentile(mean_scores, 90)
+            perc90_idx = np.argmax(mean_scores >= perc90)
+            annot_max(perc90_idx, perc90, subplt)
+            subplt.fill_between(t, (mean_scores + std_scores / 2), (mean_scores - std_scores / 2),
+                                color=lighten_color(p[0].get_color()))
+    subplt.set_ylim(0, 1.1)
+    subplt.set_xlim(-10, iterations + int(iterations * 0.1))
+    subplt.set_xticks(np.arange(0, iterations + int(iterations * 0.1), int(iterations / 5)))
+    plt.legend(loc=4)
+    if save_img:
+        plt.savefig(join(OUTPUT_PATH, output_file), bbox_inches='tight', format='eps', dpi=1200)
+
+
+def annot_max(xmax, ymax, ax=None):
+    text = "x={:.3f}, y={:.3f}".format(xmax, ymax)
+    if not ax:
+        ax = plt.gca()
+    bbox_props = dict(boxstyle="square,pad=0.3", fc="w", ec="k", lw=0.72)
+    arrowprops = dict(arrowstyle="->", connectionstyle="angle,angleA=0,angleB=60")
+    kw = dict(xycoords='data',
+              arrowprops=arrowprops, bbox=bbox_props, ha="right", va="top")
+    ax.annotate(text, xy=(xmax, ymax), **kw)
 
 
 def plot_templates_scores(input_path, save_img=False, title=None, output_file=""):
@@ -154,12 +201,9 @@ def plot_templates_scores(input_path, save_img=False, title=None, output_file=""
         subplt.text(-10, max_value + 0.02, "{:4.2f}".format(max_value))
         subplt.fill_between(t, mean_scores + std_scores / 2, mean_scores - std_scores / 2,
                             color=lighten_color(p_mean_color))
-    subplt.set_xticks([0, len(mean_scores)])
     subplt.set_ylabel("Score")
     subplt.set_xlabel("ES Iterations")
-    # subplt.set_ylim(-200, 1100)
-    # subplt.set_xlim(-10, 550)
-    subplt.set_xticks(np.arange(0, 600, 100))
+    subplt.set_xticks(np.arange(0, len(mean_scores) + 1, 100))
     plt.legend(loc=4)
     figManager = plt.get_current_fig_manager()
     figManager.window.showMaximized()
