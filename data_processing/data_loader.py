@@ -115,5 +115,20 @@ def load_continuous_dataset(dataset_choice='opportunity', template_choice_method
     return streams, labels, timestamps
 
 
-def load_evolved_templates(es_results_file, classes, use_evolved_thresholds):
-    return None
+def load_evolved_templates(es_results_file, classes, use_evolved_thresholds=False):
+    chosen_templates = [None for _ in classes]
+    thresholds = list()
+    for i, c in enumerate(classes):
+        file_path = es_results_file + "_{}_templates.txt".format(c)
+        with open(file_path, "r") as templates_file:
+            last_line = templates_file.readlines()[-1]
+            if use_evolved_thresholds:
+                template = np.array([int(v) for v in last_line.split(" ")[:-1]])
+                thresholds.append(int(last_line.split(" ")[-1]))
+            else:
+                template = np.array([int(v) for v in last_line.split(" ")])
+            chosen_templates[i] = template
+    if use_evolved_thresholds:
+        return chosen_templates, thresholds
+    else:
+        return chosen_templates

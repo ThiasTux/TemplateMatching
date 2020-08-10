@@ -4,15 +4,15 @@ Opportunity Dataset
 https://archive.ics.uci.edu/ml/datasets/OPPORTUNITY+Activity+Recognition
 """
 from os.path import join
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 from pyquaternion import Quaternion
 
+from data_processing.dataset_interface import Dataset
 from template_matching.encode_trajectories import normalize, encode_3d
 from utils.filter_data import butter_lowpass_filter
 from utils.plots import plot_creator
-
-from data_processing.dataset_interface import Dataset
 
 
 class OpportunityDataset(Dataset):

@@ -33,6 +33,7 @@ if __name__ == '__main__':
         wsize = 500
         temporal_merging_window = 50
         tolerance_window = 10
+        es_results_file = "{}/skoda/templates/zeus_templates_2020-07-29_17-54-30".format(outputs_path)
     elif dataset_choice == 'skoda_mini':
         use_encoding = False
         classes = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
@@ -62,7 +63,7 @@ if __name__ == '__main__':
         wsize = 5
         temporal_merging_window = 5
         null_class_percentage = 0.5
-        es_results_file = "{}/hci_guided/templates/templates_2019-07-09_15-13-01".format(outputs_path)
+        es_results_file = "{}/hci_guided/templates/zeus_templates_2020-07-30_13-59-45".format(outputs_path)
     elif dataset_choice == 'hci_freehand':
         classes = [49, 50, 51, 52, 53]
         output_folder = "{}/hci_freehand/params".format(outputs_path)
@@ -83,7 +84,36 @@ if __name__ == '__main__':
         null_class_percentage = 0
         params = [28, 2, 0]
         thresholds = [991, 567]
-        es_results_file = "{}/synthetic2/ templates/templates_2019-04-11_16-58-37".format(outputs_path)
+        es_results_file = "{}/synthetic2/templates/templates_2019-04-11_16-58-37".format(outputs_path)
+    elif dataset_choice == 'synthetic4':
+        classes = [1001, 1002, 1003, 1004]
+        output_folder = "{}/synthetic4/params".format(outputs_path)
+        null_class_percentage = 0
+        params = [60, 4, 0]
+        thresholds = [5534, 165, 3058, 4534]
+        es_results_file = "{}/synthetic4/templates/zeus_templates_2020-07-28_23-30-25".format(outputs_path)
+    elif dataset_choice == 'hci_table':
+        encoding = '2d'
+        classes = [i for i in range(1, 35)]
+        output_folder = "{}/hci_table/params".format(outputs_path)
+        null_class_percentage = 0.5
+        params = [60, 4, 0]
+        thresholds = [5534, 165, 3058, 4534]
+        es_results_file = "{}/hci_table/templates/templates_2019-04-11_16-58-37".format(outputs_path)
+    elif dataset_choice == 'shl_preview':
+        classes = [1, 2, 4, 7, 8]
+        output_folder = "{}/shl_preview/params".format(outputs_path)
+        null_class_percentage = 0.5
+        params = [60, 4, 0]
+        thresholds = [5534, 165, 3058, 4534]
+        es_results_file = "{}/shl_preview/templates/templates_2019-04-11_16-58-37".format(outputs_path)
+    elif dataset_choice == 'uwave_x':
+        output_folder = "{}/uwave_x/params".format(outputs_path)
+        classes = [1]
+        null_class_percentage = 0.5
+        params = [60, 4, 0]
+        thresholds = [5534, 165, 3058, 4534]
+        es_results_file = "{}/uwave_x/templates/templates_2019-04-11_16-58-37".format(outputs_path)
 
     if isolated_case:
         templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice, classes=classes,
@@ -110,8 +140,8 @@ if __name__ == '__main__':
         print("Templates loaded!")
 
     if isolated_case:
-        m_wlcss_cuda = WLCSSCudaParamsTraining(templates, streams, 1, use_encoding)
-        mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
+        m_wlcss_cuda = WLCSSCuda(templates, streams, params, use_encoding)
+        mss = m_wlcss_cuda.compute_wlcss()[0]
         m_wlcss_cuda.cuda_freemem()
         pfe.performance_evaluation_isolated(mss, streams_labels, thresholds, classes)
         plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes, streams_labels=streams_labels,
