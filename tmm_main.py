@@ -5,11 +5,11 @@ import numpy as np
 from data_processing import data_loader as dl
 from performance_evaluation import performance_evaluation as pfe
 from template_matching.utils import find_peaks
-from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining, WLCSSCudaContinuous
+from template_matching.wlcss_cuda_class import WLCSSCudaContinuous, WLCSSCuda
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 'skoda'
+    dataset_choice = 'hci_guided'
     outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     isolated_case = True  # True for isolate, False for continuous
@@ -24,11 +24,11 @@ if __name__ == '__main__':
     write_to_file = True
     if dataset_choice == 'skoda':
         use_encoding = '3d'
-        # classes = [3001, 3003, 3013, 3018]
-        classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
+        classes = [3001, 3003, 3013, 3018]
+        # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
         output_folder = "{}/skoda/params".format(outputs_path)
         params = [57, 2, 8]
-        thresholds = [370, 353, 220, 233, 307, 463, 228, 135]
+        thresholds = [441, 231, 317, 207]
         null_class_percentage = 0.6
         wsize = 500
         temporal_merging_window = 50

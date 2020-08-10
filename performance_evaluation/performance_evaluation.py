@@ -5,7 +5,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score, accuracy_score
-from sklearn.preprocessing import minmax_scale
 
 colors_key = ['blue', 'red', 'green', 'orange', 'magenta', 'brown', 'cyan', 'yellow', 'steelblue', 'crimson',
               'mediumspringgreen']
@@ -69,18 +68,16 @@ def compute_confusion_matrix_isolated(matching_scores, streams_labels, threshold
     print("Prec: {}".format(precision_score(tmp_streams_labels, labels, average='macro')))
     print("Rec: {}".format(recall_score(tmp_streams_labels, labels, average='macro')))
     print("F1: {}".format(f1_score(tmp_streams_labels, labels, average='macro')))
-    cfm = confusion_matrix(tmp_streams_labels, labels.astype(int))
-    cfm = cfm.astype('float') / cfm.sum(axis=1)[:, np.newaxis]
-    cfm = np.transpose(cfm)
+    classes.append(0)
+    cfm = confusion_matrix(tmp_streams_labels, labels.astype(int), labels=classes, normalize='true')
     plt.figure()
     plt.imshow(cfm, interpolation='nearest', cmap=plt.cm.Blues)
     plt.title("Confusion matrix - Isolated ")
-    classes.append(0)
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes)
     plt.yticks(tick_marks, classes)
-    plt.xlabel('True label')
-    plt.ylabel('Predicted label')
+    plt.xlabel('Predicted label')
+    plt.ylabel('True label')
     fmt = '.2f'
     thresh = cfm.max() / 2.
     for i, j in itertools.product(range(cfm.shape[0]), range(cfm.shape[1])):

@@ -38,9 +38,14 @@ class ESTemplateGenerator:
         self.__m_wlcss_cuda = WLCSSCudaTemplatesTraining(self.__streams, self.__params, self.__templates_chromosomes,
                                                          self.__num_individuals, self.__use_encoding)
         self.__results = list()
+        # self.__pool = Pool(processes=12)
+        # self.__rep_streams_labels = [self.__streams_labels for _ in range(self.__num_individuals)]
+        # self.__rep_thresholds = [self.__threshold for _ in range(self.__num_individuals)]
+        # self.__rep_fitness_function = [self.__fitness_function for _ in range(self.__num_individuals)]
 
     def optimize(self):
         self.__execute_ga()
+        # self.__pool.close()
 
     def __execute_ga(self):
         scores = list()
@@ -112,20 +117,24 @@ class ESTemplateGenerator:
     def __mutation(self, templates_pop, mp):
         tmpl_sizes = templates_pop.shape
         mask = np.random.rand(templates_pop.shape[0], templates_pop.shape[1]) < mp
-        new_templates_pop_mask = np.random.normal(0, 32, size=tmpl_sizes) * mask
+        new_templates_pop_mask = np.random.normal(0, 4, size=tmpl_sizes) * mask
         new_templates_pop = np.remainder(np.copy(templates_pop) + new_templates_pop_mask, self.__bit_values)
 
         return new_templates_pop.astype(np.int)
 
     def __compute_fitness_cuda(self, templates_pop):
         matching_scores = self.__m_wlcss_cuda.compute_wlcss(templates_pop)
-        fitness_scores = np.array([fit_fun.isolated_fitness_function_templates(matching_scores[0][:, k],
-                                                                               self.__streams_labels,
-                                                                               self.__threshold,
-                                                                               parameter_to_optimize=self.__fitness_function)
-                                   for k in
-                                   range(self.__num_individuals)])
-        return fitness_scores
+        fitness_scores = [fit_fun.isolated_fitness_function_templates(matching_scores[0][:, k],
+                                                                      self.__streams_labels,
+                                                                      self.__threshold,
+                                                                      parameter_to_optimize=self.__fitness_function)
+                          for k in
+                          range(self.__num_individuals)]
+        # fitness_scores = self.__pool.starmap(fit_fun.isolated_fitness_function_templates, zip(matching_scores[0].T,
+        #                                                                                self.__rep_streams_labels,
+        #                                                                                self.__rep_thresholds,
+        #                                                                                self.__rep_fitness_function))
+        return np.array(fitness_scores)
 
     def __np_to_int(self, chromosome):
         return int("".join(chromosome.astype('U')), 2)

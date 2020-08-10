@@ -9,8 +9,8 @@ from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
 
 class GAParamsOptimizer:
     def __init__(self, templates, streams, streams_labels, classes, use_encoding=False,
-                 iterations=500, num_individuals=32, bits_parameters=5, bits_thresholds=10, cr_p=0.3, mt_p=0.1,
-                 elitism=3, rank=10, maximize=True, fitness_function='f1_acc', use_gradient=False):
+                 iterations=500, num_individuals=32, bits_reward=5, bits_penalty=5, bits_epsilon=5, bits_thresholds=10,
+                 cr_p=0.3, mt_p=0.1, elitism=3, rank=10, maximize=True, fitness_function='f1_acc', use_gradient=False):
         self.__templates = templates
         self.__streams = streams
         self.__streams_labels = streams_labels
@@ -18,7 +18,11 @@ class GAParamsOptimizer:
         self.__use_encoding = use_encoding
         self.__iterations = iterations
         self.__num_individuals = num_individuals
-        self.__bits_parameters = bits_parameters
+        self.__bits_reward = bits_reward
+        self.__bits_penalty = bits_penalty
+        self.__bits_epsilon = bits_epsilon
+        self.__penalty_idx = self.__bits_reward + self.__bits_penalty
+        self.__epsilon_idx = self.__bits_reward + self.__bits_penalty + self.__bits_epsilon
         self.__bits_thresholds = bits_thresholds
         self.__crossover_probability = cr_p
         self.__mutation_probability = mt_p
@@ -27,9 +31,7 @@ class GAParamsOptimizer:
         self.__fitness_function = fitness_function
         self.__maximize = maximize
         self.__scaling_factor = 2 ** (self.__bits_thresholds - 1)
-        self.__chromosomes = 3
-        self.__total_genes = self.__bits_parameters * self.__chromosomes
-        self.__chromosomes += len(templates)
+        self.__total_genes = self.__bits_reward + self.__bits_penalty + self.__bits_epsilon
         self.__total_genes += self.__bits_thresholds * len(templates)
         self.__use_gradient = use_gradient
         self.__m_wlcss_cuda = WLCSSCudaParamsTraining(self.__templates, self.__streams, self.__num_individuals,
@@ -61,13 +63,12 @@ class GAParamsOptimizer:
                 top_idx = np.argmax(fit_scores)
             else:
                 top_idx = np.argmin(fit_scores)
-            reward = self.__np_to_int(pop[top_idx][0:self.__bits_parameters])
-            penalty = self.__np_to_int(pop[top_idx][self.__bits_parameters:self.__bits_parameters * 2])
-            accepted_distance = self.__np_to_int(pop[top_idx][self.__bits_parameters * 2:self.__bits_parameters * 3])
-            thresholds = [self.__np_to_int(pop[top_idx][self.__bits_parameters * 3 + (
-                    j * self.__bits_thresholds):self.__bits_parameters * 3 + (
-                    j + 1) * self.__bits_thresholds]) - self.__scaling_factor for
-                          j
+            reward = self.__np_to_int(pop[top_idx][0:self.__bits_reward])
+            penalty = self.__np_to_int(pop[top_idx][self.__bits_reward:self.__penalty_idx])
+            accepted_distance = self.__np_to_int(pop[top_idx][self.__penalty_idx:self.__epsilon_idx])
+            thresholds = [self.__np_to_int(pop[top_idx][
+                                           self.__epsilon_idx + (j * self.__bits_thresholds):self.__epsilon_idx + (
+                                                   j + 1) * self.__bits_thresholds]) - self.__scaling_factor for j
                           in range(len(self.__templates))]
             scores.append([np.mean(fit_scores), np.max(fit_scores), np.min(fit_scores), np.std(fit_scores),
                            [reward, penalty, accepted_distance, thresholds]])
@@ -86,11 +87,12 @@ class GAParamsOptimizer:
         else:
             top_idx = np.argmin(fit_scores)
         top_score = fit_scores[top_idx]
-        reward = self.__np_to_int(pop[top_idx][0:self.__bits_parameters])
-        penalty = self.__np_to_int(pop[top_idx][self.__bits_parameters:self.__bits_parameters * 2])
-        accepted_distance = self.__np_to_int(pop[top_idx][self.__bits_parameters * 2:self.__bits_parameters * 3])
-        thresholds = [self.__np_to_int(pop[top_idx][self.__bits_parameters * 3 + (
-                j * self.__bits_thresholds):self.__bits_parameters * 3 + (j + 1) * self.__bits_thresholds]) for j in
+        reward = self.__np_to_int(pop[top_idx][0:self.__bits_reward])
+        penalty = self.__np_to_int(pop[top_idx][self.__bits_reward:self.__penalty_idx])
+        accepted_distance = self.__np_to_int(pop[top_idx][self.__penalty_idx:self.__epsilon_idx])
+        thresholds = [self.__np_to_int(pop[top_idx][
+                                       self.__epsilon_idx + (j * self.__bits_thresholds):self.__epsilon_idx + (
+                                               j + 1) * self.__bits_thresholds]) - self.__scaling_factor for j in
                       range(len(self.__templates))]
         self.__m_wlcss_cuda.cuda_freemem()
         self.__results = [reward, penalty, accepted_distance, thresholds, top_score, scores]
@@ -125,19 +127,19 @@ class GAParamsOptimizer:
 
     def __compute_fitness_cuda(self, pop):
         params = [
-            [self.__np_to_int(p[0:self.__bits_parameters]),
-             self.__np_to_int(p[self.__bits_parameters:self.__bits_parameters * 2]),
-             self.__np_to_int(p[self.__bits_parameters * 2:self.__bits_parameters * 3])] for p in pop]
-        thresholds = [[self.__np_to_int(p[self.__bits_parameters * 3 + (
-                j * self.__bits_thresholds):self.__bits_parameters * 3 + (j + 1) * self.__bits_thresholds]) for j in
-                       range(len(self.__templates))] for p in pop]
+            [self.__np_to_int(p[0:self.__bits_reward]),
+             self.__np_to_int(p[self.__bits_reward:self.__penalty_idx]),
+             self.__np_to_int(p[self.__penalty_idx:self.__epsilon_idx])] for p in pop]
+        thresholds = [[self.__np_to_int(p[self.__epsilon_idx + (j * self.__bits_thresholds):self.__epsilon_idx + (
+                j + 1) * self.__bits_thresholds]) - self.__scaling_factor for j in range(len(self.__templates))] for
+                      p in pop]
         matching_scores = self.__m_wlcss_cuda.compute_wlcss(params)
-        fitness_scores = np.array([fit_fun.isolated_fitness_function_params(matching_scores[k], self.__streams_labels,
-                                                                            thresholds[k], self.__classes,
-                                                                            parameter_to_optimize=self.__fitness_function)
-                                   for k in
-                                   range(self.__num_individuals)])
-        return fitness_scores
+        fitness_scores = [fit_fun.isolated_fitness_function_params(matching_scores[k], self.__streams_labels,
+                                                                   thresholds[k], self.__classes,
+                                                                   parameter_to_optimize=self.__fitness_function)
+                          for k in
+                          range(self.__num_individuals)]
+        return np.array(fitness_scores)
 
     def __np_to_int(self, chromosome):
         return int("".join(chromosome.astype('U')), 2)

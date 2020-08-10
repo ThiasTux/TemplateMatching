@@ -1,20 +1,19 @@
 #!/usr/bin/env python
 import datetime
+import socket
 import time
 from os.path import join
 
 import matplotlib.pyplot as plt
-import numpy as np
 
 from data_processing import data_loader as dl
 from performance_evaluation import fitness_functions as ftf
-from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
+from template_matching.wlcss_cuda_class import WLCSSCuda
 from training.params.ga_params_optimizer import GAParamsOptimizer
 from utils.plots import plot_creator as plt_creator
-import socket
 
 if __name__ == '__main__':
-    dataset_choice = 'skoda'
+    dataset_choice = 'hci_guided'
     outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     num_test = 1
@@ -28,7 +27,7 @@ if __name__ == '__main__':
     bits_thresholds = 11
     rank = int(num_individuals / 3)
     elitism = 3
-    iterations = 250
+    iterations = 200
     fitness_function = 'f1_acc'
     crossover_probability = 0.3
     mutation_probability = 0.1
@@ -58,12 +57,13 @@ if __name__ == '__main__':
         null_class_percentage = 0.5
     elif dataset_choice == 'opportunity_encoded':
         encoding = '3d'
-        classes = [406516, 404516, 406505, 404505, 406519, 404519, 407521, 405506]
+        # classes = [406516, 404516, 406505, 404505, 406519, 404519, 407521, 405506]
+        classes = [408512]
         user = 3
         output_folder = "{}/opportunity_encoded/params".format(outputs_path)
         null_class_percentage = 0.5
     elif dataset_choice == 'hci_guided':
-        classes = [49, 50]
+        classes = [49, 50, 51, 52, 53]
         output_folder = "{}/hci_guided/params".format(outputs_path)
         null_class_percentage = 0.5
     elif dataset_choice == 'hci_freehand':
@@ -131,7 +131,9 @@ if __name__ == '__main__':
 
     optimizer = GAParamsOptimizer(templates, streams, streams_labels, classes,
                                   use_encoding=encoding,
-                                  bits_parameters=bits_params,
+                                  bits_reward=bits_params,
+                                  bits_penalty=bits_params,
+                                  bits_epsilon=bits_params,
                                   bits_thresholds=bits_thresholds,
                                   num_individuals=num_individuals, rank=rank,
                                   elitism=elitism,
@@ -180,8 +182,8 @@ if __name__ == '__main__':
     params = results[0:3]
     thresholds = results[3]
 
-    m_wlcss_cuda = WLCSSCudaParamsTraining(templates, streams, 1, encoding)
-    mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
+    m_wlcss_cuda = WLCSSCuda(templates, streams, [params for _ in classes], encoding)
+    mss = m_wlcss_cuda.compute_wlcss()
     m_wlcss_cuda.cuda_freemem()
 
     fitness_score = ftf.isolated_fitness_function_params(mss, streams_labels, thresholds, classes,
@@ -190,7 +192,7 @@ if __name__ == '__main__':
 
     plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes, streams_labels,
                                   title="Isolated matching score - Params opt. - {}".format(dataset_choice))
-    plt_creator.plot_scores([output_file_path.replace(".txt", "")],
-                            title="Fitness scores evolution - {}".format(dataset_choice))
+    plt_creator.plot_gascores([output_file_path.replace(".txt", "")],
+                              title="Fitness scores evolution - {}".format(dataset_choice))
     plt.show()
     print("End!")

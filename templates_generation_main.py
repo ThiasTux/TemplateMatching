@@ -48,6 +48,7 @@ if __name__ == '__main__':
         params = [57, 2, 8]
         thresholds = [370, 353, 220, 233, 307, 463, 228, 135]
         bit_values = 15
+        fitness_function = 2
     elif dataset_choice == 'skoda_mini':
         encoding = False
         classes = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
@@ -64,19 +65,16 @@ if __name__ == '__main__':
         params = [31, 0, 0]
         thresholds = [471, 523, 441, 423]
         bit_values = 27
-    elif dataset_choice == 'opportunity' or dataset_choice == 201 or dataset_choice == 202 or dataset_choice == 203 \
-            or dataset_choice == 204 or dataset_choice == 205 or dataset_choice == 211:
+    elif dataset_choice == 'opportunity':
         encoding = False
         classes = [406516, 404516, 406505, 404505, 406519, 404519, 407521, 405506]
-        # classes = [406516, 408512, 405506]
-        # classes = [407521, 406520, 406505, 406519]
         user = None
         output_folder = "{}/opportunity/templates".format(outputs_path)
         null_class_percentage = 0.5
         params = [42, 6, 4]
         thresholds = [460, 979, 968, 1733, 1657, 1784, 1199, 976]
         bit_values = 128
-    elif dataset_choice == 210:
+    elif dataset_choice == 'opportunity_encoded':
         encoding = False
         # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
         # classes = [406516, 408512, 405506]
@@ -87,11 +85,12 @@ if __name__ == '__main__':
     elif dataset_choice == 'hci_guided':
         encoding = False
         classes = [49, 50, 51, 52, 53]
-        output_folder = "outputs/training/cuda/hci_guided/templates"
-        params = [61, 24, 2]
-        thresholds = [3, 321, 365, 1024, 1412]
-        bit_values = 128
+        output_folder = "{}/hci_guided/templates".format(outputs_path)
+        params = [[39, 15, 3], [47, 2, 2], [53, 20, 2], [54, 40, 4], [63, 43, 3]]
+        thresholds = [98, 1961, 409, 199, 794]
+        bit_values = 64
         null_class_percentage = 0.5
+        fitness_function = 2
     elif dataset_choice == 'hci_freehand':
         encoding = False
         classes = [49, 50, 51, 52, 53]
@@ -135,6 +134,7 @@ if __name__ == '__main__':
         params = [60, 4, 0]
         thresholds = [5534, 165, 3058, 4534]
         bit_values = 64
+        fitness_function = 2
     elif dataset_choice == 'hci_table':
         encoding = '2d'
         classes = [i for i in range(1, 5)]
@@ -207,7 +207,7 @@ if __name__ == '__main__':
                 np.average([len(streams[i]) for i, sl in enumerate(streams_labels) if sl == c]).astype(int)))
         print("{} - {}".format(c, chromosomes))
         if optimize_thresholds:
-            optimizer = ESTemplateThresholdsGenerator(streams, tmp_labels, params, c, chromosomes, bit_values,
+            optimizer = ESTemplateThresholdsGenerator(streams, tmp_labels, params[i], c, chromosomes, bit_values,
                                                       chosen_template=templates[i], use_encoding=encoding,
                                                       num_individuals=num_individuals, rank=rank,
                                                       elitism=elitism,
@@ -216,7 +216,7 @@ if __name__ == '__main__':
                                                       cr_p=crossover_probability,
                                                       mt_p=mutation_probability)
         else:
-            optimizer = ESTemplateGenerator(streams, tmp_labels, params, thresholds[i], c, chromosomes, bit_values,
+            optimizer = ESTemplateGenerator(streams, tmp_labels, params[i], thresholds[i], c, chromosomes, bit_values,
                                             chosen_template=templates[i], use_encoding=encoding,
                                             num_individuals=num_individuals, rank=rank,
                                             elitism=elitism,
@@ -243,6 +243,7 @@ if __name__ == '__main__':
                                              results[-1][k]))
         else:
             best_templates.append(results[1])
+            thresholds[i] = int((results[2][-1][-2] + results[2][-1][-1]) / 2)
             with open(output_scores_path, 'w') as f:
                 for item in results[-2]:
                     f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
@@ -293,7 +294,7 @@ if __name__ == '__main__':
         tmp_labels = np.copy(streams_labels)
         tmp_labels[tmp_labels != c] = 0
         templates_fitness_score = ftf.isolated_fitness_function_templates(mss[:, i], tmp_labels, thresholds[i],
-                                                                          parameter_to_optimize=86)
+                                                                          parameter_to_optimize=fitness_function)
         print("Class: {} - Score: {:4.3f} - Good dist: {:4.3f} - Bad dist: {:4.3f} - Thres: {}".format(c,
                                                                                                        templates_fitness_score[
                                                                                                            0],
