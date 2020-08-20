@@ -5,13 +5,13 @@ http://har-dataset.org/doku.php?id=wiki:dataset
 """
 from os.path import join
 
-from data_processing.dataset_interface import Dataset
-from scipy.io import loadmat
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.io import loadmat
 
-from utils.plots import plot_creator
+from data_processing.dataset_interface import Dataset
 from utils.filter_data import butter_lowpass_filter, decimate_signal
+from utils.plots import plot_creator
 
 
 class SkodaMini(Dataset):
@@ -40,13 +40,14 @@ class SkodaMini(Dataset):
         sensor_axis = 10
         streams = []
         labels = []
+        bins = np.linspace(-1000, 1000, 64)
         for a in range(num_activities):
             # tmp_data_x = [butter_lowpass_filter(t[0]) for t in right_mat_data[0][sensor_axis][0][a][0]]
             # tmp_data_y = [butter_lowpass_filter(t[0]) for t in right_mat_data[0][sensor_axis+1][0][a][0]]
             # tmp_data_z = [butter_lowpass_filter(t[0]) for t in right_mat_data[0][sensor_axis+2][0][a][0]]
             # tmp_data = [np.sqrt(tmp_data_x[i] ** 2 + tmp_data_y[i] ** 2 + tmp_data_z[i] ** 2) for i in range(len(tmp_data_x))]
-            tmp_data = [decimate_signal(butter_lowpass_filter(t[0], 5, self.__frequency), 10) for t in
-                        right_mat_data[0][sensor_axis][0][a][0]]
+            tmp_data = [np.digitize(decimate_signal(butter_lowpass_filter(t[0], 5, self.__frequency), 10), bins[:-1])
+                        for t in right_mat_data[0][sensor_axis][0][a][0]]
             streams += tmp_data
             labels += [self.__labels[a + 1] for i in range(len(tmp_data))]
         return streams, np.array(labels)
