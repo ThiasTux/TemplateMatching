@@ -60,6 +60,8 @@ for index, td in test_data.iterrows():
         print("Rank: {}".format(rank))
         print("Num tests: {}".format(num_test))
         print("Fitness function: {}".format(fitness_function))
+        print("Bit params: {}".format(bits_params))
+        print("Bit thresholds: {}".format(bits_thresholds))
         print("Null class extraction: {}".format(use_null))
         print("Null class percentage: {}".format(null_class_percentage))
         print("Use encoding: {}".format(encoding))

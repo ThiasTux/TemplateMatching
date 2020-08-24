@@ -16,7 +16,7 @@ from training.params.ga_params_optimizer import GAParamsOptimizer
 test_filepath = "test/params/test_synthetic4_0.csv"
 test_info = ["dataset_choice", "num_test", "use_null", "bits_params", "bits_thresholds", "write_to_file", "user",
              "null_class_percentage", "num_individuals", "rank", "elitism", "iterations", "fitness_function",
-             "crossover_probability", "mutation_probability", "use_encoding", "classes", "output_folder"]
+             "crossover_probability", "mutation_probability", "encoding", "classes", "output_folder"]
 
 test_data = pd.read_csv(test_filepath)
 
@@ -60,12 +60,14 @@ for index, td in test_data.iterrows():
         print("Rank: {}".format(rank))
         print("Num tests: {}".format(num_test))
         print("Fitness function: {}".format(fitness_function))
+        print("Bit params: {}".format(bits_params))
+        print("Bit thresholds: {}".format(bits_thresholds))
         print("Null class extraction: {}".format(use_null))
         print("Null class percentage: {}".format(null_class_percentage))
-        print("Use encoding: {}".format(use_encoding))
+        print("Use encoding: {}".format(encoding))
 
         optimizer = GAParamsOptimizer(templates, streams, streams_labels, classes,
-                                      use_encoding=use_encoding,
+                                      use_encoding=encoding,
                                       bits_parameters=bits_params,
                                       bits_thresholds=bits_thresholds,
                                       num_individuals=num_individuals, rank=rank,
@@ -103,7 +105,7 @@ for index, td in test_data.iterrows():
             outputconffile.write("Bit thresholds: {}\n".format(bits_thresholds))
             outputconffile.write("Null class extraction: {}\n".format(use_null))
             outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
-            outputconffile.write("Use encoding: {}\n".format(use_encoding))
+            outputconffile.write("Use encoding: {}\n".format(encoding))
             outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
 
         with open(output_file_path, 'w') as outputfile:
@@ -112,7 +114,7 @@ for index, td in test_data.iterrows():
         params = results[0:3]
         thresholds = results[3]
 
-        m_wlcss_cuda = WLCSSCudaParamsTraining(templates, streams, 1, use_encoding)
+        m_wlcss_cuda = WLCSSCudaParamsTraining(templates, streams, 1, encoding)
         mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
         m_wlcss_cuda.cuda_freemem()
 
