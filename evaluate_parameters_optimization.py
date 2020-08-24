@@ -6,14 +6,15 @@ import socket
 import time
 from os.path import join
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from data_processing import data_loader as dl
 from performance_evaluation import fitness_functions as ftf
 from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
 from training.params.ga_params_optimizer import GAParamsOptimizer
 
-test_filepath = "test/params/test_synthetic4_0.csv"
+test_filepath = "test/params/test_hci_guided_0.csv"
 test_info = ["dataset_choice", "num_test", "use_null", "bits_params", "bits_thresholds", "write_to_file", "user",
              "null_class_percentage", "num_individuals", "rank", "elitism", "iterations", "fitness_function",
              "crossover_probability", "mutation_probability", "encoding", "classes", "output_folder"]
@@ -68,7 +69,9 @@ for index, td in test_data.iterrows():
 
         optimizer = GAParamsOptimizer(templates, streams, streams_labels, classes,
                                       use_encoding=encoding,
-                                      bits_parameters=bits_params,
+                                      bits_reward=bits_params,
+                                      bits_penalty=bits_params,
+                                      bits_epsilon=bits_params,
                                       bits_thresholds=bits_thresholds,
                                       num_individuals=num_individuals, rank=rank,
                                       elitism=elitism,
