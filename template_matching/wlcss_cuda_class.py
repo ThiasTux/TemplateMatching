@@ -361,7 +361,11 @@ class WLCSSCuda:
 
         self.h_t = templates
         self.h_s = streams
-        self.h_p = parameters
+        s = np.array([parameters]).shape
+        if s == tuple((1, 3)):
+            self.h_p = [parameters for _ in templates]
+        else:
+            self.h_p = parameters
 
         self.num_templates = len(self.h_t)  # Num block on X
         self.num_streams = len(self.h_s)  # Num block on Y
