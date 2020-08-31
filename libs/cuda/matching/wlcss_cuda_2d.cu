@@ -45,7 +45,7 @@ __global__ void wlcss_cuda_kernel(int32_t *d_mss, int32_t *d_mss_offsets, int32_
 
     for(int32_t j=0;j<s_len;j++){
         for(int32_t i=0;i<t_len;i++){
-            int32_t distance = d_2d_cost_matrix[s[j]*7 + t[i]];
+            int32_t distance = d_2d_cost_matrix[s[j]*8 + t[i]];
             if (distance <= accepteddist){
                 tmp = tmp_window[i]+reward;
             } else{
@@ -79,8 +79,8 @@ extern "C"{
         h_mss_length = h_mss_len;
 
         //Allocate memory for cost matrix
-        gpuErrchk( cudaMalloc((void **) &d_2d_cost_matrix, 49 * sizeof(int32_t)) );
-        gpuErrchk( cudaMemcpy(d_2d_cost_matrix, h_2d_cost_matrix, 49 * sizeof(int32_t), cudaMemcpyHostToDevice) );
+        gpuErrchk( cudaMalloc((void **) &d_2d_cost_matrix, 64 * sizeof(int32_t)) );
+        gpuErrchk( cudaMemcpy(d_2d_cost_matrix, h_2d_cost_matrix, 64 * sizeof(int32_t), cudaMemcpyHostToDevice) );
         
         // Allocate memory for templates array
         gpuErrchk( cudaMalloc((void **) &d_ts, h_ts_length * sizeof(int32_t)) );
