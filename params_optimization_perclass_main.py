@@ -190,6 +190,7 @@ if __name__ == '__main__':
             params.append(results[i][0:3])
             thresholds.append(results[i][3])
             outputfile.write("{}\n".format(results[i][:-1]))
+            print(c)
             print(results[i][:-1])
     print("Results written")
 

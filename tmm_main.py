@@ -9,12 +9,12 @@ from template_matching.wlcss_cuda_class import WLCSSCudaContinuous, WLCSSCuda
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 'hci_guided'
+    dataset_choice = 'hci_table'
     outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     isolated_case = True  # True for isolate, False for continuous
     save_img = False
-    use_encoding = False
+    encoding = False
 
     use_null = False
     user = None
@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     write_to_file = True
     if dataset_choice == 'skoda':
-        use_encoding = '3d'
+        encoding = '3d'
         classes = [3001, 3003, 3013, 3018]
         # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
         output_folder = "{}/skoda/params".format(outputs_path)
@@ -35,12 +35,16 @@ if __name__ == '__main__':
         tolerance_window = 10
         es_results_file = "{}/skoda/templates/zeus_templates_2020-07-29_17-54-30".format(outputs_path)
     elif dataset_choice == 'skoda_mini':
-        use_encoding = False
-        classes = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
+        encoding = False
+        # classes = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
+        classes = [50]
         output_folder = "{}/skoda_mini/params".format(outputs_path)
         null_class_percentage = 0.6
-        params = [25, 6, 1]
-        thresholds = [22, 169, 29, 283, 284, 311, 225, 138]
+        # params = [[34, 5, 2], [59, 18, 3], [49, 13, 2], [5, 11, 4], [55, 57, 1], [55, 38, 0], [24, 8, 2], [47, 16, 2],
+        #           [30, 0, 8], [39, 9, 9]]
+        # thresholds = [500, 994, 907, -698, 962, 405, -643, -74, 859, 480]
+        params = [[49, 13, 2]]
+        thresholds = [907]
         es_results_file = "{}/skoda_mini/templates/templates_2019-03-27_18-24-04".format(outputs_path)
         wsize = 1000
         temporal_merging_window = 5
@@ -95,10 +99,15 @@ if __name__ == '__main__':
     elif dataset_choice == 'hci_table':
         encoding = '2d'
         classes = [i for i in range(1, 35)]
+        classes = classes[:33]
         output_folder = "{}/hci_table/params".format(outputs_path)
         null_class_percentage = 0.5
-        params = [60, 4, 0]
-        thresholds = [5534, 165, 3058, 4534]
+        params = dl.load_params(
+            "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda/hci_table/params/zeus_param_thres_2020-08-25_21-34-25.txt")
+        thresholds = dl.load_thresholds(
+            "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda/hci_table/params/zeus_param_thres_2020-08-25_21-34-25.txt")
+        params = params[:len(classes)]
+        thresholds = thresholds[:len(classes)]
         es_results_file = "{}/hci_table/templates/templates_2019-04-11_16-58-37".format(outputs_path)
     elif dataset_choice == 'shl_preview':
         classes = [1, 2, 4, 7, 8]
@@ -140,8 +149,8 @@ if __name__ == '__main__':
         print("Templates loaded!")
 
     if isolated_case:
-        m_wlcss_cuda = WLCSSCuda(templates, streams, params, use_encoding)
-        mss = m_wlcss_cuda.compute_wlcss()[0]
+        m_wlcss_cuda = WLCSSCuda(templates, streams, params, encoding)
+        mss = m_wlcss_cuda.compute_wlcss()
         m_wlcss_cuda.cuda_freemem()
         pfe.performance_evaluation_isolated(mss, streams_labels, thresholds, classes)
         plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes, streams_labels=streams_labels,
@@ -149,7 +158,7 @@ if __name__ == '__main__':
                                           dataset_choice, "Isolated", use_evolved_templates, use_evolved_thresholds))
         # plt_creator.plot_gestures(dl.load_dataset(dataset_choice, classes), classes=classes)
     else:
-        m_wlcss_cuda = WLCSSCudaContinuous(templates, [stream], 1, use_encoding)
+        m_wlcss_cuda = WLCSSCudaContinuous(templates, [stream], 1, encoding)
         mss = m_wlcss_cuda.compute_wlcss(np.array([params]))
         m_wlcss_cuda.cuda_freemem()
         plt_creator.plot_continuous_data(stream, labels, timestamps)
