@@ -1,3 +1,6 @@
+import numpy as np
+
+from data_processing.hci import HCIGuided
 from data_processing.hcitable import HCITable
 from data_processing.opportunity import OpportunityDataset, OpportunityDatasetEncoded
 from data_processing.shl import SHLPreview
@@ -6,10 +9,7 @@ from data_processing.skoda_mini import SkodaMini
 from data_processing.synthetic import Synthetic1, Synthetic2, Synthetic3, Synthetic4
 from data_processing.ucr_dataset import UWaveGestureLibraryX
 from data_processing.utd_mhad import UTDMhad
-from data_processing.hci import HCIGuided
 from utils import distance_measures as dtm
-
-import numpy as np
 
 
 def load_training_dataset(dataset_choice='opportunity', template_choice_method='random', classes=None, seed=42,
@@ -132,3 +132,24 @@ def load_evolved_templates(es_results_file, classes, use_evolved_thresholds=Fals
         return chosen_templates, thresholds
     else:
         return chosen_templates
+
+
+def load_params(ga_results_file):
+    params = []
+    with open(ga_results_file, 'r') as inputfile:
+        for line in inputfile.readlines():
+            tmp_line = line.replace("[", "").replace("]", "")
+            line_values = tmp_line.split(",")
+            p = [int(i) for i in line_values[:3]]
+            params.append(p)
+    return params
+
+
+def load_thresholds(ga_results_file):
+    thresholds = []
+    with open(ga_results_file, 'r') as inputfile:
+        for line in inputfile.readlines():
+            tmp_line = line.replace("[", "").replace("]", "")
+            line_values = tmp_line.split(",")
+            thresholds.append(int(line_values[3]))
+    return thresholds
