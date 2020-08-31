@@ -18,6 +18,14 @@ if __name__ == '__main__':
         input_files = [
             "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda/hci_guided/params/zeus_param_thres_2020-08-10_15-14-30"]
         plt_creator.plot_gascores(input_files)
+    elif plot_choice == 21:
+        input_files = [
+            '/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda/hci_guided/params/poseidon_param_thres_2020-08-19_14-51-38',
+            '/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda/hci_guided/params/poseidon_param_thres_2020-08-19_14-57-07',
+            '/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda/hci_guided/params/poseidon_param_thres_2020-08-19_15-02-46',
+            '/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda/hci_guided/params/poseidon_param_thres_2020-08-19_15-12-43',
+            '/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda/hci_guided/params/poseidon_param_thres_2020-08-19_15-19-31']
+        plt_creator.plot_perclass_gascores(input_files)
     elif plot_choice == 3:
         plt_creator.plot_templates_scores(input_file)
     elif plot_choice == 4:
