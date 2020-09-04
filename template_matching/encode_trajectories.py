@@ -149,7 +149,7 @@ def compute_2d_distance_matrix(print_output=True):
     matrix_distance = np.zeros((8, 8))
     for k_i in codebook_keys:
         for k_j in codebook_keys:
-            matrix_distance[k_i - 1, k_j - 1] = angle_between(codebook[k_i], codebook[k_j])
+            matrix_distance[k_i, k_j] = angle_between(codebook[k_i], codebook[k_j])
     matrix_distance = (matrix_distance * 10).astype(int)
     if print_output:
         for i in range(8):
@@ -161,5 +161,5 @@ def compute_2d_distance_matrix(print_output=True):
 
 
 if __name__ == '__main__':
-    compute_3d_distance_matrix()
+    # compute_3d_distance_matrix()
     compute_2d_distance_matrix()
