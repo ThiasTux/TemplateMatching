@@ -87,7 +87,7 @@ def normalize(v):
 
 
 def encode_2d(v, codebook=create_2d_codebook(8)):
-    distances = {k - 1: angle_between(codebook.get(k), v) for k in codebook.keys()}
+    distances = {k: angle_between(codebook.get(k), v) for k in codebook.keys()}
     return min(distances, key=distances.get)
 
 
