@@ -21,7 +21,7 @@ test_info = ["dataset_choice", "num_test", "use_null", "write_to_file", "user", 
              "classes", "output_folder", "bit_values", "scaling_length"]
 
 test_data = pd.read_csv(test_filepath)
-
+print(test_filepath)
 prev_dataset = None
 
 # Load test configuration
@@ -36,6 +36,7 @@ for index, td in test_data.iterrows():
     results_scores = list()
     classes = [int(c) for c in classes.replace("[", "").replace("]", "").split(",")]
     params = [int(p) for p in params.replace("[", "").replace("]", "").split(",")]
+    params = [[params[i], params[i + 1], params[i + 2]] for i in range(0, len(params), 3)]
     thresholds = [int(t) for t in thresholds.replace("[", "").replace("]", "").split(",")]
     timestamp_tests = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
     # Run tests
@@ -95,7 +96,7 @@ for index, td in test_data.iterrows():
                         int)) / scaling_length)
             print("{} - {}".format(c, chromosomes))
             if optimize_thresholds:
-                optimizer = ESTemplateThresholdsGenerator(streams, tmp_labels, params, c, chromosomes, bit_values,
+                optimizer = ESTemplateThresholdsGenerator(streams, tmp_labels, params[i], c, chromosomes, bit_values,
                                                           chosen_template=templates[i], use_encoding=encoding,
                                                           num_individuals=num_individuals, rank=rank,
                                                           elitism=elitism,
@@ -104,7 +105,7 @@ for index, td in test_data.iterrows():
                                                           cr_p=crossover_probability,
                                                           mt_p=mutation_probability)
             else:
-                optimizer = ESTemplateGenerator(streams, tmp_labels, params, thresholds[i], c, chromosomes,
+                optimizer = ESTemplateGenerator(streams, tmp_labels, params[i], thresholds[i], c, chromosomes,
                                                 bit_values,
                                                 chosen_template=templates[i], use_encoding=encoding,
                                                 num_individuals=num_individuals, rank=rank,
