@@ -12,7 +12,7 @@ import numpy as np
 
 from data_processing import data_loader as dl
 from performance_evaluation import fitness_functions as ftf
-from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
+from template_matching.wlcss_cuda_class import WLCSSCuda
 from training.templates.es_templates_generator import ESTemplateGenerator, ESTemplateThresholdsGenerator
 from utils.plots import plot_creator as plt_creator
 
@@ -280,8 +280,8 @@ if __name__ == '__main__':
     print("Results written")
     print(output_file_path.replace(".txt", ""))
 
-    m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, streams, 1, encoding)
-    mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
+    m_wlcss_cuda = WLCSSCuda(best_templates, streams, params, encoding)
+    mss = m_wlcss_cuda.compute_wlcss()
     m_wlcss_cuda.cuda_freemem()
 
     if optimize_thresholds:

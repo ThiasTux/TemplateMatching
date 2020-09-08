@@ -6,17 +6,18 @@ import socket
 import time
 from os.path import join
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from data_processing import data_loader as dl
 from performance_evaluation import fitness_functions as ftf
-from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
+from template_matching.wlcss_cuda_class import WLCSSCuda
 from training.templates.es_templates_generator import ESTemplateGenerator, ESTemplateThresholdsGenerator
 
-test_filepath = "test/templates/test_synthetic4_1.csv"
+test_filepath = "test/templates/test_hci_guided_0.csv"
 test_info = ["dataset_choice", "num_test", "use_null", "write_to_file", "user", "params", "thresholds",
              "null_class_percentage", "num_individuals", "rank", "elitism", "iterations", "fitness_function",
-             "crossover_probability", "mutation_probability", "inject_templates", "optimize_thresholds", "use_encoding",
+             "crossover_probability", "mutation_probability", "inject_templates", "optimize_thresholds", "encoding",
              "classes", "output_folder", "bit_values", "scaling_length"]
 
 test_data = pd.read_csv(test_filepath)
@@ -95,7 +96,7 @@ for index, td in test_data.iterrows():
             print("{} - {}".format(c, chromosomes))
             if optimize_thresholds:
                 optimizer = ESTemplateThresholdsGenerator(streams, tmp_labels, params, c, chromosomes, bit_values,
-                                                          chosen_template=templates[i], use_encoding=use_encoding,
+                                                          chosen_template=templates[i], use_encoding=encoding,
                                                           num_individuals=num_individuals, rank=rank,
                                                           elitism=elitism,
                                                           iterations=iterations,
@@ -105,7 +106,7 @@ for index, td in test_data.iterrows():
             else:
                 optimizer = ESTemplateGenerator(streams, tmp_labels, params, thresholds[i], c, chromosomes,
                                                 bit_values,
-                                                chosen_template=templates[i], use_encoding=use_encoding,
+                                                chosen_template=templates[i], use_encoding=encoding,
                                                 num_individuals=num_individuals, rank=rank,
                                                 elitism=elitism,
                                                 iterations=iterations,
@@ -163,10 +164,10 @@ for index, td in test_data.iterrows():
             outputconffile.write("Thresholds: {}\n".format(thresholds))
             outputconffile.write("Null class extraction: {}\n".format(use_null))
             outputconffile.write("Null class percentage: {}\n".format(null_class_percentage))
-            outputconffile.write("Use encoding: {}\n".format(use_encoding))
+            outputconffile.write("Use encoding: {}\n".format(encoding))
             outputconffile.write("Duration: {}\n".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
-        m_wlcss_cuda = WLCSSCudaParamsTraining(best_templates, streams, 1, False)
-        mss = m_wlcss_cuda.compute_wlcss(np.array([params]))[0]
+        m_wlcss_cuda = WLCSSCuda(best_templates, streams, params, encoding)
+        mss = m_wlcss_cuda.compute_wlcss()
         m_wlcss_cuda.cuda_freemem()
 
         if optimize_thresholds:
