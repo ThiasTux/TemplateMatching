@@ -133,6 +133,7 @@ for index, td in test_data.iterrows():
                                                  results[-1][k]))
             else:
                 best_templates.append(results[1])
+                thresholds[i] = int((results[2][-1][-2] + results[2][-1][-1]) / 2)
                 with open(output_scores_path, 'w') as f:
                     for item in results[-2]:
                         f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
