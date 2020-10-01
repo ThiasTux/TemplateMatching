@@ -29,6 +29,8 @@ for index, td in test_data.iterrows():
     for tfi in test_info:
         if td[tfi] == 'None':
             vars()[tfi] = None
+        elif td[tfi] == 'FALSE':
+            vars()[tfi] = False
         else:
             vars()[tfi] = td[tfi]
     results_paths = list()

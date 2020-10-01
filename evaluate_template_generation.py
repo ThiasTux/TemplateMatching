@@ -30,6 +30,8 @@ for index, td in test_data.iterrows():
     for tfi in test_info:
         if td[tfi] == 'None':
             vars()[tfi] = None
+        elif td[tfi] == 'FALSE':
+            vars()[tfi] = False
         else:
             vars()[tfi] = td[tfi]
     results_paths = list()
@@ -178,7 +180,7 @@ for index, td in test_data.iterrows():
                                                              parameter_to_optimize='f1')
         results_scores.append(fitness_score)
         results_paths.append(output_file_path.replace(".txt", ""))
-    test_data.loc[index, 'results_paths'] = str(results_paths)
-    test_data.loc[index, 'results_scores'] = str(results_scores)
+        test_data.loc[index, 'results_paths'] = str(results_paths)
+        test_data.loc[index, 'results_scores'] = str(results_scores)
     test_data.to_csv(test_filepath.replace(".csv", "{}_results.csv".format(timestamp_tests)))
 print("Done!")

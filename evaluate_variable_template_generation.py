@@ -14,7 +14,7 @@ from performance_evaluation import fitness_functions as ftf
 from template_matching.wlcss_cuda_class import WLCSSCuda
 from training.templates.es_templates_generator import ESVariableTemplateGenerator
 
-test_filepath = "test/variable_templates/test_hci_guided_0.csv"
+test_filepath = "test/variable_templates/test_all_0.csv"
 test_info = ["dataset_choice", "num_test", "use_null", "write_to_file", "user", "params", "thresholds",
              "null_class_percentage", "num_individuals", "rank", "elitism", "iterations", "fitness_function",
              "crossover_probability", "mutation_probability", "inject_templates", "optimize_thresholds", "encoding",
@@ -31,6 +31,8 @@ for index, td in test_data.iterrows():
     for tfi in test_info:
         if td[tfi] == 'None':
             vars()[tfi] = None
+        elif td[tfi] == 'FALSE':
+            vars()[tfi] = False
         else:
             vars()[tfi] = td[tfi]
     results_paths = list()
