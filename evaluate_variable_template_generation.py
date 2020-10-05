@@ -88,12 +88,12 @@ for index, td in test_data.iterrows():
         print("Thresholds: {}".format(thresholds))
         print("Null class extraction: {}".format(use_null))
         print("Null class percentage: {}".format(null_class_percentage))
-        print("Enlarge probability: {}\n".format(enlarge_probability))
-        print("Shrink probability: {}\n".format(shrink_probability))
-        print("Length weight: {}\n".format(length_weight))
-        print("Max length rate: {}\n".format(max_length_rate))
-        print("Min length rate: {}\n".format(min_length_rate))
-        print("Use encoding: {}\n".format(encoding))
+        print("Enlarge probability: {}".format(enlarge_probability))
+        print("Shrink probability: {}".format(shrink_probability))
+        print("Length weight: {}".format(length_weight))
+        print("Max length rate: {}".format(max_length_rate))
+        print("Min length rate: {}".format(min_length_rate))
+        print("Use encoding: {}".format(encoding))
         for i, c in enumerate(classes):
             tmp_labels = np.copy(streams_labels)
             tmp_labels[tmp_labels != c] = 0
