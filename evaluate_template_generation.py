@@ -182,5 +182,5 @@ for index, td in test_data.iterrows():
         results_paths.append(output_file_path.replace(".txt", ""))
         test_data.loc[index, 'results_paths'] = str(results_paths)
         test_data.loc[index, 'results_scores'] = str(results_scores)
-    test_data.to_csv(test_filepath.replace(".csv", "{}_results.csv".format(timestamp_tests)))
+        test_data.to_csv(test_filepath.replace(".csv", "{}_results.csv".format(timestamp_tests)))
 print("Done!")
