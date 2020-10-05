@@ -153,3 +153,19 @@ def load_thresholds(ga_results_file):
             line_values = tmp_line.split(",")
             thresholds.append(int(line_values[3]))
     return thresholds
+
+
+def load_template_generation_thresholds(es_results_file):
+    conf_file_path = es_results_file + "_conf.txt"
+    with open(conf_file_path, 'r') as conf_file:
+        dataset_name = conf_file.readline()
+        classes = [int(c) for c in conf_file.readline().split(":")[1].strip().split(" ")]
+    thresholds = [_ for _ in range(len(classes))]
+    for i, c in enumerate(classes):
+        c_scores_filepath = es_results_file + "_{}_scores.txt".format(c)
+        with open(c_scores_filepath, 'r') as c_scores_file:
+            last_line_values = [float(v.strip()) for v in c_scores_file.readlines()[-1].split(",")]
+        good_score = last_line_values[-2]
+        bad_score = last_line_values[-1]
+        thresholds[i] = int((good_score + bad_score) / 2)
+    return thresholds

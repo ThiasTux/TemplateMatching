@@ -17,7 +17,7 @@ from training.templates.es_templates_generator import ESTemplateGenerator, ESTem
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 'uwave_x'
+    dataset_choice = 'skoda'
     outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     num_test = 1
@@ -29,8 +29,8 @@ if __name__ == '__main__':
     null_class_percentage = 0.5
     encoding = False
 
-    num_individuals = 256
-    rank = 16
+    num_individuals = 128
+    rank = 32
     elitism = 3
     iterations = 500
     fitness_function = 86
@@ -45,8 +45,10 @@ if __name__ == '__main__':
         classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
         output_folder = "{}/skoda/templates".format(outputs_path)
         null_class_percentage = 0.6
-        params = [57, 2, 8]
-        thresholds = [370, 353, 220, 233, 307, 463, 228, 135]
+        params = [[63, 1, 0], [50, 2, 7], [41, 3, 0], [58, 1, 2], [32, 6, 8], [54, 4, 3], [59, 4, 7], [53, 22, 12]]
+        thresholds = [998, 519, -84, 644, -1053, -91, -38, -718]
+        # params = params[-1:]
+        # thresholds = thresholds[-1:]
         bit_values = 15
         fitness_function = 2
     elif dataset_choice == 'skoda_mini':
@@ -76,10 +78,12 @@ if __name__ == '__main__':
         bit_values = 128
     elif dataset_choice == 'opportunity_encoded':
         encoding = False
-        # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
-        # classes = [406516, 408512, 405506]
-        # classes = [407521, 406520, 406505, 406519]
-        output_folder = "{}/hci_guided/templates".format(outputs_path)
+        classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
+        # classes = []
+        params = [[579, 7, 7], [906, 35, 12], [996, 72, 2], [947, 114, 9], [965, 165, 9], [619, 12, 14], [985, 148, 2],
+                  [918, 30, 1], [1009, 6, 1], [278, 963, 336], [988, 72, 6]]
+        thresholds = [7508, 20123, -794, 11293, -34, 10628, 4175, 7202, 10268, 12265, -1133]
+        output_folder = "{}/opportunity_encoded/templates".format(outputs_path)
         sensor = None
         null_class_percentage = 0.8
     elif dataset_choice == 'hci_guided':
