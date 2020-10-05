@@ -95,8 +95,8 @@ def isolated_fitness_function_templates(scores, labels, threshold, parameter_to_
         return np.mean(good_scores) - np.mean(bad_scores)
         # min(good) - max(bad)
     elif parameter_to_optimize == 2:
-        min_good_scores = np.mean(good_scores[good_scores.argsort()[:10]])
-        max_bad_scores = np.mean(bad_scores[bad_scores.argsort()[10:]])
+        min_good_scores = np.mean(good_scores[good_scores.argsort()][:10])
+        max_bad_scores = np.mean(bad_scores[bad_scores.argsort()][-10:])
         return np.array([min_good_scores - max_bad_scores, min_good_scores, max_bad_scores])
     # 90 % (good) - 10 % (bad)
     elif parameter_to_optimize == 3:

@@ -248,8 +248,9 @@ class ESVariableTemplateGenerator:
         new_templates_pop = [[] for _ in range(len(templates_pop))]
         for i in range(0, len(templates_pop) - 1, 2):
             if np.random.random() < cp:
-                crossover_position_1 = int(len(templates_pop[i]) / 2) + random.randint(-2, 2)
-                crossover_position_2 = int(len(templates_pop[i + 1]) / 2) + random.randint(-2, 2)
+                random_perc_position = random.random()
+                crossover_position_1 = int(len(templates_pop[i]) * random_perc_position)
+                crossover_position_2 = int(len(templates_pop[i + 1]) * random_perc_position)
                 new_templates_pop[i] = [templates_pop[i][j] for j in range(0, crossover_position_1)] + [
                     templates_pop[i + 1][j] for j in range(crossover_position_2, len(templates_pop[i + 1]))]
                 new_templates_pop[i + 1] = [templates_pop[i][j] for j in
