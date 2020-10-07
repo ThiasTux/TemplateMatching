@@ -95,25 +95,28 @@ extern "C"{
         gpuErrchk( cudaMalloc((void **) &d_mss_offsets, num_streams*num_templates*num_params_sets * sizeof(int32_t)) );
         gpuErrchk( cudaMemcpy(d_mss_offsets, h_mss_offsets, num_streams*num_templates*num_params_sets * sizeof(int32_t), cudaMemcpyHostToDevice) );
 
+        // Allocate memory for templates lengths
+        gpuErrchk( cudaMalloc((void **) &d_tlen, num_templates * sizeof(int32_t)) );
+        // Allocate memory for templates offsets
+        gpuErrchk( cudaMalloc((void **) &d_toffsets, num_templates * sizeof(int32_t)) );
+
     }
 
     void wlcss_cuda(int32_t *h_ts, int32_t *h_tlen, int32_t *h_toffsets, int h_ts_len, int32_t *h_mss){
         
         h_ts_length = h_ts_len;
 
-        // Allocate memory for templates array
+        /// Allocate memory for templates array
         gpuErrchk( cudaMalloc((void **) &d_ts, h_ts_length * sizeof(int32_t)) );
+        gpuErrchk( cudaMemcpy(d_ts, h_ts, h_ts_length * sizeof(int32_t), cudaMemcpyHostToDevice) );
 
-        // Allocate memory for templates lengths
-        gpuErrchk( cudaMalloc((void **) &d_tlen, num_templates * sizeof(int32_t)) );
+        // Initialize memory for templates lengths
         gpuErrchk( cudaMemcpy(d_tlen, h_tlen, num_templates * sizeof(int32_t), cudaMemcpyHostToDevice) );
 
-        // Allocate memory for templates offsets
-        gpuErrchk( cudaMalloc((void **) &d_toffsets, num_templates * sizeof(int32_t)) );
+        // Initialize memory for templates offsets
         gpuErrchk( cudaMemcpy(d_toffsets, h_toffsets, num_templates * sizeof(int32_t), cudaMemcpyHostToDevice) );
         
-        // Allocate memory for templates
-        gpuErrchk( cudaMemcpy(d_ts, h_ts, h_ts_length * sizeof(int32_t), cudaMemcpyHostToDevice) );
+        // Initialize memory for matching scores
         gpuErrchk( cudaMemcpy(d_mss, h_mss, h_mss_length * sizeof(int32_t), cudaMemcpyHostToDevice) );
 
         wlcss_cuda_kernel<<<dim3(num_templates, num_streams), num_params_sets>>>(d_mss, d_mss_offsets, d_ts, d_ss, d_tlen, d_toffsets, d_slen, d_soffsets, d_params);
@@ -122,11 +125,12 @@ extern "C"{
         gpuErrchk( cudaDeviceSynchronize() );
 
         gpuErrchk( cudaMemcpy(h_mss, d_mss, h_mss_length * sizeof(int32_t), cudaMemcpyDeviceToHost) );
+
+        cudaFree(d_ts);
     }
     
     void wlcss_freemem(){
         
-        cudaFree(d_ts);
         cudaFree(d_tlen);
         cudaFree(d_toffsets);
         
@@ -136,6 +140,6 @@ extern "C"{
         
         cudaFree(d_mss);
         cudaFree(d_mss_offsets);
-        gpuErrchk( cudaFree(d_params) );
+        cudaFree(d_params);
     }
 }

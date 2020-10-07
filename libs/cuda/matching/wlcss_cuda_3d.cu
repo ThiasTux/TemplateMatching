@@ -157,5 +157,7 @@ extern "C"{
         
         cudaFree(d_tmp_windows);
         cudaFree(d_tmp_windows_offsets);
+
+        cudaFree(d_3d_cost_matrix);
     }
 }

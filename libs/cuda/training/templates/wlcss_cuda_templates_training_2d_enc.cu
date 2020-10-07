@@ -141,6 +141,8 @@ extern "C"{
         
         cudaFree(d_mss);
         cudaFree(d_mss_offsets);
-        gpuErrchk( cudaFree(d_params) );
+        cudaFree(d_params);
+
+        cudaFree(d_2d_cost_matrix);
     }
 }
