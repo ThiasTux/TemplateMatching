@@ -48,7 +48,11 @@ def load_training_dataset(dataset_choice='opportunity', template_choice_method='
         dataset = UWaveGestureLibraryX()
 
     if dataset.quick_load:
-        return dataset.quick_load_training_dataset()
+        templates, stream, stream_labels = dataset.quick_load_training_dataset()
+        if template_choice_method is None:
+            return stream, stream_labels
+        else:
+            return templates, stream, stream_labels
 
     streams, labels = dataset.load_isolated_dataset()
 
