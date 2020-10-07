@@ -256,10 +256,6 @@ class ESVariableTemplateGenerator:
                 new_templates_pop[i + 1] = [templates_pop[i][j] for j in
                                             range(crossover_position_1, len(templates_pop[i]))] + [
                                                templates_pop[i + 1][j] for j in range(0, crossover_position_2)]
-                if len(new_templates_pop[i]) > self.__max_templates_chromosomes:
-                    new_templates_pop[i] = new_templates_pop[i][:self.__max_templates_chromosomes]
-                if len(new_templates_pop[i + 1]) > self.__max_templates_chromosomes:
-                    new_templates_pop[i + 1] = new_templates_pop[i + 1][:self.__max_templates_chromosomes]
             else:
                 new_templates_pop[i] = templates_pop[i]
                 new_templates_pop[i + 1] = templates_pop[i + 1]
