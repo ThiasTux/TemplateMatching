@@ -17,7 +17,7 @@ from training.templates.es_templates_generator import ESVariableTemplateGenerato
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 'skoda'
+    dataset_choice = 'hci_table'
     outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     num_test = 1
@@ -146,10 +146,14 @@ if __name__ == '__main__':
         fitness_function = 2
     elif dataset_choice == 'hci_table':
         encoding = '2d'
-        classes = [i for i in range(1, 5)]
+        classes = [i for i in range(9, 35)]
         output_folder = "{}/hci_table/variable_templates".format(outputs_path)
-        params = [55, 54, 0]
-        thresholds = [918, 929, 842, 883]
+        params = [[42, 1, 0], [60, 0, 0], [46, 1, 2], [59, 1, 4], [47, 0, 0], [62, 6, 2], [48, 0, 3], [47, 3, 4],
+                  [52, 54, 0], [49, 16, 0], [57, 0, 4], [33, 1, 6], [43, 0, 1], [56, 1, 4], [53, 4, 4], [45, 6, 2],
+                  [53, 1, 3], [38, 0, 4], [63, 35, 1], [47, 2, 5], [44, 3, 4], [44, 1, 5], [60, 8, 0], [56, 5, 4],
+                  [36, 0, 1], [50, 1, 2]]
+        thresholds = [1005, 3630, 967, 2935, 1733, 734, 1755, 1711, -294, -52, 1845, 684, 2134, 2053, 1488, 1389, 2028,
+                      2041, -385, 1125, 906, 1465, 1439, 1673, 1407, 1724]
         bit_values = 8
     elif dataset_choice == 'shl_preview':
         encoding = False

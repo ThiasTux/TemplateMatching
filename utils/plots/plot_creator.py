@@ -1,16 +1,16 @@
 import glob
+import math
 import os
 from os.path import join
 
-import math
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colors as mcolors, patches
-from template_matching import wlcss_c as wlcss
-from data_processing import data_loader_old as dl
-from utils import utils
 
+from data_processing import data_loader_old as dl
+from template_matching import wlcss_c as wlcss
 from utils import filter_data as fd
+from utils import utils
 
 COLORS = list(mcolors.BASE_COLORS.keys())
 OUTPUT_PATH = "/home/mathias/Documents/Academic/PhD/Publications/2019/ABC/WLCSSLearn/figures"
@@ -238,15 +238,18 @@ def plot_templates(input_path, num_templates=20, save_img=False, title=None, out
         fig.suptitle("{}".format(c))
         with open(templates_file_path, 'r') as templates_file:
             j = 1
-            for i, line in enumerate(templates_file.readlines()):
+            lines = templates_file.readlines()
+            for i, line in enumerate(lines):
                 if i % templates_reduction_factor == 0:
                     t = [int(v) for v in line.split(" ")[:-1]]
                     subplt = fig.add_subplot(num_rows - 1, num_cols + 2, j)
                     subplt.plot(t, linewidth=.5)
-                    subplt.set_title("{}".format(i))
+                    subplt.set_title("{} - {}".format(i, len(t)))
                     # subplt.set_yticklabels([])
                     # subplt.set_xticklabels([])
                     j += 1
+            print("Class: {} - Start length: {} - End length: {}".format(c, len(
+                [int(v) for v in lines[0].split(" ")[:-1]]), len([int(v) for v in lines[-1].split(" ")[:-1]])))
 
 
 def lighten_color(color, amount=0.5):

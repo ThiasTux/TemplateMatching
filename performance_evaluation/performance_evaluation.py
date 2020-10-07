@@ -44,10 +44,15 @@ def performance_evaluation_isolated(matching_scores, streams_labels, thresholds,
     else:
         cfm = None
     if print_results:
-        print("Accuracy - {}".format(accuracy))
-        print("Precision - {}".format(precision))
-        print("Recall - {}".format(recall))
-        print("F1 - {}".format(f1))
+        np.set_printoptions(precision=3)
+        print("Accuracy - ", end='')
+        print([float("{0:.3f}".format(i)) for i in accuracy])
+        print("Precision - ", end='')
+        print([float("{0:.3f}".format(i)) for i in precision])
+        print("Recall - ", end='')
+        print([float("{0:.3f}".format(i)) for i in recall])
+        print("F1 - ", end='')
+        print([float("{0:.3f}".format(i)) for i in f1])
     return [accuracy, precision, recall, f1, cfm]
 
 

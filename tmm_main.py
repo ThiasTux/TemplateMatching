@@ -10,7 +10,7 @@ from template_matching.wlcss_cuda_class import WLCSSCudaContinuous, WLCSSCuda
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 'skoda'
+    dataset_choice = 'opportunity_encoded'
     outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     isolated_case = True  # True for isolate, False for continuous
@@ -21,6 +21,10 @@ if __name__ == '__main__':
     user = None
     use_evolved_templates = True
     use_evolved_thresholds = False
+
+    print("Dataset: " + dataset_choice)
+    print("Isolate: {}".format(isolated_case))
+    print("Evolved templates: {}".format(use_evolved_templates))
 
     write_to_file = True
     if dataset_choice == 'skoda':
@@ -70,11 +74,11 @@ if __name__ == '__main__':
                   [918, 30, 1], [1009, 6, 1], [278, 963, 336], [988, 72, 6]]
         thresholds = [7508, 20123, -794, 11293, -34, 10628, 4175, 7202, 10268, 12265, -1133]
         params = params[:-2]
-        es_results_file = "{}/opportunity_encoded/templates/poseidon_templates_2020-09-14_04-04-00".format(outputs_path)
+        es_results_file = "{}/opportunity_encoded/variable_templates/poseidon_templates_2020-10-06_13-03-39".format(
+            outputs_path)
         if use_evolved_templates:
             thresholds = dl.load_template_generation_thresholds(es_results_file)
         thresholds = thresholds[:-2]
-        print(classes)
     elif dataset_choice == 'hci_guided':
         classes = [49, 50, 51, 52, 53]
         output_folder = "{}/hci_guided/params".format(outputs_path)
@@ -126,7 +130,7 @@ if __name__ == '__main__':
                   [36, 0, 1], [50, 1, 2]]
         thresholds = [1005, 3630, 967, 2935, 1733, 734, 1755, 1711, -294, -52, 1845, 684, 2134, 2053, 1488, 1389, 2028,
                       2041, -385, 1125, 906, 1465, 1439, 1673, 1407, 1724]
-        es_results_file = "{}/hci_table/templates/poseidon_templates_2020-09-22_00-04-32".format(outputs_path)
+        es_results_file = "{}/hci_table/variable_templates/poseidon_templates_2020-10-06_13-10-44".format(outputs_path)
         if use_evolved_templates:
             thresholds = dl.load_template_generation_thresholds(es_results_file)
     elif dataset_choice == 'shl_preview':
@@ -157,7 +161,7 @@ if __name__ == '__main__':
                                                        template_choice_method='mrt_lcs')
         stream, labels, timestamps = dl.load_continuous_dataset(dataset_choice=dataset_choice, user=user)
 
-    print("Data loaded!")
+    print("Classes: {}".format(classes))
 
     if use_evolved_templates:
         if es_results_file is not None:
@@ -166,7 +170,6 @@ if __name__ == '__main__':
                                                                   use_evolved_thresholds)
             else:
                 templates = dl.load_evolved_templates(es_results_file, classes)
-        print("Templates loaded!")
 
     if isolated_case:
         m_wlcss_cuda = WLCSSCuda(templates, streams, params, encoding)
