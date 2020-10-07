@@ -1,7 +1,8 @@
 import glob
 from os.path import join
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 from data_processing.dataset_interface import Dataset
 from template_matching.encode_trajectories import normalize, encode_2d
@@ -10,16 +11,32 @@ from utils.plots import plot_creator
 
 
 class HCITable(Dataset):
+
+    @property
+    def frequency(self):
+        return None
+
+    @property
+    def quick_load(self):
+        return True
+
+    @property
+    def default_classes(self):
+        return [i for i in range(9, 35)]
+
     def __init__(self):
         super().__init__()
-        self.__dataset_path = join(self.datasets_input_path, "hcitable_release/data/")
-        self.__users = []
+        self.users = []
+
+    @property
+    def dataset_path(self):
+        return join(self.datasets_input_path, "hcitable_release/data/")
 
     def load_isolated_dataset(self, load_encoded=True):
         if load_encoded:
             return self.load_encoded_isolated_dataset()
         else:
-            files = [file for file in glob.glob(self.__dataset_path + "*-table*-data.txt")]
+            files = [file for file in glob.glob(self.dataset_path + "*-table*-data.txt")]
             files = sorted(files)
             data = np.loadtxt(files[0])
             table_data = data[:, -4:-2]
@@ -31,7 +48,7 @@ class HCITable(Dataset):
             return Dataset.segment_data(table_data, labels)
 
     def load_encoded_isolated_dataset(self):
-        files = [file for file in glob.glob(self.__dataset_path + "*-table*-data.txt")]
+        files = [file for file in glob.glob(self.dataset_path + "*-table*-data.txt")]
         files = sorted(files)
         data = np.loadtxt(files[0])
         timestamps = (data[:, 0] * 1000).astype(int)
@@ -70,7 +87,9 @@ def plot_isolate_gestures(plot=True, save=False):
     dataset = HCITable()
     templates, labels = dataset.load_isolated_dataset()
     templates = [templates[t] for t in np.where(labels > 0)[0]]
+    templates = [templates[t] for t in np.where((labels == 17) | (labels == 27))[0]]
     labels = labels[np.where(labels > 0)[0]]
+    labels = labels[np.where((labels == 17) | (labels == 27))[0]]
     plot_creator.plot_gestures(templates, labels)
     plt.show()
 

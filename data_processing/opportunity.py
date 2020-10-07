@@ -17,25 +17,39 @@ from utils.plots import plot_creator
 
 class OpportunityDataset(Dataset):
 
+    @property
+    def dataset_path(self):
+        return join(self.datasets_input_path, "OpportunityUCIDataset/dataset/")
+
+    @property
+    def frequency(self):
+        return 30
+
+    @property
+    def quick_load(self):
+        return True
+
+    @property
+    def default_classes(self):
+        return [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
+
     def __init__(self):
         super().__init__()
-        self.__dataset_path = join(self.datasets_input_path, "OpportunityUCIDataset/dataset/")
         self.__users = ["S1", "S2", "S3", "S4"]
         self.__default_user = "S1"
-        self.__frequency = 30
 
     def load_data(self, user=None):
         if user is None:
-            datapath = join(self.__dataset_path, "{}-Drill.dat".format(self.__default_user))
+            datapath = join(self.dataset_path, "{}-Drill.dat".format(self.__default_user))
         else:
-            datapath = join(self.__dataset_path, "{}-Drill.dat".format(user))
+            datapath = join(self.dataset_path, "{}-Drill.dat".format(user))
         return np.loadtxt(datapath)
 
     def load_isolated_dataset(self, sensor_no=67):
         data = self.load_data()
         stream_labels = data[:, 249]
         sensor_data = np.nan_to_num(data[:, sensor_no])
-        tmp_data = butter_lowpass_filter(sensor_data, 3, self.__frequency)
+        tmp_data = butter_lowpass_filter(sensor_data, 3, self.frequency)
         bins = np.linspace(-10000, 10000, 128)
         quantized_data = np.digitize(tmp_data, bins[:-1])
         return Dataset.segment_data(quantized_data, stream_labels)
@@ -50,6 +64,22 @@ class OpportunityDataset(Dataset):
 
 
 class OpportunityDatasetEncoded(Dataset):
+
+    @property
+    def dataset_path(self):
+        return join(self.datasets_input_path, "OpportunityUCIDataset/dataset/")
+
+    @property
+    def frequency(self):
+        return 30
+
+    @property
+    def quick_load(self):
+        return True
+
+    @property
+    def default_classes(self):
+        return [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
 
     def __init__(self):
         super().__init__()
@@ -130,7 +160,7 @@ def plot_isolate_gestures(sensor_no=67, annotation_column=249):
 
 def plot_encoded_gestures():
     dataset = OpportunityDatasetEncoded()
-    templates, labels = dataset.load_encode_dataset()
+    templates, labels = dataset.load_isolated_dataset()
     templates = [templates[t] for t in np.where(labels > 0)[0]]
     labels = labels[np.where(labels > 0)[0]]
     plot_creator.plot_gestures(templates, labels)

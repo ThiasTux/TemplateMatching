@@ -1,3 +1,7 @@
+import pickle
+from datetime import datetime
+from os.path import join
+
 import numpy as np
 
 from data_processing.hci import HCIGuided
@@ -42,6 +46,9 @@ def load_training_dataset(dataset_choice='opportunity', template_choice_method='
         dataset = SHLPreview()
     elif dataset_choice == 'uwave_x':
         dataset = UWaveGestureLibraryX()
+
+    if dataset.quick_load:
+        return dataset.quick_load_training_dataset()
 
     streams, labels = dataset.load_isolated_dataset()
 
@@ -169,3 +176,31 @@ def load_template_generation_thresholds(es_results_file):
         bad_score = last_line_values[-1]
         thresholds[i] = int((good_score + bad_score) / 2)
     return thresholds
+
+
+def generate_quick_load_datasets():
+    datasets = ['hci_guided']
+    now = datetime.now()
+    for d in datasets:
+        print(d)
+        # Load the dataset
+        if d == 'skoda':
+            dataset = Skoda()
+        elif d == 'skoda_mini':
+            dataset = SkodaMini()
+        elif d == 'opportunity_encoded':
+            dataset = OpportunityDatasetEncoded()
+        elif d == 'hci_guided':
+            dataset = HCIGuided()
+        elif d == 'hci_table':
+            dataset = HCITable()
+        date = now.strftime("%m%d%Y")
+        output_path = join(dataset.dataset_path, "{}_training_{}.pickle".format(d, date))
+        templates, stream, stream_labels = load_training_dataset(dataset_choice=d, template_choice_method='mrt_lcs',
+                                                                 classes=dataset.default_classes)
+        with open(output_path, 'wb') as output_file:
+            pickle.dump([templates, stream, stream_labels], output_file)
+
+
+if __name__ == '__main__':
+    generate_quick_load_datasets()

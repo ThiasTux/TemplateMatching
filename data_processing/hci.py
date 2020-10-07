@@ -1,23 +1,38 @@
+import pickle
 from os.path import join
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 from data_processing.dataset_interface import Dataset
 from utils.filter_data import butter_lowpass_filter, decimate_signal
 from utils.plots import plot_creator
-import matplotlib.pyplot as plt
-import pickle
 
 
 class HCIGuided(Dataset):
+    @property
+    def dataset_path(self):
+        return join(self.datasets_input_path, "HCI_FreeHandGestures")
+
+    @property
+    def frequency(self):
+        return 96
+
+    @property
+    def quick_load(self):
+        return True
+
+    @property
+    def default_classes(self):
+        return [49, 50, 51, 52, 53]
+
     def __init__(self):
         super().__init__()
-        self.__dataset_path = join(self.datasets_input_path, "HCI_FreeHandGestures")
         self.__users = ["01"]
         self.__default_user = "01"
-        self.__frequency = 96
 
     def load_data(self):
-        datapath = join(self.__dataset_path, "usb_hci_guided.csv")
+        datapath = join(self.dataset_path, "usb_hci_guided.csv")
         return np.loadtxt(datapath)
 
     def load_isolated_dataset(self, sensor_no=51, quick_load=True):
@@ -32,9 +47,9 @@ class HCIGuided(Dataset):
         else:
             data = self.load_data()
             stream_labels = data[:, 0]
-            acc_x = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.__frequency), 10)
-            acc_y = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.__frequency), 10)
-            acc_z = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.__frequency), 10)
+            acc_x = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.frequency), 10)
+            acc_y = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.frequency), 10)
+            acc_z = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.frequency), 10)
             stream_labels = stream_labels[::10]
             stream_labels[np.where(stream_labels > 53)[0]] = 0
             acc_data = np.array([acc_x, acc_y, acc_z]).T

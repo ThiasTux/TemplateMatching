@@ -4,22 +4,37 @@ Skoda dataset
 import glob
 import pickle
 from os.path import join
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
+from pyquaternion import Quaternion
 
 from data_processing.dataset_interface import Dataset
-from mpl_toolkits.mplot3d import Axes3D
-
 from template_matching.encode_trajectories import normalize, encode_3d
 from utils.filter_data import butter_lowpass_filter
 from utils.plots import plot_creator
-from pyquaternion import Quaternion
 
 
 class Skoda(Dataset):
+
+    @property
+    def dataset_path(self):
+        return join(self.datasets_input_path, "SkodaDataset/processed_data/")
+
+    @property
+    def frequency(self):
+        return 50
+
+    @property
+    def quick_load(self):
+        return True
+
+    @property
+    def default_classes(self):
+        return [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
+
     def __init__(self):
         super().__init__()
-        self.__dataset_path = join(self.datasets_input_path, "SkodaDataset/processed_data/")
         self.__users = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
         self.__labels_dict = {0: 'null', 3001: 'open_hood', 3002: 'close_hood', 3003: 'open_trunk', 3004: 'check_trunk',
                               3005: 'close_trunk', 3006: 'fuel_lid', 3007: 'open_left_door', 3008: 'close_left_door',
@@ -31,7 +46,6 @@ class Skoda(Dataset):
         self.__labels = sorted(list(self.__labels_dict.keys()))
         self.__default_user = 'H'
         self.__default_session_id = '1'
-        self.__frequency = 50
 
     def load_isolated_dataset(self, quick_load=False, load_encoded=True):
         if quick_load:
@@ -47,7 +61,7 @@ class Skoda(Dataset):
                 return self.load_encode_dataset()
 
     def load_continuous_dataset(self, use_torso=False):
-        file = join(self.__dataset_path, "subject{}_{}.txt".format(self.__default_user, self.__default_session_id))
+        file = join(self.dataset_path, "subject{}_{}.txt".format(self.__default_user, self.__default_session_id))
         data = np.loadtxt(file)
         timestamps = data[:, 0]
         labels = data[:, -1]
@@ -72,7 +86,7 @@ class Skoda(Dataset):
         return encoded_stream, labels, timestamps
 
     def load_encode_dataset(self, use_torso=False):
-        files = [file for file in glob.glob(join(self.__dataset_path, "subject{}_*.txt".format(self.__default_user)))]
+        files = [file for file in glob.glob(join(self.dataset_path, "subject{}_*.txt".format(self.__default_user)))]
         encoded_templates = list()
         templates_labels = np.array([])
         for file in files:
@@ -104,7 +118,7 @@ class Skoda(Dataset):
 
     def encode_isolated_trajectories(self, gestures, frequency=None, sample_freq=10):
         if frequency is None:
-            frequency = self.__frequency
+            frequency = self.frequency
         step = int(frequency / sample_freq)
         encoded_gestures = list()
         for gesture_points in gestures:
@@ -122,7 +136,7 @@ class Skoda(Dataset):
     def encode_continuous_trajectory(self, stream, stream_labels=None, stream_timestamps=None, frequency=None,
                                      sample_freq=10):
         if frequency is None:
-            frequency = self.__frequency
+            frequency = self.frequency
         step = int(frequency / sample_freq)
         trajectory = list()
         gesture_trajectory = list()
@@ -141,7 +155,7 @@ class Skoda(Dataset):
             return np.array(gesture_trajectory)
 
     def plot_live_gestures(self):
-        file = join(self.__dataset_path, "subject{}_{}.txt".format(self.__default_user, self.__default_session_id))
+        file = join(self.dataset_path, "subject{}_{}.txt".format(self.__default_user, self.__default_session_id))
         data = np.loadtxt(file)
         timestamps = data[:, 0]
         labels = data[:, -1]
@@ -192,7 +206,7 @@ class Skoda(Dataset):
                                           [rla_vectors[i][2], rha_vectors[i][2]], color='b')
             print(labels[i])
             i += 1
-            plt.pause(1 / self.__frequency)
+            plt.pause(1 / self.frequency)
 
 
 def plot_isolate_gestures():

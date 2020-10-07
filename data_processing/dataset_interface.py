@@ -1,23 +1,36 @@
+import glob
+import pickle
 from abc import abstractmethod, ABC
-import numpy as np
-
 from os.path import expanduser, join
+
+import numpy as np
 
 
 class Dataset(ABC):
     datasets_input_path = join(expanduser("~"), "Documents/Datasets")
 
     def __init__(self):
-        self.__default_user = 's01'
-        self.__frequency = None
+        pass
 
     @property
-    def freq(self):
-        return self.__frequency
+    @abstractmethod
+    def dataset_path(self):
+        pass
 
     @property
-    def default_user(self):
-        return self.__default_user
+    @abstractmethod
+    def frequency(self):
+        pass
+
+    @property
+    @abstractmethod
+    def quick_load(self):
+        pass
+
+    @property
+    @abstractmethod
+    def default_classes(self):
+        pass
 
     @abstractmethod
     def load_isolated_dataset(self):
@@ -46,3 +59,9 @@ class Dataset(ABC):
                     start_act = i
                     prev_label = label
         return templates, np.array(labels)
+
+    def quick_load_training_dataset(self):
+        filepath = [file for file in glob.glob(self.dataset_path + "*.pickle")][0]
+        with open(filepath, 'rb') as file:
+            templates, streams, stream_labels = pickle.load(file)
+        return templates, streams, stream_labels
