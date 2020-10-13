@@ -1,4 +1,3 @@
-import pickle
 from os.path import join
 
 import matplotlib.pyplot as plt
@@ -12,7 +11,7 @@ from utils.plots import plot_creator
 class HCIGuided(Dataset):
     @property
     def dataset_path(self):
-        return join(self.datasets_input_path, "HCI_FreeHandGestures")
+        return join(self.datasets_input_path, "HCI_FreeHandGestures/")
 
     @property
     def frequency(self):
@@ -35,32 +34,23 @@ class HCIGuided(Dataset):
         datapath = join(self.dataset_path, "usb_hci_guided.csv")
         return np.loadtxt(datapath)
 
-    def load_isolated_dataset(self, sensor_no=51, quick_load=True):
-        if quick_load:
-            with open(join(self.datasets_input_path, 'WLCSSTraining/datasets/hci/all_data_isolated.pickle'),
-                      'rb') as file:
-                data = pickle.load(file)
-            templates = [d[:, 1] for d in data]
-            stream_labels = np.array([d[0, 2] for d in data])
-            stream_labels[np.where(stream_labels > 53)[0]] = 0
-            return templates, stream_labels
-        else:
-            data = self.load_data()
-            stream_labels = data[:, 0]
-            acc_x = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.frequency), 10)
-            acc_y = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.frequency), 10)
-            acc_z = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.frequency), 10)
-            stream_labels = stream_labels[::10]
-            stream_labels[np.where(stream_labels > 53)[0]] = 0
-            acc_data = np.array([acc_x, acc_y, acc_z]).T
-            filtered_data = np.linalg.norm(acc_data, axis=1)
-            max_value = 3500
-            min_value = 0
-            bins = np.arange(min_value, max_value, (max_value - min_value) / 64)
-            quantized_data = np.digitize(filtered_data, bins)
-            bins = np.arange(0, 64)
-            processed_data = np.array([bins[x] for x in quantized_data], dtype=int)
-            return Dataset.segment_data(processed_data, stream_labels)
+    def load_isolated_dataset(self, sensor_no=51):
+        data = self.load_data()
+        stream_labels = data[:, 0]
+        acc_x = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.frequency), 10)
+        acc_y = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.frequency), 10)
+        acc_z = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.frequency), 10)
+        stream_labels = stream_labels[::10]
+        stream_labels[np.where(stream_labels > 53)[0]] = 0
+        acc_data = np.array([acc_x, acc_y, acc_z]).T
+        filtered_data = np.linalg.norm(acc_data, axis=1)
+        max_value = 3500
+        min_value = 0
+        bins = np.arange(min_value, max_value, (max_value - min_value) / 64)
+        quantized_data = np.digitize(filtered_data, bins)
+        bins = np.arange(0, 64)
+        processed_data = np.array([bins[x] for x in quantized_data], dtype=int)
+        return Dataset.segment_data(processed_data, stream_labels)
 
     def load_continuous_dataset(self):
         pass
