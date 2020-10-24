@@ -17,7 +17,7 @@ from training.templates.es_templates_generator import ESVariableTemplateGenerato
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 'hci_table'
+    dataset_choice = 'hci_guided'
     outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     num_test = 1
@@ -39,11 +39,11 @@ if __name__ == '__main__':
     inject_templates = False
     optimize_thresholds = False
 
-    enlarge_probability = 0
-    shrink_probability = 0.5
-    length_weight = 0.7
-    max_length_rate = 1
-    min_length_rate = 0.25
+    enlarge_probability = 0.33
+    shrink_probability = 0.33
+    length_weight = 0.9
+    max_length_rate = 1.5
+    min_length_rate = 0.33
 
     if dataset_choice == 'skoda':
         encoding = '3d'
@@ -244,6 +244,7 @@ if __name__ == '__main__':
         results = optimizer.get_results()
         output_file = "{}/{}_templates_{}".format(output_folder, hostname, st)
         output_scores_path = "{}_{}_scores.txt".format(output_file, c)
+        output_templates_path = "{}_{}_templates.txt".format(output_file, c)
 
         if optimize_thresholds:
             best_templates.append(results[1])
@@ -251,7 +252,6 @@ if __name__ == '__main__':
             with open(output_scores_path, 'w') as f:
                 for item in results[-3]:
                     f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
-            output_templates_path = "{}_{}_templates.txt".format(output_file, c)
             with open(output_templates_path, 'w') as f:
                 for k, item in enumerate(results[-2]):
                     f.write("{} {}\n".format(" ".join([str(x) for x in item.tolist()]),
@@ -262,7 +262,6 @@ if __name__ == '__main__':
             with open(output_scores_path, 'w') as f:
                 for item in results[-2]:
                     f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
-            output_templates_path = "{}_{}_templates.txt".format(output_file, c)
             with open(output_templates_path, 'w') as f:
                 for k, item in enumerate(results[-1]):
                     f.write("{}\n".format(" ".join([str(x) for x in item.tolist()])))
@@ -310,6 +309,8 @@ if __name__ == '__main__':
                                                          parameter_to_optimize='f1')
     print(fitness_score)
 
+    original_t_lengths = list()
+    generated_t_lengths = list()
     for i, c in enumerate(classes):
         tmp_labels = np.copy(streams_labels)
         tmp_labels[tmp_labels != c] = 0
@@ -320,12 +321,18 @@ if __name__ == '__main__':
         print(
             "Class: {} - Score: {:4.3f} - Good dist: {:4.3f} - Bad dist: {:4.3f} - Thres: {} - Start_length: {} - End_length: {}".format(
                 c,
-                templates_fitness_score[0],
+                (length_weight / len(best_templates[i])) + (1 - length_weight * templates_fitness_score[0]),
                 templates_fitness_score[1],
                 templates_fitness_score[2],
                 thresholds[i],
                 start_length,
                 len(best_templates[i])))
+        original_t_lengths.append(start_length)
+        generated_t_lengths.append(len(best_templates[i]))
+        print("Computation saved: {:3.2f}".format(
+            np.sum(np.array(generated_t_lengths)) / np.sum(np.array(original_t_lengths)) * 100))
+
+    print("")
 
     plt_creator.plot_templates_scores(output_file_path.replace(".txt", ""))
     plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes, streams_labels,

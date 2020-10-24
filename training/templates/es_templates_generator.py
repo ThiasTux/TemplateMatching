@@ -172,6 +172,12 @@ class ESVariableTemplateGenerator:
         self.__templates_chromosomes = chromosomes
         self.__max_templates_chromosomes = int(chromosomes * max_lr)
         self.__min_templates_chromosomes = int(chromosomes * min_lr)
+        max_scores = params[0] * self.__max_templates_chromosomes
+        min_scores = -params[1] * self.__bit_values * self.__max_templates_chromosomes
+        self.__max_fitness = max_scores - min_scores
+        self.__min_fitness = min_scores - max_scores
+        self.__max_templates_length = self.__max_templates_chromosomes + 1
+        self.__min_templates_length = self.__min_templates_chromosomes - 1
         self.__enlarge_probability = en_p
         self.__shrink_probability = sh_p
         self.__length_weight = l_weight
@@ -190,9 +196,7 @@ class ESVariableTemplateGenerator:
         bar = progressbar.ProgressBar(max_value=self.__iterations)
         fit_scores_distances = self.__compute_fitness_cuda(templates_pop)
         fit_scores = fit_scores_distances[:, 0]
-        fit_scores = np.array(
-            [(self.__length_weight * 1 / len(templates_pop[k])) + (self.__fitness_weight * fit_scores[k]) for k in
-             range(self.__num_individuals)])
+        fit_scores = self.__combine_fitness(fit_scores, templates_pop)
         for i in range(self.__iterations):
             pop_sort_idx = np.argsort(-fit_scores if self.__maximize else fit_scores)
             top_templates_individuals = [templates_pop[k] for k in pop_sort_idx]
@@ -206,9 +210,7 @@ class ESVariableTemplateGenerator:
                 templates_pop[0:self.__elitism] = top_templates_individuals[0:self.__elitism]
             fit_scores_distances = self.__compute_fitness_cuda(templates_pop)
             fit_scores = fit_scores_distances[:, 0]
-            fit_scores = np.array(
-                [(self.__length_weight * 1 / len(templates_pop[k])) + (self.__fitness_weight * fit_scores[k]) for k in
-                 range(self.__num_individuals)])
+            fit_scores = self.__combine_fitness(fit_scores, templates_pop)
             good_distances = fit_scores_distances[:, 1]
             bad_distances = fit_scores_distances[:, 2]
             if self.__maximize:
@@ -289,13 +291,20 @@ class ESVariableTemplateGenerator:
 
     def __compute_fitness_cuda(self, templates_pop):
         matching_scores = self.__m_wlcss_cuda.compute_wlcss(templates_pop)
-        fitness_scores = [fit_fun.isolated_fitness_function_templates(matching_scores[0][:, k],
+        fitness_scores = [fit_fun.isolated_fitness_function_templates(matching_scores[:, k],
                                                                       self.__streams_labels,
                                                                       self.__threshold,
                                                                       parameter_to_optimize=self.__fitness_function)
                           for k in
                           range(self.__num_individuals)]
         return np.array(fitness_scores)
+
+    def __combine_fitness(self, fit_scores, templates_pop):
+        norm_fit_scores = (fit_scores - self.__min_fitness) / (self.__max_fitness - self.__min_fitness)
+        templates_lengths = np.array([len(t) for t in templates_pop])
+        norm_templates_lengths = (templates_lengths - self.__max_templates_length) / (
+                self.__min_templates_length - self.__max_templates_length)
+        return self.__length_weight * norm_templates_lengths + self.__fitness_function * norm_fit_scores
 
     def __np_to_int(self, chromosome):
         return int("".join(chromosome.astype('U')), 2)
