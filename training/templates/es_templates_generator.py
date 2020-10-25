@@ -38,14 +38,9 @@ class ESTemplateGenerator:
         self.__m_wlcss_cuda = WLCSSCudaTemplatesTraining(self.__streams, self.__params, self.__templates_chromosomes,
                                                          self.__num_individuals, self.__use_encoding)
         self.__results = list()
-        # self.__pool = Pool(processes=12)
-        # self.__rep_streams_labels = [self.__streams_labels for _ in range(self.__num_individuals)]
-        # self.__rep_thresholds = [self.__threshold for _ in range(self.__num_individuals)]
-        # self.__rep_fitness_function = [self.__fitness_function for _ in range(self.__num_individuals)]
 
     def optimize(self):
         self.__execute_ga()
-        # self.__pool.close()
 
     def __execute_ga(self):
         scores = list()
@@ -130,10 +125,6 @@ class ESTemplateGenerator:
                                                                       parameter_to_optimize=self.__fitness_function)
                           for k in
                           range(self.__num_individuals)]
-        # fitness_scores = self.__pool.starmap(fit_fun.isolated_fitness_function_templates, zip(matching_scores[0].T,
-        #                                                                                self.__rep_streams_labels,
-        #                                                                                self.__rep_thresholds,
-        #                                                                                self.__rep_fitness_function))
         return np.array(fitness_scores)
 
     def __np_to_int(self, chromosome):
@@ -304,7 +295,7 @@ class ESVariableTemplateGenerator:
         templates_lengths = np.array([len(t) for t in templates_pop])
         norm_templates_lengths = (templates_lengths - self.__max_templates_length) / (
                 self.__min_templates_length - self.__max_templates_length)
-        return self.__length_weight * norm_templates_lengths + self.__fitness_function * norm_fit_scores
+        return self.__length_weight * norm_templates_lengths + self.__fitness_weight * norm_fit_scores
 
     def __np_to_int(self, chromosome):
         return int("".join(chromosome.astype('U')), 2)
