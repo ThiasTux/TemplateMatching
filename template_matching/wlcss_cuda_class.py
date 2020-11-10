@@ -22,13 +22,13 @@ class WLCSSCudaParamsTraining:
         """
         if not use_encoding:
             wlcss_dll = ctypes.CDLL(
-                os.path.abspath("libs/cuda/training/params/lib_wlcss_cuda_params_training_optimized.so"))
+                os.path.abspath("libs/cuda/training/params/lib_wlcss_cuda_params_training.so"))
         elif use_encoding == '2d':
             wlcss_dll = ctypes.CDLL(
-                os.path.abspath("libs/cuda/training/params/lib_wlcss_cuda_params_training_optimized_2d_enc.so"))
+                os.path.abspath("libs/cuda/training/params/lib_wlcss_cuda_params_training_2d_enc.so"))
         elif use_encoding == '3d':
             wlcss_dll = ctypes.CDLL(
-                os.path.abspath("libs/cuda/training/params/lib_wlcss_cuda_params_training_optimized_3d_enc.so"))
+                os.path.abspath("libs/cuda/training/params/lib_wlcss_cuda_params_training_3d_enc.so"))
         self._wlcss_init = wlcss_dll.wlcss_cuda_init
         self._wlcss_init.argtype = [POINTER(c_int32), POINTER(c_int32), POINTER(c_int32), POINTER(c_int32),
                                     POINTER(c_int32), POINTER(c_int32), POINTER(c_int32), POINTER(c_int32),
@@ -370,13 +370,13 @@ class WLCSSCudaTraining:
 class WLCSSCudaContinuous:
     def __init__(self, templates, streams, num_individuals=1, use_encoding=False):
         if not use_encoding:
-            wlcss_dll = ctypes.CDLL(os.path.abspath("libs/cuda/training/lib_wlcss_cuda_params_training_optimized.so"))
+            wlcss_dll = ctypes.CDLL(os.path.abspath("libs/cuda/training/lib_wlcss_cuda_params_training.so"))
         elif use_encoding == '2d':
             wlcss_dll = ctypes.CDLL(
-                os.path.abspath("libs/cuda/training/lib_wlcss_cuda_params_training_optimized_2d_enc.so"))
+                os.path.abspath("libs/cuda/training/lib_wlcss_cuda_params_training_2d_enc.so"))
         elif use_encoding == '3d':
             wlcss_dll = ctypes.CDLL(
-                os.path.abspath("libs/cuda/training/lib_wlcss_cuda_params_training_optimized_3d_enc.so"))
+                os.path.abspath("libs/cuda/training/lib_wlcss_cuda_params_training_3d_enc.so"))
         self._wlcss_init = wlcss_dll.wlcss_cuda_init
         self._wlcss_init.argtype = [POINTER(c_int32), POINTER(c_int32), POINTER(c_int32), POINTER(c_int32),
                                     POINTER(c_int32), POINTER(c_int32), POINTER(c_int32), POINTER(c_int32),
