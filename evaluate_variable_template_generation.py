@@ -2,6 +2,7 @@
 Evaluate Template Generation loading ES parameter from csv file.
 """
 import datetime
+import pickle
 import socket
 import time
 from os.path import join
@@ -109,7 +110,7 @@ for index, td in test_data.iterrows():
                                                     chosen_template=templates[i], use_encoding=encoding,
                                                     num_individuals=num_individuals, rank=rank,
                                                     elitism=elitism,
-                                                    iterations=iterations,
+                                                    iterations=iterations, save_internals=True,
                                                     fitness_function=fitness_function,
                                                     cr_p=crossover_probability,
                                                     mt_p=mutation_probability,
@@ -123,6 +124,13 @@ for index, td in test_data.iterrows():
             results = optimizer.get_results()
             output_file = "{}/{}_templates_{}".format(output_folder, hostname, st)
             output_scores_path = "{}_{}_scores.txt".format(output_file, c)
+
+            output_internal_state_templates_path = "{}_{}_internal_templates.pickle".format(output_file, c)
+            output_internal_state_scores_path = "{}_{}_internal_scores.csv".format(output_file, c)
+            internal_fitness, internal_templates = optimizer.get_internal_states()
+            np.savetxt(output_internal_state_scores_path, internal_fitness)
+            with open(output_internal_state_templates_path, 'wb') as output_file:
+                pickle.dump(internal_templates, output_file)
 
             if optimize_thresholds:
                 best_templates.append(results[1])
@@ -165,7 +173,7 @@ for index, td in test_data.iterrows():
             outputconffile.write("Optimize threshold: {}\n".format(optimize_thresholds))
             outputconffile.write("Num tests: {}\n".format(num_test))
             outputconffile.write("Fitness function: {}\n".format(fitness_function))
-            outputconffile.write("Chromosomes: {}\n".format(chromosomes))
+            outputconffile.write("Bit values: {}\n".format(bit_values))
             outputconffile.write("Params: {}\n".format(params))
             outputconffile.write("Thresholds: {}\n".format(thresholds))
             outputconffile.write("Null class extraction: {}\n".format(use_null))

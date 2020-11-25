@@ -3,6 +3,7 @@
 Template Generation main launcher
 """
 import datetime
+import pickle
 import socket
 import time
 from os.path import join
@@ -29,8 +30,8 @@ if __name__ == '__main__':
     null_class_percentage = 0.5
     encoding = False
 
-    num_individuals = 64
-    rank = 16
+    num_individuals = 128
+    rank = 32
     elitism = 3
     iterations = 500
     fitness_function = 2
@@ -38,21 +39,24 @@ if __name__ == '__main__':
     mutation_probability = 0.1
     inject_templates = False
     optimize_thresholds = False
+    save_internals = False
 
     enlarge_probability = 0.33
     shrink_probability = 0.33
-    length_weight = 0.9
-    max_length_rate = 1.5
+    length_weight = 0.05
+    max_length_rate = 1
     min_length_rate = 0.33
 
     if dataset_choice == 'skoda':
         encoding = '3d'
-        # classes = [3001, 3003, 3013, 3018]
-        classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
+        classes = [3001, 3003, 3013, 3018]
+        # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
         output_folder = "{}/skoda/variable_templates".format(outputs_path)
         null_class_percentage = 0.6
         params = [[63, 1, 0], [50, 2, 7], [41, 3, 0], [58, 1, 2], [32, 6, 8], [54, 4, 3], [59, 4, 7], [53, 22, 12]]
+        params = params[:4]
         thresholds = [998, 519, -84, 644, -1053, -91, -38, -718]
+        thresholds = thresholds[:4]
         bit_values = 15
         fitness_function = 2
     elif dataset_choice == 'skoda_mini':
@@ -87,19 +91,20 @@ if __name__ == '__main__':
         params = [[579, 7, 7], [906, 35, 12], [996, 72, 2], [947, 114, 9], [965, 165, 9], [619, 12, 14], [985, 148, 2],
                   [918, 30, 1], [1009, 6, 1], [278, 963, 336], [988, 72, 6]]
         thresholds = [7508, 20123, -794, 11293, -34, 10628, 4175, 7202, 10268, 12265, -1133]
-
         output_folder = "{}/opportunity_encoded/variable_templates".format(outputs_path)
         sensor = None
         null_class_percentage = 0.8
     elif dataset_choice == 'hci_guided':
         encoding = False
         classes = [49, 50, 51, 52, 53]
+        # classes = [49]
         output_folder = "{}/hci_guided/variable_templates".format(outputs_path)
         params = [[39, 15, 3], [47, 2, 2], [53, 20, 2], [54, 40, 4], [63, 43, 3]]
         thresholds = [98, 1961, 409, 199, 794]
         bit_values = 64
         null_class_percentage = 0.5
         fitness_function = 2
+        save_internals = True
     elif dataset_choice == 'hci_freehand':
         encoding = False
         classes = [49, 50, 51, 52, 53]
@@ -196,6 +201,7 @@ if __name__ == '__main__':
     hostname = socket.gethostname().lower()
     print("Dataset choice: {}".format(dataset_choice))
     print("Classes: {}".format(' '.join([str(c) for c in classes])))
+    print("Bit values: {}".format(bit_values))
     print("Population: {}".format(num_individuals))
     print("Iteration: {}".format(iterations))
     print("Crossover: {}".format(crossover_probability))
@@ -229,7 +235,7 @@ if __name__ == '__main__':
                                                 bit_values,
                                                 chosen_template=templates[i], use_encoding=encoding,
                                                 num_individuals=num_individuals, rank=rank,
-                                                elitism=elitism,
+                                                elitism=elitism, save_internals=save_internals,
                                                 iterations=iterations,
                                                 fitness_function=fitness_function,
                                                 cr_p=crossover_probability,
@@ -245,6 +251,14 @@ if __name__ == '__main__':
         output_file = "{}/{}_templates_{}".format(output_folder, hostname, st)
         output_scores_path = "{}_{}_scores.txt".format(output_file, c)
         output_templates_path = "{}_{}_templates.txt".format(output_file, c)
+
+        if save_internals:
+            output_internal_state_templates_path = "{}_{}_internal_templates.pickle".format(output_file, c)
+            output_internal_state_scores_path = "{}_{}_internal_scores.csv".format(output_file, c)
+            internal_fitness, internal_templates = optimizer.get_internal_states()
+            np.savetxt(output_internal_state_scores_path, internal_fitness)
+            with open(output_internal_state_templates_path, 'wb') as output_file:
+                pickle.dump(internal_templates, output_file)
 
         if optimize_thresholds:
             best_templates.append(results[1])
@@ -284,7 +298,7 @@ if __name__ == '__main__':
         outputconffile.write("Optimize threshold: {}\n".format(optimize_thresholds))
         outputconffile.write("Num tests: {}\n".format(num_test))
         outputconffile.write("Fitness function: {}\n".format(fitness_function))
-        outputconffile.write("Chromosomes: {}\n".format(chromosomes))
+        outputconffile.write("Bit values: {}\n".format(bit_values))
         outputconffile.write("Params: {}\n".format(params))
         outputconffile.write("Thresholds: {}\n".format(thresholds))
         outputconffile.write("Null class extraction: {}\n".format(use_null))
