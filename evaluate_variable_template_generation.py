@@ -15,7 +15,7 @@ from performance_evaluation import fitness_functions as ftf
 from template_matching.wlcss_cuda_class import WLCSSCuda
 from training.templates.es_templates_generator import ESVariableTemplateGenerator
 
-test_filepath = "test/variable_templates/test_all_0.csv"
+test_filepath = "test/variable_templates/test_hci_guided_2.csv"
 test_info = ["dataset_choice", "num_test", "use_null", "write_to_file", "user", "params", "thresholds",
              "null_class_percentage", "num_individuals", "rank", "elitism", "iterations", "fitness_function",
              "crossover_probability", "mutation_probability", "inject_templates", "optimize_thresholds", "encoding",
@@ -123,14 +123,15 @@ for index, td in test_data.iterrows():
 
             results = optimizer.get_results()
             output_file = "{}/{}_templates_{}".format(output_folder, hostname, st)
+            output_templates_path = "{}_{}_templates.txt".format(output_file, c)
             output_scores_path = "{}_{}_scores.txt".format(output_file, c)
 
             output_internal_state_templates_path = "{}_{}_internal_templates.pickle".format(output_file, c)
             output_internal_state_scores_path = "{}_{}_internal_scores.csv".format(output_file, c)
             internal_fitness, internal_templates = optimizer.get_internal_states()
             np.savetxt(output_internal_state_scores_path, internal_fitness)
-            with open(output_internal_state_templates_path, 'wb') as output_file:
-                pickle.dump(internal_templates, output_file)
+            with open(output_internal_state_templates_path, 'wb') as f:
+                pickle.dump(internal_templates, f)
 
             if optimize_thresholds:
                 best_templates.append(results[1])
@@ -149,7 +150,6 @@ for index, td in test_data.iterrows():
                 with open(output_scores_path, 'w') as f:
                     for item in results[-2]:
                         f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
-                output_templates_path = "{}_{}_templates.txt".format(output_file, c)
                 with open(output_templates_path, 'w') as f:
                     for k, item in enumerate(results[-1]):
                         f.write("{}\n".format(" ".join([str(x) for x in item.tolist()])))
