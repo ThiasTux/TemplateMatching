@@ -2,7 +2,6 @@
 Evaluate Template Generation loading ES parameter from csv file.
 """
 import datetime
-import pickle
 import socket
 import time
 from os.path import join
@@ -110,7 +109,7 @@ for index, td in test_data.iterrows():
                                                     chosen_template=templates[i], use_encoding=encoding,
                                                     num_individuals=num_individuals, rank=rank,
                                                     elitism=elitism,
-                                                    iterations=iterations, save_internals=True,
+                                                    iterations=iterations,
                                                     fitness_function=fitness_function,
                                                     cr_p=crossover_probability,
                                                     mt_p=mutation_probability,
@@ -125,13 +124,6 @@ for index, td in test_data.iterrows():
             output_file = "{}/{}_templates_{}".format(output_folder, hostname, st)
             output_templates_path = "{}_{}_templates.txt".format(output_file, c)
             output_scores_path = "{}_{}_scores.txt".format(output_file, c)
-
-            output_internal_state_templates_path = "{}_{}_internal_templates.pickle".format(output_file, c)
-            output_internal_state_scores_path = "{}_{}_internal_scores.csv".format(output_file, c)
-            internal_fitness, internal_templates = optimizer.get_internal_states()
-            np.savetxt(output_internal_state_scores_path, internal_fitness)
-            with open(output_internal_state_templates_path, 'wb') as f:
-                pickle.dump(internal_templates, f)
 
             if optimize_thresholds:
                 best_templates.append(results[1])
