@@ -91,8 +91,6 @@ for index, td in test_data.iterrows():
             tmp_labels = np.copy(streams_labels)
             tmp_labels[tmp_labels != c] = 0
             chromosomes = len(templates[i])
-            if not inject_templates:
-                templates = [None for _ in range(len(classes))]
             print("{} - {}".format(c, chromosomes))
             optimizer = ESVariableTemplateGenerator(streams, tmp_labels, params[i], thresholds[i], c, chromosomes,
                                                     bit_values,
