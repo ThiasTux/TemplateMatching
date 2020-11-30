@@ -91,10 +91,14 @@ for index, td in test_data.iterrows():
             tmp_labels = np.copy(streams_labels)
             tmp_labels[tmp_labels != c] = 0
             chromosomes = len(templates[i])
+            if inject_templates:
+                injected_template = templates[i]
+            else:
+                injected_template = None
             print("{} - {}".format(c, chromosomes))
             optimizer = ESVariableTemplateGenerator(streams, tmp_labels, params[i], thresholds[i], c, chromosomes,
                                                     bit_values,
-                                                    chosen_template=templates[i], use_encoding=encoding,
+                                                    chosen_template=injected_template, use_encoding=encoding,
                                                     num_individuals=num_individuals, rank=rank,
                                                     elitism=elitism,
                                                     iterations=iterations,
