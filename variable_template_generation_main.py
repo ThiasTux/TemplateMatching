@@ -173,18 +173,11 @@ if __name__ == '__main__':
         bit_values = 64
         null_class_percentage = 0.5
 
-    if inject_templates:
-        templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
-                                                                      classes=classes, user=user,
-                                                                      extract_null=use_null,
-                                                                      template_choice_method='random',
-                                                                      null_class_percentage=null_class_percentage)
-    else:
-        streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
-                                                           classes=classes, user=user, extract_null=use_null,
-                                                           template_choice_method=None,
-                                                           null_class_percentage=null_class_percentage)
-        templates = [None for _ in range(len(classes))]
+    templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
+                                                                  classes=classes, user=user,
+                                                                  extract_null=use_null,
+                                                                  template_choice_method='mrt',
+                                                                  null_class_percentage=null_class_percentage)
 
     # Group streams by labels
     streams_labels_sorted_idx = streams_labels.argsort()
@@ -225,11 +218,9 @@ if __name__ == '__main__':
     for i, c in enumerate(classes):
         tmp_labels = np.copy(streams_labels)
         tmp_labels[tmp_labels != c] = 0
-        if inject_templates:
-            chromosomes = len(templates[i])
-        else:
-            chromosomes = int(np.ceil(
-                np.average([len(streams[i]) for i, sl in enumerate(streams_labels) if sl == c]).astype(int)))
+        chromosomes = len(templates[i])
+        if not inject_templates:
+            templates = [None for _ in range(len(classes))]
         print("{} - {}".format(c, chromosomes))
         optimizer = ESVariableTemplateGenerator(streams, tmp_labels, params[i], thresholds[i], c, chromosomes,
                                                 bit_values,

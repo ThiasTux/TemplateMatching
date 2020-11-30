@@ -47,18 +47,11 @@ for index, td in test_data.iterrows():
         # Load data (only if data are not loaded already)
         if prev_dataset is None or dataset_choice != prev_dataset:
             prev_dataset = dataset_choice
-            if inject_templates:
-                templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
-                                                                              classes=classes, user=user,
-                                                                              extract_null=use_null,
-                                                                              template_choice_method='random',
-                                                                              null_class_percentage=null_class_percentage)
-            else:
-                streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
-                                                                   classes=classes, user=user, extract_null=use_null,
-                                                                   template_choice_method=None,
-                                                                   null_class_percentage=null_class_percentage)
-                templates = [None for _ in range(len(classes))]
+            templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
+                                                                          classes=classes, user=user,
+                                                                          extract_null=use_null,
+                                                                          template_choice_method='mrt',
+                                                                          null_class_percentage=null_class_percentage)
             # Group streams by labels
             streams_labels_sorted_idx = streams_labels.argsort()
             streams = [streams[i] for i in streams_labels_sorted_idx]
@@ -97,12 +90,9 @@ for index, td in test_data.iterrows():
         for i, c in enumerate(classes):
             tmp_labels = np.copy(streams_labels)
             tmp_labels[tmp_labels != c] = 0
-            if inject_templates:
-                chromosomes = len(templates[i])
-            else:
-                chromosomes = int(np.ceil(
-                    np.average([len(streams[i]) for i, sl in enumerate(streams_labels) if sl == c]).astype(
-                        int)))
+            chromosomes = len(templates[i])
+            if not inject_templates:
+                templates = [None for _ in range(len(classes))]
             print("{} - {}".format(c, chromosomes))
             optimizer = ESVariableTemplateGenerator(streams, tmp_labels, params[i], thresholds[i], c, chromosomes,
                                                     bit_values,
