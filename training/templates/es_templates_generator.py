@@ -166,10 +166,14 @@ class ESVariableTemplateGenerator:
         self.__templates_chromosomes = chromosomes
         self.__max_templates_chromosomes = int(chromosomes * max_lr)
         self.__min_templates_chromosomes = int(chromosomes * min_lr)
-        max_scores = params[0] * self.__max_templates_chromosomes
-        min_scores = -params[1] * self.__bit_values * self.__max_templates_chromosomes
-        self.__max_fitness = max_scores - min_scores
-        self.__min_fitness = min_scores - max_scores
+        self.__max_scores = params[0] * self.__max_templates_chromosomes
+        self.__min_scores = -self.__max_scores
+        self.__max_fitness = self.__max_scores - self.__min_scores
+        self.__min_fitness = self.__min_scores - self.__max_scores
+        print("Max score: {}, Min score: {}, Max distance: {}, Min distance: {}".format(self.__max_scores,
+                                                                                        self.__min_scores,
+                                                                                        self.__max_fitness,
+                                                                                        self.__min_fitness))
         self.__max_templates_length = self.__max_templates_chromosomes + 1
         self.__min_templates_length = self.__min_templates_chromosomes - 1
         self.__enlarge_probability = en_p
@@ -207,7 +211,7 @@ class ESVariableTemplateGenerator:
                 templates_pop[0:self.__elitism] = top_templates_individuals[0:self.__elitism]
             fit_scores_distances = self.__compute_fitness_cuda(templates_pop)
             fit_scores = fit_scores_distances[:, 0]
-            fit_scores = self.__combine_fitness(fit_scores, templates_pop)
+            fit_scores = self.__combine_fitness(fit_scores, templates_pop, method='moving_min_max')
             good_distances = fit_scores_distances[:, 1]
             bad_distances = fit_scores_distances[:, 2]
             if self.__maximize:
@@ -299,11 +303,33 @@ class ESVariableTemplateGenerator:
                           range(self.__num_individuals)]
         return np.array(fitness_scores)
 
-    def __combine_fitness(self, fit_scores, templates_pop):
-        norm_fit_scores = (fit_scores - self.__min_fitness) / (self.__max_fitness - self.__min_fitness)
+    def __combine_fitness(self, fit_scores, templates_pop, method='min_max'):
         templates_lengths = np.array([len(t) for t in templates_pop])
-        norm_templates_lengths = (templates_lengths - self.__max_templates_length) / (
-                self.__min_templates_length - self.__max_templates_length)
+        if method == 'min_max':
+            # print("Mean: {}, Std: {}, Min: {}, Max: {}".format(np.mean(fit_scores), np.std(fit_scores),
+            #                                                    np.min(fit_scores), np.max(fit_scores)), end="\n",
+            #       flush=True)
+            # Min-max normalization fit_score
+            norm_fit_scores = (fit_scores - self.__min_fitness) / (self.__max_fitness - self.__min_fitness)
+            # Min-max normalization template length
+            norm_templates_lengths = (templates_lengths - self.__max_templates_length) / (
+                    self.__min_templates_length - self.__max_templates_length)
+        elif method == 'z_score_local':
+            # Min-max normalization fit_score
+            print("Mean: {}, Std: {}, Min: {}, Max: {}".format(np.mean(fit_scores), np.std(fit_scores),
+                                                               np.min(fit_scores), np.max(fit_scores)), end="\n",
+                  flush=True)
+            norm_fit_scores = (fit_scores - np.mean(fit_scores)) / np.std(fit_scores)
+            norm_templates_lengths = (templates_lengths - np.mean(templates_lengths)) / np.std(templates_lengths)
+        elif method == 'moving_min_max':
+            min_fitness = np.min(fit_scores)
+            if min_fitness < self.__min_fitness:
+                self.__min_fitness = min_fitness
+            # Min-max normalization fit_score
+            norm_fit_scores = (fit_scores - self.__min_fitness) / (self.__max_fitness - self.__min_fitness)
+            # Min-max normalization template length
+            norm_templates_lengths = (templates_lengths - self.__max_templates_length) / (
+                    self.__min_templates_length - self.__max_templates_length)
         return self.__length_weight * norm_templates_lengths + self.__fitness_weight * norm_fit_scores
 
     def __np_to_int(self, chromosome):
