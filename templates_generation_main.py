@@ -3,6 +3,7 @@
 Template Generation main launcher
 """
 import datetime
+import pickle
 import socket
 import time
 from os.path import join
@@ -13,11 +14,11 @@ import numpy as np
 from data_processing import data_loader as dl
 from performance_evaluation import fitness_functions as ftf
 from template_matching.wlcss_cuda_class import WLCSSCuda
-from training.templates.es_templates_generator import ESTemplateGenerator, ESTemplateThresholdsGenerator
+from training.templates.es_templates_generator import ESTemplateGenerator
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 'skoda'
+    dataset_choice = 'hci_guided'
     outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     num_test = 1
@@ -33,11 +34,13 @@ if __name__ == '__main__':
     rank = 32
     elitism = 3
     iterations = 500
-    fitness_function = 86
+    fitness_function = 2
     crossover_probability = 0.3
     mutation_probability = 0.1
+    scaling_length = 0.5
     inject_templates = False
     optimize_thresholds = False
+    save_internals = False
 
     if dataset_choice == 'skoda':
         encoding = '3d'
@@ -159,18 +162,11 @@ if __name__ == '__main__':
         bit_values = 64
         null_class_percentage = 0.5
 
-    if inject_templates:
-        templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
-                                                                      classes=classes, user=user,
-                                                                      extract_null=use_null,
-                                                                      template_choice_method='random',
-                                                                      null_class_percentage=null_class_percentage)
-    else:
-        streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
-                                                           classes=classes, user=user, extract_null=use_null,
-                                                           template_choice_method=None,
-                                                           null_class_percentage=null_class_percentage)
-        templates = [None for _ in range(len(classes))]
+    templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
+                                                                  classes=classes, user=user,
+                                                                  extract_null=use_null,
+                                                                  template_choice_method='mrt',
+                                                                  null_class_percentage=null_class_percentage)
 
     # Group streams by labels
     streams_labels_sorted_idx = streams_labels.argsort()
@@ -204,35 +200,34 @@ if __name__ == '__main__':
     for i, c in enumerate(classes):
         tmp_labels = np.copy(streams_labels)
         tmp_labels[tmp_labels != c] = 0
+        chromosomes = int(len(templates[i]) * scaling_length)
         if inject_templates:
-            chromosomes = len(templates[i])
+            injected_template = templates[i]
         else:
-            chromosomes = int(np.ceil(
-                np.average([len(streams[i]) for i, sl in enumerate(streams_labels) if sl == c]).astype(int)))
+            injected_template = None
         print("{} - {}".format(c, chromosomes))
-        if optimize_thresholds:
-            optimizer = ESTemplateThresholdsGenerator(streams, tmp_labels, params[i], c, chromosomes, bit_values,
-                                                      chosen_template=templates[i], use_encoding=encoding,
-                                                      num_individuals=num_individuals, rank=rank,
-                                                      elitism=elitism,
-                                                      iterations=iterations,
-                                                      fitness_function=fitness_function,
-                                                      cr_p=crossover_probability,
-                                                      mt_p=mutation_probability)
-        else:
-            optimizer = ESTemplateGenerator(streams, tmp_labels, params[i], thresholds[i], c, chromosomes, bit_values,
-                                            chosen_template=templates[i], use_encoding=encoding,
-                                            num_individuals=num_individuals, rank=rank,
-                                            elitism=elitism,
-                                            iterations=iterations,
-                                            fitness_function=fitness_function,
-                                            cr_p=crossover_probability,
-                                            mt_p=mutation_probability)
+
+        optimizer = ESTemplateGenerator(streams, tmp_labels, params[i], thresholds[i], c, chromosomes, bit_values,
+                                        chosen_template=injected_template, use_encoding=encoding,
+                                        num_individuals=num_individuals, rank=rank,
+                                        elitism=elitism,
+                                        iterations=iterations,
+                                        fitness_function=fitness_function,
+                                        cr_p=crossover_probability,
+                                        mt_p=mutation_probability)
         optimizer.optimize()
 
         results = optimizer.get_results()
         output_file = "{}/{}_templates_{}".format(output_folder, hostname, st)
         output_scores_path = "{}_{}_scores.txt".format(output_file, c)
+
+        if save_internals:
+            output_internal_state_templates_path = "{}_{}_internal_templates.pickle".format(output_file, c)
+            output_internal_state_scores_path = "{}_{}_internal_scores.csv".format(output_file, c)
+            internal_fitness, internal_templates = optimizer.get_internal_states()
+            np.savetxt(output_internal_state_scores_path, internal_fitness)
+            with open(output_internal_state_templates_path, 'wb') as output_file:
+                pickle.dump(internal_templates, output_file)
 
         if optimize_thresholds:
             best_templates.append(results[1])

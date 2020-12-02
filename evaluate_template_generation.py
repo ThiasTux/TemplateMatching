@@ -12,9 +12,9 @@ import pandas as pd
 from data_processing import data_loader as dl
 from performance_evaluation import fitness_functions as ftf
 from template_matching.wlcss_cuda_class import WLCSSCuda
-from training.templates.es_templates_generator import ESTemplateGenerator, ESTemplateThresholdsGenerator
+from training.templates.es_templates_generator import ESTemplateGenerator
 
-test_filepath = "test/templates/test_hci_guided_0.csv"
+test_filepath = "test/templates/test_hci_guided_1.csv"
 test_info = ["dataset_choice", "num_test", "use_null", "write_to_file", "user", "params", "thresholds",
              "null_class_percentage", "num_individuals", "rank", "elitism", "iterations", "fitness_function",
              "crossover_probability", "mutation_probability", "inject_templates", "optimize_thresholds", "encoding",
@@ -46,18 +46,11 @@ for index, td in test_data.iterrows():
         # Load data (only if data are not loaded already)
         if prev_dataset is None or dataset_choice != prev_dataset:
             prev_dataset = dataset_choice
-            if inject_templates:
-                templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
-                                                                              classes=classes, user=user,
-                                                                              extract_null=use_null,
-                                                                              template_choice_method='random',
-                                                                              null_class_percentage=null_class_percentage)
-            else:
-                streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
-                                                                   classes=classes, user=user, extract_null=use_null,
-                                                                   template_choice_method=None,
-                                                                   null_class_percentage=null_class_percentage)
-                templates = [None for _ in range(len(classes))]
+            templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
+                                                                          classes=classes, user=user,
+                                                                          extract_null=use_null,
+                                                                          template_choice_method='mrt',
+                                                                          null_class_percentage=null_class_percentage)
             # Group streams by labels
             streams_labels_sorted_idx = streams_labels.argsort()
             streams = [streams[i] for i in streams_labels_sorted_idx]
@@ -87,35 +80,26 @@ for index, td in test_data.iterrows():
         print("Thresholds: {}".format(thresholds))
         print("Null class extraction: {}".format(use_null))
         print("Null class percentage: {}".format(null_class_percentage))
+        print("Use encoding: {}".format(encoding))
         for i, c in enumerate(classes):
             tmp_labels = np.copy(streams_labels)
             tmp_labels[tmp_labels != c] = 0
+            chromosomes = len(templates[i])
             if inject_templates:
-                chromosomes = len(templates[i])
+                injected_template = templates[i]
             else:
-                chromosomes = int(np.ceil(
-                    np.average([len(streams[i]) for i, sl in enumerate(streams_labels) if sl == c]).astype(
-                        int)) / scaling_length)
+                chromosomes = int(chromosomes * scaling_length)
+                injected_template = None
             print("{} - {}".format(c, chromosomes))
-            if optimize_thresholds:
-                optimizer = ESTemplateThresholdsGenerator(streams, tmp_labels, params[i], c, chromosomes, bit_values,
-                                                          chosen_template=templates[i], use_encoding=encoding,
-                                                          num_individuals=num_individuals, rank=rank,
-                                                          elitism=elitism,
-                                                          iterations=iterations,
-                                                          fitness_function=fitness_function,
-                                                          cr_p=crossover_probability,
-                                                          mt_p=mutation_probability)
-            else:
-                optimizer = ESTemplateGenerator(streams, tmp_labels, params[i], thresholds[i], c, chromosomes,
-                                                bit_values,
-                                                chosen_template=templates[i], use_encoding=encoding,
-                                                num_individuals=num_individuals, rank=rank,
-                                                elitism=elitism,
-                                                iterations=iterations,
-                                                fitness_function=fitness_function,
-                                                cr_p=crossover_probability,
-                                                mt_p=mutation_probability)
+            optimizer = ESTemplateGenerator(streams, tmp_labels, params[i], thresholds[i], c, chromosomes,
+                                            bit_values,
+                                            chosen_template=injected_template, use_encoding=encoding,
+                                            num_individuals=num_individuals, rank=rank,
+                                            elitism=elitism,
+                                            iterations=iterations,
+                                            fitness_function=fitness_function,
+                                            cr_p=crossover_probability,
+                                            mt_p=mutation_probability)
             optimizer.optimize()
 
             results = optimizer.get_results()
@@ -163,7 +147,7 @@ for index, td in test_data.iterrows():
             outputconffile.write("Optimize threshold: {}\n".format(optimize_thresholds))
             outputconffile.write("Num tests: {}\n".format(num_test))
             outputconffile.write("Fitness function: {}\n".format(fitness_function))
-            outputconffile.write("Chromosomes: {}\n".format(chromosomes))
+            outputconffile.write("Bit values: {}\n".format(bit_values))
             outputconffile.write("Params: {}\n".format(params))
             outputconffile.write("Thresholds: {}\n".format(thresholds))
             outputconffile.write("Null class extraction: {}\n".format(use_null))

@@ -14,8 +14,7 @@ class ESTemplateGenerator:
                  use_encoding=False,
                  num_processes=1,
                  iterations=500,
-                 num_individuals=32,
-                 cr_p=0.3, mt_p=0.1,
+                 num_individuals=32, save_internals=False, cr_p=0.3, mt_p=0.1,
                  elitism=3, rank=10, fitness_function=7, maximize=True):
         self.__streams = steams
         self.__streams_labels = stream_labels
@@ -28,6 +27,9 @@ class ESTemplateGenerator:
         self.__num_processes = num_processes
         self.__iterations = iterations
         self.__num_individuals = num_individuals
+        self.__save_internal = save_internals
+        self.__intermediate_population = list()
+        self.__intermediate_fitness_scores = list()
         self.__crossover_probability = cr_p
         self.__mutation_probability = mt_p
         self.__elitism = elitism
@@ -35,6 +37,10 @@ class ESTemplateGenerator:
         self.__fitness_function = fitness_function
         self.__maximize = maximize
         self.__templates_chromosomes = chromosomes
+        self.__max_scores = params[0] * self.__templates_chromosomes
+        self.__min_scores = -self.__max_scores
+        self.__max_fitness = self.__max_scores - self.__min_scores
+        self.__min_fitness = self.__min_scores - self.__max_scores
         self.__m_wlcss_cuda = WLCSSCudaTemplatesTraining(self.__streams, self.__params, self.__templates_chromosomes,
                                                          self.__num_individuals, self.__use_encoding)
         self.__results = list()
@@ -49,6 +55,10 @@ class ESTemplateGenerator:
         bar = progressbar.ProgressBar(max_value=self.__iterations)
         fit_scores_distances = self.__compute_fitness_cuda(templates_pop)
         fit_scores = fit_scores_distances[:, 0]
+        fit_scores = self.__normalize_fitness_scores(fit_scores)
+        if self.__save_internal:
+            self.__intermediate_population.append(templates_pop)
+            self.__intermediate_fitness_scores.append(fit_scores)
         for i in range(self.__iterations):
             pop_sort_idx = np.argsort(-fit_scores if self.__maximize else fit_scores)
             top_templates_individuals = templates_pop[pop_sort_idx]
@@ -60,6 +70,7 @@ class ESTemplateGenerator:
                 templates_pop[0:self.__elitism] = top_templates_individuals[0:self.__elitism]
             fit_scores_distances = self.__compute_fitness_cuda(templates_pop)
             fit_scores = fit_scores_distances[:, 0]
+            fit_scores = self.__normalize_fitness_scores(fit_scores)
             good_distances = fit_scores_distances[:, 1]
             bad_distances = fit_scores_distances[:, 2]
             if self.__maximize:
@@ -70,6 +81,9 @@ class ESTemplateGenerator:
             scores.append([np.mean(fit_scores), np.max(fit_scores), np.min(fit_scores), np.std(fit_scores),
                            good_distances[top_idx], bad_distances[top_idx]])
             best_templates.append(best_template)
+            if self.__save_internal:
+                self.__intermediate_population.append(templates_pop)
+                self.__intermediate_fitness_scores.append(fit_scores)
             bar.update(i)
         bar.finish()
         if self.__maximize:
@@ -127,11 +141,22 @@ class ESTemplateGenerator:
                           range(self.__num_individuals)]
         return np.array(fitness_scores)
 
+    def __normalize_fitness_scores(self, fit_scores):
+        min_fitness = np.min(fit_scores)
+        if min_fitness < self.__min_fitness:
+            self.__min_fitness = min_fitness
+        # Min-max normalization fit_score
+        norm_fit_scores = (fit_scores - self.__min_fitness) / (self.__max_fitness - self.__min_fitness)
+        return norm_fit_scores
+
     def __np_to_int(self, chromosome):
         return int("".join(chromosome.astype('U')), 2)
 
     def get_results(self):
         return self.__results
+
+    def get_internal_states(self):
+        return np.array(self.__intermediate_fitness_scores), self.__intermediate_population
 
 
 class ESVariableTemplateGenerator:
