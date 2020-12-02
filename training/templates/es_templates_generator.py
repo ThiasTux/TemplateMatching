@@ -194,7 +194,7 @@ class ESVariableTemplateGenerator:
         bar = progressbar.ProgressBar(max_value=self.__iterations)
         fit_scores_distances = self.__compute_fitness_cuda(templates_pop)
         fit_scores = fit_scores_distances[:, 0]
-        fit_scores = self.__combine_fitness(fit_scores, templates_pop)
+        fit_scores = self.__combine_fitness(fit_scores, templates_pop, method='moving_min_max')
         if self.__save_internal:
             self.__intermediate_population.append(templates_pop)
             self.__intermediate_fitness_scores.append(fit_scores)
