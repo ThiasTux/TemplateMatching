@@ -1,16 +1,17 @@
 import matplotlib.pyplot as plt
 
-from data_processing import data_loader_old as dl
+from data_processing import data_loader as dl
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    plot_choice = 2
-    input_file = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda/hci_guided/templates/zeus_templates_2020-07-30_14-25-05"
-    dataset_choice = 'synthetic'
-    classes = [1001, 1002, 1003, 1004]
+    plot_choice = 0
+    input_file = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda/opportunity_encoded/variable_templates/kronos_templates_2020-11-30_14-37-38"
+    dataset_choice = 'hci_table'
+    classes = [9]
     if plot_choice == 0:
-        data = dl.load_dataset(dataset_choice, classes)
-        plt_creator.plot_gestures(data, classes=classes)
+        templates, streams, streams_labels = dl.load_training_dataset(dataset_choice, classes=classes,
+                                                                      use_quick_loader=False)
+        plt_creator.plot_gestures(streams, streams_labels, classes=classes)
     elif plot_choice == 1:
         data = dl.load_continuous_dataset(dataset_choice)
         plt_creator.plot_continuous_data(data, classes=classes)

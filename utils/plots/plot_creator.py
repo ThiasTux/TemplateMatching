@@ -205,8 +205,6 @@ def plot_templates_scores(input_path, save_img=False, title=None, output_file=""
     subplt.set_xlabel("ES Iterations")
     subplt.set_xticks(np.arange(0, len(mean_scores) + 1, 100))
     plt.legend(loc=4)
-    figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
     if save_img:
         plt.savefig(join(OUTPUT_PATH, output_file), bbox_inches='tight', format='eps', dpi=1000)
 
@@ -250,6 +248,22 @@ def plot_templates(input_path, num_templates=20, save_img=False, title=None, out
                     j += 1
             print("Class: {} - Start length: {} - End length: {}".format(c, len(
                 [int(v) for v in lines[0].split(" ")[:-1]]), len([int(v) for v in lines[-1].split(" ")[:-1]])))
+
+
+def rotate(x, y, origin=(0, 0)):
+    # shift to origin
+    x1 = x - origin[0]
+    y1 = y - origin[1]
+
+    # rotate
+    x2 = y1
+    y2 = -x1
+
+    # shift back
+    x3 = x2 + origin[1]
+    y3 = y2 + origin[0]
+
+    return x3, y3
 
 
 def lighten_color(color, amount=0.5):
