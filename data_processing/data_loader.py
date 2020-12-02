@@ -17,7 +17,7 @@ from utils import distance_measures as dtm
 
 
 def load_training_dataset(dataset_choice='opportunity', template_choice_method='random', classes=None, seed=42,
-                          train_test_split=0.5,
+                          train_test_split=0.5, use_quick_loader=True,
                           extract_null=False, null_class_percentage=0.5, num_gestures=None, user=None):
     # Load the dataset
     if dataset_choice == 'skoda':
@@ -47,12 +47,20 @@ def load_training_dataset(dataset_choice='opportunity', template_choice_method='
     elif dataset_choice == 'uwave_x':
         dataset = UWaveGestureLibraryX()
 
-    if dataset.quick_load:
-        templates, stream, stream_labels = dataset.quick_load_training_dataset()
+    if use_quick_loader and dataset.quick_load:
+        templates, streams, streams_labels = dataset.quick_load_training_dataset()
         if template_choice_method is None:
-            return stream, stream_labels
+            return streams, streams_labels
         else:
-            return templates, stream, stream_labels
+            default_classes = dataset.default_classes
+            if classes == default_classes:
+                return templates, streams, streams_labels
+            else:
+                tmp_templates = list()
+                for c in classes:
+                    idx_c = default_classes.index(c)
+                    tmp_templates.append(templates[idx_c])
+                return tmp_templates, streams, streams_labels
 
     streams, labels = dataset.load_isolated_dataset()
 
@@ -182,8 +190,22 @@ def load_template_generation_thresholds(es_results_file):
     return thresholds
 
 
+def load_generated_params(es_results_file):
+    conf_file_path = es_results_file + "_conf.txt"
+    with open(conf_file_path, 'r') as conf_file:
+        dataset_name = conf_file.readline()
+        classes = [int(c) for c in conf_file.readline().split(":")[1].strip().split(" ")]
+    params = [_ for _ in range(len(classes))]
+    for i, c in enumerate(classes):
+        c_params_filepath = es_results_file + "_{}_params.txt".format(c)
+        with open(c_params_filepath, 'r') as c_params_file:
+            last_line_values = [int(v.strip()) for v in c_params_file.readlines()[-1].split(" ")]
+        params[i] = last_line_values
+    return params
+
+
 def generate_quick_load_datasets():
-    datasets = ['hci_guided']
+    datasets = ['hci_table']
     now = datetime.now()
     for d in datasets:
         print(d)
@@ -201,6 +223,7 @@ def generate_quick_load_datasets():
         date = now.strftime("%m%d%Y")
         output_path = join(dataset.dataset_path, "{}_training_{}.pickle".format(d, date))
         templates, stream, stream_labels = load_training_dataset(dataset_choice=d, template_choice_method='mrt_lcs',
+                                                                 use_quick_loader=False,
                                                                  classes=dataset.default_classes)
         with open(output_path, 'wb') as output_file:
             pickle.dump([templates, stream, stream_labels], output_file)

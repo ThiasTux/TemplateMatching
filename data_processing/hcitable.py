@@ -50,19 +50,32 @@ class HCITable(Dataset):
     def load_encoded_isolated_dataset(self):
         files = [file for file in glob.glob(self.dataset_path + "*-table*-data.txt")]
         files = sorted(files)
-        data = np.loadtxt(files[0])
-        timestamps = (data[:, 0] * 1000).astype(int)
-        table_data = data[:, -4:-2]
-        table_data = np.nan_to_num(table_data)
-        table_data[:, 0] = butter_lowpass_filter(table_data[:, 0], 5, 200)
-        table_data[:, 1] = butter_lowpass_filter(table_data[:, 1], 5, 200)
-        labels = data[:, -2]
-        labels[np.where(labels < 0)[0]] = 0
-        templates, templates_labels = Dataset.segment_data(table_data, labels)
-        templates = [templates[t] for t in np.where(templates_labels > 0)[0]]
-        templates_labels = templates_labels[np.where(templates_labels > 0)[0]]
-        encoded_templates = self.encode_trajectory(templates)
-        return encoded_templates, templates_labels
+        encoded_streams = list()
+        streams_labels = np.array([])
+        for f in files[:1]:
+            with open(f) as input_file:
+                data = np.array([line.strip().split() for line in input_file], float)
+            table_data = data[:, -4:-2]
+            table_data = np.nan_to_num(table_data)
+            table_data[:, 0] = butter_lowpass_filter(table_data[:, 0], 5, 200)
+            table_data[:, 1] = butter_lowpass_filter(table_data[:, 1], 5, 200)
+            labels = data[:, -2]
+            size_labels = data[:, -1]
+            # Select only big gestures
+            # table_data = table_data[np.where(size_labels == 2)[0]]
+            # labels = labels[np.where(size_labels == 2)[0]]
+            # labels[np.where(labels < 0)[0]] = 0
+            # Segment data
+            templates, templates_labels = Dataset.segment_data(table_data, labels)
+            lenghts_templates = np.array([len(t) for t in templates])
+            templates = [templates[t] for t in np.where(lenghts_templates > 5)[0]]
+            templates_labels = templates_labels[np.where(lenghts_templates > 5)[0]]
+            # Filter for only A-Z gestures
+            templates = [templates[t] for t in np.where((templates_labels >= 9) & (templates_labels < 35))[0]]
+            streams_labels = np.append(streams_labels,
+                                       templates_labels[np.where((templates_labels >= 9) & (templates_labels < 35))[0]])
+            encoded_streams += self.encode_trajectory(templates)
+        return encoded_streams, streams_labels
 
     def load_continuous_dataset(self):
         pass
@@ -85,14 +98,18 @@ class HCITable(Dataset):
 
 def plot_isolate_gestures(plot=True, save=False):
     dataset = HCITable()
-    templates, labels = dataset.load_isolated_dataset()
-    templates = [templates[t] for t in np.where(labels > 0)[0]]
-    templates = [templates[t] for t in np.where((labels == 17) | (labels == 27))[0]]
-    labels = labels[np.where(labels > 0)[0]]
-    labels = labels[np.where((labels == 17) | (labels == 27))[0]]
-    plot_creator.plot_gestures(templates, labels)
+    streams, labels = dataset.load_isolated_dataset()
+    plot_creator.plot_gestures(streams, labels)
+    plt.show()
+
+
+def plot_isolated_gestures_quick_loader():
+    dataset = HCITable()
+    templates, streams, labels = dataset.quick_load_training_dataset()
+    plot_creator.plot_gestures(streams, labels)
     plt.show()
 
 
 if __name__ == '__main__':
     plot_isolate_gestures()
+    # plot_isolated_gestures_quick_loader()
