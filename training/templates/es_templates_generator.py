@@ -192,6 +192,7 @@ class ESVariableTemplateGenerator:
         self.__max_templates_chromosomes = int(chromosomes * max_lr)
         self.__min_templates_chromosomes = int(chromosomes * min_lr)
         self.__max_scores = params[0] * self.__max_templates_chromosomes
+        self.__b = 5 / self.__max_scores
         self.__min_scores = -self.__max_scores
         self.__max_fitness = self.__max_scores - self.__min_scores
         self.__min_fitness = self.__min_scores - self.__max_scores
@@ -219,7 +220,7 @@ class ESVariableTemplateGenerator:
         bar = progressbar.ProgressBar(max_value=self.__iterations)
         fit_scores_distances = self.__compute_fitness_cuda(templates_pop)
         fit_scores = fit_scores_distances[:, 0]
-        fit_scores = self.__combine_fitness(fit_scores, templates_pop, method='moving_min_max')
+        fit_scores = self.__combine_fitness(fit_scores, templates_pop, method='sigmoid_min_max')
         if self.__save_internal:
             self.__intermediate_population.append(templates_pop)
             self.__intermediate_fitness_scores.append(fit_scores)
@@ -236,7 +237,7 @@ class ESVariableTemplateGenerator:
                 templates_pop[0:self.__elitism] = top_templates_individuals[0:self.__elitism]
             fit_scores_distances = self.__compute_fitness_cuda(templates_pop)
             fit_scores = fit_scores_distances[:, 0]
-            fit_scores = self.__combine_fitness(fit_scores, templates_pop, method='moving_min_max')
+            fit_scores = self.__combine_fitness(fit_scores, templates_pop, method='sigmoid_min_max')
             good_distances = fit_scores_distances[:, 1]
             bad_distances = fit_scores_distances[:, 2]
             if self.__maximize:
@@ -353,6 +354,10 @@ class ESVariableTemplateGenerator:
             # Min-max normalization fit_score
             norm_fit_scores = (fit_scores - self.__min_fitness) / (self.__max_fitness - self.__min_fitness)
             # Min-max normalization template length
+            norm_templates_lengths = (templates_lengths - self.__max_templates_length) / (
+                    self.__min_templates_length - self.__max_templates_length)
+        elif method == 'sigmoid_min_max':
+            norm_fit_scores = 1 / (1 + np.e ** (-self.__b * fit_scores))
             norm_templates_lengths = (templates_lengths - self.__max_templates_length) / (
                     self.__min_templates_length - self.__max_templates_length)
         return self.__length_weight * norm_templates_lengths + self.__fitness_weight * norm_fit_scores
