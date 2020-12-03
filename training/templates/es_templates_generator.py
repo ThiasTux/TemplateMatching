@@ -190,7 +190,7 @@ class ESVariableTemplateGenerator:
         self.__maximize = maximize
         self.__templates_chromosomes = chromosomes
         self.__max_templates_chromosomes = int(chromosomes * max_lr)
-        self.__min_templates_chromosomes = int(chromosomes * min_lr)
+        self.__min_templates_chromosomes = max(int(chromosomes * min_lr), 3)
         self.__max_scores = params[0] * self.__max_templates_chromosomes
         self.__b = 5 / self.__max_scores
         self.__min_scores = -self.__max_scores
