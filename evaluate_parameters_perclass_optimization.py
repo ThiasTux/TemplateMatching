@@ -6,6 +6,7 @@ import socket
 import time
 from os.path import join
 
+import numpy as np
 import pandas as pd
 
 from data_processing import data_loader as dl
@@ -13,7 +14,7 @@ from performance_evaluation import fitness_functions as ftf
 from template_matching.wlcss_cuda_class import WLCSSCuda
 from training.params.ga_params_optimizer import GAParamsOptimizer
 
-test_filepath = "test/params_perclass/test_large_params_0.csv"
+test_filepath = "test/params_perclass/test_hci_guided_1.csv"
 test_info = ["dataset_choice", "num_test", "use_null", "bits_params", "bits_thresholds", "write_to_file", "user",
              "null_class_percentage", "num_individuals", "rank", "elitism", "iterations", "fitness_function",
              "crossover_probability", "mutation_probability", "encoding", "classes", "output_folder"]
@@ -74,7 +75,7 @@ for index, td in test_data.iterrows():
         for i, c in enumerate(classes):
             print(c)
             optimizer = GAParamsOptimizer([templates[i]], streams, streams_labels, [c],
-                                          use_encoding=encoding,
+                                          use_encoding=encoding, save_internals=True,
                                           bits_reward=bits_params,
                                           bits_penalty=bits_params,
                                           bits_epsilon=bits_params,
@@ -92,11 +93,17 @@ for index, td in test_data.iterrows():
             elapsed_time = time.time() - start_time
             tmp_results = optimizer.get_results()
             results.append(tmp_results)
-            output_scores_path = "{}/{}_param_thres_{}_scores_{}.txt".format(output_folder, hostname, st, c)
-            output_files.append(output_scores_path.replace(".txt", ""))
+            output_file = "{}/{}_param_thres_{}".format(output_folder, hostname, st)
+            output_scores_path = "{}_scores_{}.txt".format(output_file, c)
             with open(output_scores_path, 'w') as f:
                 for item in tmp_results[-1]:
                     f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
+            if save_internals:
+                output_internal_params_path = "{}_{}_internal_params.csv".format(output_file, c)
+                output_internal_scores_path = "{}_{}_internal_scores.csv".format(output_file, c)
+                internal_fitness, internal_params = optimizer.get_internal_states()
+                np.savetxt(output_internal_scores_path, internal_fitness, fmt='%4.3f')
+                np.savetxt(output_internal_params_path, internal_params, fmt='%d')
         output_file_path = join(output_folder,
                                 "{}_param_thres_{}.txt".format(hostname, st))
         output_config_path = join(output_folder,

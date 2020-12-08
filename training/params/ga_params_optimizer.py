@@ -8,7 +8,7 @@ from template_matching.wlcss_cuda_class import WLCSSCudaParamsTraining
 
 
 class GAParamsOptimizer:
-    def __init__(self, templates, streams, streams_labels, classes, use_encoding=False,
+    def __init__(self, templates, streams, streams_labels, classes, use_encoding=False, save_internals=False,
                  iterations=500, num_individuals=32, bits_reward=5, bits_penalty=5, bits_epsilon=5, bits_thresholds=10,
                  cr_p=0.3, mt_p=0.1, elitism=3, rank=10, maximize=True, fitness_function='f1_acc', use_gradient=False):
         self.__templates = templates
@@ -18,6 +18,9 @@ class GAParamsOptimizer:
         self.__use_encoding = use_encoding
         self.__iterations = iterations
         self.__num_individuals = num_individuals
+        self.__save_internal = save_internals
+        self.__intermediate_population = list()
+        self.__intermediate_fitness_scores = list()
         self.__bits_reward = bits_reward
         self.__bits_penalty = bits_penalty
         self.__bits_epsilon = bits_epsilon
@@ -47,6 +50,9 @@ class GAParamsOptimizer:
         pop = self.__generate_population()
         bar = progressbar.ProgressBar(max_value=self.__iterations)
         fit_scores = self.__compute_fitness_cuda(pop)
+        if self.__save_internal:
+            self.__intermediate_population.append(pop)
+            self.__intermediate_fitness_scores.append(fit_scores)
         num_zero_grad = 0
         compute_grad = False
         i = 0
@@ -80,6 +86,9 @@ class GAParamsOptimizer:
                     if np.gradient(max_scores)[-1] < 0.05:
                         num_zero_grad += 1
             i += 1
+            if self.__save_internal:
+                self.__intermediate_population.append(pop)
+                self.__intermediate_fitness_scores.append(fit_scores)
             bar.update(i)
         bar.finish()
         if self.__maximize:
@@ -146,3 +155,17 @@ class GAParamsOptimizer:
 
     def get_results(self):
         return self.__results
+
+    def get_internal_states(self):
+        decoded_pop = np.zeros((self.__iterations + 1, self.__num_individuals * (3 + len(self.__templates))))
+        for iter, pop in enumerate(self.__intermediate_population):
+            for i, p in enumerate(pop):
+                idx = i * (3 + len(self.__templates))
+                decoded_pop[iter, idx] = self.__np_to_int(p[0:self.__bits_reward])
+                decoded_pop[iter, idx + 1] = self.__np_to_int(p[self.__bits_reward:self.__penalty_idx])
+                decoded_pop[iter, idx + 2] = self.__np_to_int(p[self.__penalty_idx:self.__epsilon_idx])
+                for j in range(len(self.__templates)):
+                    decoded_pop[iter, idx + 3 + j] = self.__np_to_int(p[self.__epsilon_idx + (
+                            j * self.__bits_thresholds):self.__epsilon_idx + (
+                            j + 1) * self.__bits_thresholds]) - self.__scaling_factor
+        return np.array(self.__intermediate_fitness_scores), decoded_pop.astype(int)

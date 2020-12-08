@@ -5,6 +5,7 @@ import time
 from os.path import join
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 from data_processing import data_loader as dl
 from performance_evaluation import fitness_functions as ftf
@@ -21,6 +22,7 @@ if __name__ == '__main__':
     write_to_file = True
     user = None
     encoding = False
+    save_internals = True
 
     num_individuals = 32
     bits_params = 6
@@ -36,16 +38,33 @@ if __name__ == '__main__':
         encoding = '3d'
         classes = [3001, 3003, 3013, 3018]
         # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
-        output_folder = "{}/skoda/params".format(outputs_path)
+        output_folder = "{}/skoda/params_perclass".format(outputs_path)
         null_class_percentage = 0.6
     elif dataset_choice == 'skoda_mini':
         classes = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
-        output_folder = "{}/skoda_mini/params".format(outputs_path)
+        output_folder = "{}/skoda_mini/params_perclass".format(outputs_path)
         null_class_percentage = 0.6
+    elif dataset_choice == 'opportunity_encoded':
+        encoding = '3d'
+        classes = [406516, 404516, 406505, 404505, 406519, 404519, 407521, 405506]
+        # classes = [408512]
+        user = 3
+        output_folder = "{}/opportunity_encoded/params_perclass".format(outputs_path)
+        null_class_percentage = 0.5
+    elif dataset_choice == 'hci_guided':
+        classes = [49, 50, 51, 52, 53]
+        output_folder = "{}/hci_guided/params_perclass".format(outputs_path)
+        null_class_percentage = 0.5
+    elif dataset_choice == 'hci_table':
+        encoding = '2d'
+        # classes = [i for i in range(9, 35)]
+        classes = [9]
+        output_folder = "{}/hci_table/params_perclass".format(outputs_path)
+        null_class_percentage = 0.5
     elif dataset_choice == 'skoda_old':
         classes = [3001, 3003, 3013, 3018]
         # classes = [3001, 3002, 3003, 3005, 3013, 3014, 3018, 3019]
-        output_folder = "{}/skoda_old/params".format(outputs_path)
+        output_folder = "{}/skoda_old/params_perclass".format(outputs_path)
         null_class_percentage = 0.6
     elif dataset_choice == 'opportunity':
         # classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
@@ -53,55 +72,39 @@ if __name__ == '__main__':
         # classes = [406516, 408512, 405506]
         # classes = [407521, 406520, 406505, 406519]
         user = 3
-        output_folder = "{}/opportunity/params".format(outputs_path)
-        null_class_percentage = 0.5
-    elif dataset_choice == 'opportunity_encoded':
-        encoding = '3d'
-        # classes = [406516, 404516, 406505, 404505, 406519, 404519, 407521, 405506]
-        classes = [408512]
-        user = 3
-        output_folder = "{}/opportunity_encoded/params".format(outputs_path)
-        null_class_percentage = 0.5
-    elif dataset_choice == 'hci_guided':
-        classes = [49, 50, 51, 52, 53]
-        output_folder = "{}/hci_guided/params".format(outputs_path)
+        output_folder = "{}/opportunity/params_perclass".format(outputs_path)
         null_class_percentage = 0.5
     elif dataset_choice == 'hci_freehand':
         classes = [49, 50, 51, 52, 53]
-        output_folder = "{}/hci_freehand/params".format(outputs_path)
+        output_folder = "{}/hci_freehand/params_perclass".format(outputs_path)
         sensor = 52
     elif dataset_choice == 500:
         classes = [0, 7]
-        output_folder = "{}/notmnist/params".format(outputs_path)
+        output_folder = "{}/notmnist/params_perclass".format(outputs_path)
         sensor = 0
         null_class_percentage = 0
     elif dataset_choice == 'synthetic1':
         classes = [1001, 1002, 1003, 1004]
-        output_folder = "{}/synthetic/params".format(outputs_path)
+        output_folder = "{}/synthetic/params_perclass".format(outputs_path)
         null_class_percentage = 0
     elif dataset_choice == 'synthetic2':
         classes = [1001, 1002]
-        output_folder = "{}/synthetic2/params".format(outputs_path)
+        output_folder = "{}/synthetic2/params_perclass".format(outputs_path)
         null_class_percentage = 0
     elif dataset_choice == 'synthetic3':
         classes = [1001, 1002]
-        output_folder = "{}/synthetic3/params".format(outputs_path)
+        output_folder = "{}/synthetic3/params_perclass".format(outputs_path)
         null_class_percentage = 0
     elif dataset_choice == 'synthetic4':
         classes = [1001, 1002, 1003, 1004]
-        output_folder = "{}/synthetic4/params".format(outputs_path)
+        output_folder = "{}/synthetic4/params_perclass".format(outputs_path)
         null_class_percentage = 0
-    elif dataset_choice == 'hci_table':
-        encoding = '2d'
-        classes = [i for i in range(1, 35)]
-        output_folder = "{}/hci_table/params".format(outputs_path)
-        null_class_percentage = 0.5
     elif dataset_choice == 'shl_preview':
         classes = [1, 2, 4, 7, 8]
-        output_folder = "{}/shl_preview/params".format(outputs_path)
+        output_folder = "{}/shl_preview/params_perclass".format(outputs_path)
         null_class_percentage = 0.5
     elif dataset_choice == 'uwave_x':
-        output_folder = "{}/uwave_x/params".format(outputs_path)
+        output_folder = "{}/uwave_x/params_perclass".format(outputs_path)
         classes = [1]
         null_class_percentage = 0.5
 
@@ -135,7 +138,7 @@ if __name__ == '__main__':
     for i, c in enumerate(classes):
         print(c)
         optimizer = GAParamsOptimizer([templates[i]], streams, streams_labels, [c],
-                                      use_encoding=encoding,
+                                      use_encoding=encoding, save_internals=save_internals,
                                       bits_reward=bits_params,
                                       bits_penalty=bits_params,
                                       bits_epsilon=bits_params,
@@ -153,11 +156,17 @@ if __name__ == '__main__':
         elapsed_time = time.time() - start_time
         tmp_results = optimizer.get_results()
         results.append(tmp_results)
-        output_scores_path = "{}/{}_param_thres_{}_scores_{}.txt".format(output_folder, hostname, st, c)
-        output_files.append(output_scores_path.replace(".txt", ""))
+        output_file = "{}/{}_param_thres_{}".format(output_folder, hostname, st)
+        output_scores_path = "{}_scores_{}.txt".format(output_file, c)
         with open(output_scores_path, 'w') as f:
             for item in tmp_results[-1]:
                 f.write("%s\n" % str(item).replace("[", "").replace("]", ""))
+        if save_internals:
+            output_internal_params_path = "{}_{}_internal_params.csv".format(output_file, c)
+            output_internal_scores_path = "{}_{}_internal_scores.csv".format(output_file, c)
+            internal_fitness, internal_params = optimizer.get_internal_states()
+            np.savetxt(output_internal_scores_path, internal_fitness, fmt='%4.3f')
+            np.savetxt(output_internal_params_path, internal_params, fmt='%d')
     output_file_path = join(output_folder,
                             "{}_param_thres_{}.txt".format(hostname, st))
     output_config_path = join(output_folder,
