@@ -22,6 +22,7 @@ print(test_filepath)
 test_data = pd.read_csv(test_filepath)
 
 prev_dataset = None
+save_internals = True
 
 # Load test configuration
 for index, td in test_data.iterrows():
@@ -75,7 +76,7 @@ for index, td in test_data.iterrows():
         for i, c in enumerate(classes):
             print(c)
             optimizer = GAParamsOptimizer([templates[i]], streams, streams_labels, [c],
-                                          use_encoding=encoding, save_internals=True,
+                                          use_encoding=encoding, save_internals=save_internals,
                                           bits_reward=bits_params,
                                           bits_penalty=bits_params,
                                           bits_epsilon=bits_params,
