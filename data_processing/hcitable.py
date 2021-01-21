@@ -57,8 +57,11 @@ class HCITable(Dataset):
                 data = np.array([line.strip().split() for line in input_file], float)
             table_data = data[:, -4:-2]
             table_data = np.nan_to_num(table_data)
-            table_data[:, 0] = butter_lowpass_filter(table_data[:, 0], 5, 200)
-            table_data[:, 1] = butter_lowpass_filter(table_data[:, 1], 5, 200)
+            rotated_data = np.zeros_like(table_data)
+            # rotated_data[:, 0] = butter_lowpass_filter(table_data[:, 0], 5, 200)
+            # rotated_data[:, 1] = butter_lowpass_filter(-table_data[:, 1], 5, 200)
+            rotated_data[:, 0] = table_data[:, 0]
+            rotated_data[:, 1] = -table_data[:, 1]
             labels = data[:, -2]
             size_labels = data[:, -1]
             # Select only big gestures
@@ -66,7 +69,7 @@ class HCITable(Dataset):
             # labels = labels[np.where(size_labels == 2)[0]]
             # labels[np.where(labels < 0)[0]] = 0
             # Segment data
-            templates, templates_labels = Dataset.segment_data(table_data, labels)
+            templates, templates_labels = Dataset.segment_data(rotated_data, labels)
             lenghts_templates = np.array([len(t) for t in templates])
             templates = [templates[t] for t in np.where(lenghts_templates > 5)[0]]
             templates_labels = templates_labels[np.where(lenghts_templates > 5)[0]]

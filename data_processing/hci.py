@@ -38,8 +38,8 @@ class HCIGuided(Dataset):
         data = self.load_data()
         stream_labels = data[:, 0]
         acc_x = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.frequency), 10)
-        acc_y = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.frequency), 10)
-        acc_z = decimate_signal(butter_lowpass_filter(data[:, sensor_no], 5, self.frequency), 10)
+        acc_y = decimate_signal(butter_lowpass_filter(data[:, sensor_no + 1], 5, self.frequency), 10)
+        acc_z = decimate_signal(butter_lowpass_filter(data[:, sensor_no + 2], 5, self.frequency), 10)
         stream_labels = stream_labels[::10]
         stream_labels[np.where(stream_labels > 53)[0]] = 0
         acc_data = np.array([acc_x, acc_y, acc_z]).T
