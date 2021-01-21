@@ -124,9 +124,10 @@ def angle_between(v1, v2):
 
 
 def compute_3d_distance_matrix(print_output=True):
-    codebook = create_3d_codebook(27)
+    alphabet = 15
+    codebook = create_3d_codebook(alphabet)
     codebook_keys = sorted(list(codebook.keys()))
-    matrix_distance = np.zeros((26, 26))
+    matrix_distance = np.zeros((alphabet, alphabet))
     for k_i in codebook_keys:
         v_1 = codebook[k_i]
         for k_j in codebook_keys:
@@ -134,11 +135,11 @@ def compute_3d_distance_matrix(print_output=True):
             matrix_distance[k_i - 1, k_j - 1] = angle_between(v_1, v_2)
     matrix_distance = (matrix_distance * 10).astype(int)
     if print_output:
-        for i in range(26):
-            print("{", end="")
-            for j in range(25):
-                print(matrix_distance[i, j], end=", ")
-            print(matrix_distance[i, 25], end="},")
+        for i in range(alphabet - 1):
+            print("", end="")
+            for j in range(alphabet - 1):
+                print(matrix_distance[i, j], end=" & ")
+            print(matrix_distance[i, alphabet - 2], end=" \\\\")
             print()
 
 
@@ -161,5 +162,5 @@ def compute_2d_distance_matrix(print_output=True):
 
 
 if __name__ == '__main__':
-    # compute_3d_distance_matrix()
+    compute_3d_distance_matrix()
     compute_2d_distance_matrix()

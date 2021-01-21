@@ -4,6 +4,7 @@ from os.path import join
 
 import numpy as np
 
+from data_processing.beachvolley import BeachVolleyball, BeachVolleyballEncoded
 from data_processing.hci import HCIGuided
 from data_processing.hcitable import HCITable
 from data_processing.opportunity import OpportunityDataset, OpportunityDatasetEncoded
@@ -28,12 +29,16 @@ def load_training_dataset(dataset_choice='opportunity', template_choice_method='
         dataset = OpportunityDataset()
     elif dataset_choice == 'opportunity_encoded':
         dataset = OpportunityDatasetEncoded()
-    elif dataset_choice == 'utd_mhad':
-        dataset = UTDMhad()
     elif dataset_choice == 'hci_guided':
         dataset = HCIGuided()
     elif dataset_choice == 'hci_table':
         dataset = HCITable()
+    elif dataset_choice == 'beachvolleyball':
+        dataset = BeachVolleyball()
+    elif dataset_choice == 'beachvolleyball_encoded':
+        dataset = BeachVolleyballEncoded()
+    elif dataset_choice == 'utd_mhad':
+        dataset = UTDMhad()
     elif dataset_choice == 'synthetic1':
         dataset = Synthetic1()
     elif dataset_choice == 'synthetic2':
@@ -53,7 +58,7 @@ def load_training_dataset(dataset_choice='opportunity', template_choice_method='
             return streams, streams_labels
         else:
             default_classes = dataset.default_classes
-            if classes == default_classes:
+            if classes is None or classes == default_classes:
                 return templates, streams, streams_labels
             else:
                 tmp_templates = list()
@@ -205,7 +210,7 @@ def load_generated_params(es_results_file):
 
 
 def generate_quick_load_datasets():
-    datasets = ['hci_table']
+    datasets = ['beachvolleyball_encoded']
     now = datetime.now()
     for d in datasets:
         print(d)
@@ -220,6 +225,10 @@ def generate_quick_load_datasets():
             dataset = HCIGuided()
         elif d == 'hci_table':
             dataset = HCITable()
+        elif d == 'beachvolleyball':
+            dataset = BeachVolleyball()
+        elif d == 'beachvolleyball_encoded':
+            dataset = BeachVolleyballEncoded()
         date = now.strftime("%m%d%Y")
         output_path = join(dataset.dataset_path, "{}_training_{}.pickle".format(d, date))
         templates, stream, stream_labels = load_training_dataset(dataset_choice=d, template_choice_method='mrt_lcs',

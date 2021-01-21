@@ -19,6 +19,11 @@ class Dataset(ABC):
 
     @property
     @abstractmethod
+    def dataset_name(self):
+        pass
+
+    @property
+    @abstractmethod
     def frequency(self):
         pass
 
@@ -61,7 +66,7 @@ class Dataset(ABC):
         return templates, np.array(labels)
 
     def quick_load_training_dataset(self):
-        filepath = [file for file in glob.glob(self.dataset_path + "*.pickle")][0]
+        filepath = [file for file in glob.glob(self.dataset_path + "{}_training_*.pickle".format(self.dataset_name))][0]
         with open(filepath, 'rb') as file:
             templates, streams, stream_labels = pickle.load(file)
         return templates, streams, stream_labels

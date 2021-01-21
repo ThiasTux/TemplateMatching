@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 from data_processing import data_loader as dl
 from performance_evaluation import fitness_functions as ftf
@@ -10,15 +11,19 @@ from template_matching.wlcss_cuda_class import WLCSSCudaContinuous, WLCSSCuda
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 'opportunity_encoded'
+    dataset_choice = 'beachvolleyball_encoded'
     outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     isolated_case = True  # True for isolate, False for continuous
     save_img = False
     encoding = False
 
+    split_train_test = True
+    train_test_random_state = 42
+
     use_null = False
     user = None
+    use_generated_params = False
     use_evolved_templates = True
     use_evolved_thresholds = False
 
@@ -37,7 +42,7 @@ if __name__ == '__main__':
         wsize = 500
         temporal_merging_window = 50
         tolerance_window = 10
-        es_results_file = "{}/skoda/variable_templates/zeus_templates_2020-10-05_18-09-01".format(outputs_path)
+        es_results_file = "{}/skoda/variable_templates/zeus_templates_2020-10-08_14-39-47".format(outputs_path)
         if use_evolved_templates:
             thresholds = dl.load_template_generation_thresholds(es_results_file)
     elif dataset_choice == 'skoda_mini':
@@ -54,31 +59,20 @@ if __name__ == '__main__':
         wsize = 1000
         temporal_merging_window = 5
         tolerance_window = 5
-    elif dataset_choice == 'opportunity':
-        classes = [406516, 404516, 406505, 404505, 406519, 404519, 407521, 405506]
-        # classes = [406516, 408512, 405506]
-        # classes = [407521, 406520, 406505, 406519]
-        output_folder = "{}/opportunity/params".format(outputs_path)
-        user = 3
-        params = [33, 9, 2]
-        thresholds = [480, 2036, 921, 2038, 815, 1477, 1797, 0]
-        wsize = 500
-        es_results_file = "{}/opportunity/templates/templates_2019-04-17_16-33-36".format(outputs_path)
     elif dataset_choice == 'opportunity_encoded':
         encoding = '3d'
         classes = [406516, 404516, 406520, 404520, 406505, 404505, 406519, 404519, 408512, 407521, 405506]
-        classes = classes[:-2]
+        # classes = classes[:-2]
         user = 3
         output_folder = "{}/opportunity_encoded/params".format(outputs_path)
         params = [[579, 7, 7], [906, 35, 12], [996, 72, 2], [947, 114, 9], [965, 165, 9], [619, 12, 14], [985, 148, 2],
                   [918, 30, 1], [1009, 6, 1], [278, 963, 336], [988, 72, 6]]
         thresholds = [7508, 20123, -794, 11293, -34, 10628, 4175, 7202, 10268, 12265, -1133]
-        params = params[:-2]
-        es_results_file = "{}/opportunity_encoded/variable_templates/poseidon_templates_2020-10-06_13-03-39".format(
+        # params = params[:-2]
+        es_results_file = "{}/opportunity_encoded/variable_templates/kronos_templates_2020-11-30_14-37-38".format(
             outputs_path)
         if use_evolved_templates:
             thresholds = dl.load_template_generation_thresholds(es_results_file)
-        thresholds = thresholds[:-2]
     elif dataset_choice == 'hci_guided':
         classes = [49, 50, 51, 52, 53]
         output_folder = "{}/hci_guided/params".format(outputs_path)
@@ -87,9 +81,50 @@ if __name__ == '__main__':
         wsize = 5
         temporal_merging_window = 5
         null_class_percentage = 0.5
-        es_results_file = "{}/hci_guided/templates/zeus_templates_2020-09-28_20-28-59".format(outputs_path)
+        es_results_file = "{}/hci_guided/all/zeus_all_2020-11-06_15-07-19".format(outputs_path)
         if use_evolved_templates:
             thresholds = dl.load_template_generation_thresholds(es_results_file)
+        if use_generated_params:
+            params = dl.load_generated_params(es_results_file)
+    elif dataset_choice == 'hci_table':
+        encoding = '2d'
+        classes = [i for i in range(9, 35)]
+        output_folder = "{}/hci_table/params".format(outputs_path)
+        null_class_percentage = 0.5
+        params = [[52, 15, 5], [31, 0, 1], [59, 2, 4], [41, 1, 2], [54, 1, 5], [51, 29, 20], [60, 2, 2], [52, 1, 5],
+                  [62, 44, 3], [38, 3, 6], [47, 16, 1], [63, 15, 5], [59, 1, 2], [57, 0, 1], [41, 2, 3], [58, 1, 1],
+                  [55, 1, 2], [38, 2, 3], [55, 4, 2], [51, 4, 0], [34, 2, 5], [61, 4, 2], [60, 2, 2], [55, 23, 6],
+                  [55, 1, 2], [18, 0, 1]]
+        thresholds = [274, 697, 511, 775, 509, -520, 895, 906, -355, 292, -310, 178, 957, 978, 437, 890, 830, 589, 394,
+                      433, 333, 679, 927, -372, 688, 264]
+        es_results_file = "{}/hci_table/variable_templates/poseidon_templates_2020-10-06_13-10-44".format(outputs_path)
+        if use_evolved_templates:
+            thresholds = dl.load_template_generation_thresholds(es_results_file)
+    elif dataset_choice == 'beachvolleyball':
+        classes = [1001, 1002, 1003, 1004]
+        output_folder = "{}/beachvolleyball/params_perclass".format(outputs_path)
+        params = []
+        thresholds = []
+    elif dataset_choice == 'beachvolleyball_encoded':
+        classes = [1001, 1002, 1003, 1004]
+        output_folder = "{}/beachvolleyball_encoded/params_perclass".format(outputs_path)
+        encoding = '3d'
+        params = [[37, 1, 2], [44, 26, 10], [52, 5, 0], [34, 9, 4]]
+        thresholds = [930, -244, 818, -295]
+        es_results_file = "{}/beachvolleyball_encoded/variable_templates/zeus_templates_2021-01-20_16-37-08".format(
+            outputs_path)
+        if use_evolved_templates:
+            thresholds = dl.load_template_generation_thresholds(es_results_file)
+    elif dataset_choice == 'opportunity':
+        classes = [406516, 404516, 406505, 404505, 406519, 404519, 407521, 405506]
+        # classes = [406516, 408512, 405506]
+        # classes = [407521, 406520, 406505, 406519]
+        output_folder = "{}/opportunity/params".format(outputs_path)
+        user = 32
+        params = [33, 9, 2]
+        thresholds = [480, 2036, 921, 2038, 815, 1477, 1797, 0]
+        wsize = 500
+        es_results_file = "{}/opportunity/templates/templates_2019-04-17_16-33-36".format(outputs_path)
     elif dataset_choice == 'hci_freehand':
         classes = [49, 50, 51, 52, 53]
         output_folder = "{}/hci_freehand/params".format(outputs_path)
@@ -118,43 +153,34 @@ if __name__ == '__main__':
         params = [60, 4, 0]
         thresholds = [5534, 165, 3058, 4534]
         es_results_file = "{}/synthetic4/templates/zeus_templates_2020-07-28_23-30-25".format(outputs_path)
-    elif dataset_choice == 'hci_table':
-        encoding = '2d'
-        classes = [i for i in range(9, 35)]
-        # classes = classes[18:19]
-        output_folder = "{}/hci_table/params".format(outputs_path)
-        null_class_percentage = 0.5
-        params = [[42, 1, 0], [60, 0, 0], [46, 1, 2], [59, 1, 4], [47, 0, 0], [62, 6, 2], [48, 0, 3], [47, 3, 4],
-                  [52, 54, 0], [49, 16, 0], [57, 0, 4], [33, 1, 6], [43, 0, 1], [56, 1, 4], [53, 4, 4], [45, 6, 2],
-                  [53, 1, 3], [38, 0, 4], [63, 35, 1], [47, 2, 5], [44, 3, 4], [44, 1, 5], [60, 8, 0], [56, 5, 4],
-                  [36, 0, 1], [50, 1, 2]]
-        thresholds = [1005, 3630, 967, 2935, 1733, 734, 1755, 1711, -294, -52, 1845, 684, 2134, 2053, 1488, 1389, 2028,
-                      2041, -385, 1125, 906, 1465, 1439, 1673, 1407, 1724]
-        es_results_file = "{}/hci_table/variable_templates/poseidon_templates_2020-10-06_13-10-44".format(outputs_path)
-        if use_evolved_templates:
-            thresholds = dl.load_template_generation_thresholds(es_results_file)
-    elif dataset_choice == 'shl_preview':
-        classes = [1, 2, 4, 7, 8]
-        output_folder = "{}/shl_preview/params".format(outputs_path)
-        null_class_percentage = 0.5
-        params = [60, 4, 0]
-        thresholds = [5534, 165, 3058, 4534]
-        es_results_file = "{}/shl_preview/templates/templates_2019-04-11_16-58-37".format(outputs_path)
-    elif dataset_choice == 'uwave_x':
-        output_folder = "{}/uwave_x/params".format(outputs_path)
-        classes = [1]
-        null_class_percentage = 0.5
-        params = [60, 4, 0]
-        thresholds = [5534, 165, 3058, 4534]
-        es_results_file = "{}/uwave_x/templates/templates_2019-04-11_16-58-37".format(outputs_path)
 
     if isolated_case:
         templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice, classes=classes,
-                                                                      template_choice_method='mrt_lcs')
-        # Group streams by labels
-        streams_labels_sorted_idx = streams_labels.argsort()
-        streams = [streams[i] for i in streams_labels_sorted_idx]
-        streams_labels = streams_labels[streams_labels_sorted_idx]
+                                                                      template_choice_method='mrt_lcs',
+                                                                      use_quick_loader=True)
+        if split_train_test:
+            streams_train, streams_test, train_labels, test_labels = train_test_split(streams, streams_labels,
+                                                                                      test_size=.33,
+                                                                                      random_state=train_test_random_state,
+                                                                                      stratify=streams_labels)
+            fig = plt.figure()
+            subplt = fig.add_subplot(111)
+            subplt.hist(streams_labels, label='Total', align='left')
+            subplt.hist(train_labels, label='Training', align='mid')
+            subplt.hist(test_labels, label='Test', align='right')
+            plt.legend()
+            streams_test_labels_sorted_idx = test_labels.argsort()
+            streams_test = [streams_test[i] for i in streams_test_labels_sorted_idx]
+            test_labels = test_labels[streams_test_labels_sorted_idx]
+        else:
+            # Group streams by labels
+            streams_labels_sorted_idx = streams_labels.argsort()
+            streams = [streams[i] for i in streams_labels_sorted_idx]
+            streams_labels = streams_labels[streams_labels_sorted_idx]
+            streams_test = streams
+            streams_train = streams
+            train_labels = streams_labels
+            test_labels = streams_labels
     else:
         if not use_evolved_templates:
             templates, _, _ = dl.load_training_dataset(dataset_choice=dataset_choice, classes=classes,
@@ -172,13 +198,13 @@ if __name__ == '__main__':
                 templates = dl.load_evolved_templates(es_results_file, classes)
 
     if isolated_case:
-        m_wlcss_cuda = WLCSSCuda(templates, streams, params, encoding)
+        m_wlcss_cuda = WLCSSCuda(templates, streams_test, params, encoding)
         mss = m_wlcss_cuda.compute_wlcss()
         m_wlcss_cuda.cuda_freemem()
-        print("Perf_F1: {}".format(ftf.isolated_fitness_function_params(mss, streams_labels, thresholds, classes,
+        print("Perf_F1: {}".format(ftf.isolated_fitness_function_params(mss, test_labels, thresholds, classes,
                                                                         parameter_to_optimize='f1')))
-        pfe.performance_evaluation_isolated(mss, streams_labels, thresholds, classes)
-        plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes, streams_labels=streams_labels,
+        pfe.performance_evaluation_isolated(mss, test_labels, thresholds, classes)
+        plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes, streams_labels=test_labels,
                                       title="Dataset: {} - {} - Evolved_templ: {} - Evolved_thres: {}".format(
                                           dataset_choice, "Isolated", use_evolved_templates, use_evolved_thresholds))
         # plt_creator.plot_gestures(dl.load_dataset(dataset_choice, classes), classes=classes)

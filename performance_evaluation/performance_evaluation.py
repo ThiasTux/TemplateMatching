@@ -39,10 +39,6 @@ def performance_evaluation_isolated(matching_scores, streams_labels, thresholds,
     recall.append(np.sum(true_positive) / (np.sum(true_positive) + np.sum(false_negative)))
     f1 = [2 / (1 / recall[k] + 1 / precision[k]) for k in range(num_classes)]
     f1.append(2 / (1 / recall[num_classes] + 1 / precision[num_classes]))
-    if compute_conf_matrix:
-        cfm = compute_confusion_matrix_isolated(matching_scores, streams_labels, thresholds, classes)
-    else:
-        cfm = None
     if print_results:
         np.set_printoptions(precision=3)
         print("Accuracy - ", end='')
@@ -53,6 +49,10 @@ def performance_evaluation_isolated(matching_scores, streams_labels, thresholds,
         print([float("{0:.3f}".format(i)) for i in recall])
         print("F1 - ", end='')
         print([float("{0:.3f}".format(i)) for i in f1])
+    if compute_conf_matrix:
+        cfm = compute_confusion_matrix_isolated(matching_scores, streams_labels, thresholds, classes)
+    else:
+        cfm = None
     return [accuracy, precision, recall, f1, cfm]
 
 
@@ -64,15 +64,16 @@ def compute_confusion_matrix_isolated(matching_scores, streams_labels, threshold
     scores = matching_scores - thresholds
     # perc_scores = minmax_scale(scores, axis=1)
     perc_scores_clip = scores.clip(min=0)
+    perc_scores_clip = perc_scores_clip / np.abs(thresholds)
     labels = np.zeros(len(perc_scores_clip))
     for i in range(len(perc_scores_clip)):
         if sum(perc_scores_clip[i]) > 0:
             labels[i] = classes[np.argmax(perc_scores_clip[i])]
     # labels = np.array([classes[i] for i in np.argmax(perc_scores, axis=1)])
     print("Acc: {}".format(accuracy_score(tmp_streams_labels, labels)))
-    print("Prec: {}".format(precision_score(tmp_streams_labels, labels, average='macro')))
-    print("Rec: {}".format(recall_score(tmp_streams_labels, labels, average='macro')))
-    print("F1: {}".format(f1_score(tmp_streams_labels, labels, average='macro')))
+    print("Prec: {}".format(precision_score(tmp_streams_labels, labels, average='micro')))
+    print("Rec: {}".format(recall_score(tmp_streams_labels, labels, average='micro')))
+    print("F1: {}".format(f1_score(tmp_streams_labels, labels, average='micro')))
     classes.append(0)
     cfm = confusion_matrix(tmp_streams_labels, labels.astype(int), labels=classes, normalize='true')
     plt.figure()

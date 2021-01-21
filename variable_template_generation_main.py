@@ -10,6 +10,7 @@ from os.path import join
 
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 from data_processing import data_loader as dl
 from performance_evaluation import fitness_functions as ftf
@@ -18,7 +19,7 @@ from training.templates.es_templates_generator import ESVariableTemplateGenerato
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 'hci_guided'
+    dataset_choice = 'beachvolleyball_encoded'
     outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     num_test = 1
@@ -29,6 +30,8 @@ if __name__ == '__main__':
     thresholds = list()
     null_class_percentage = 0.5
     encoding = False
+    split_train_test = True
+    train_test_random_state = 42
 
     num_individuals = 128
     rank = 32
@@ -41,11 +44,11 @@ if __name__ == '__main__':
     optimize_thresholds = False
     save_internals = False
 
-    enlarge_probability = 0.33
-    shrink_probability = 0.33
-    length_weight = 0.05
+    enlarge_probability = 0
+    shrink_probability = 0
+    length_weight = 0.01
     max_length_rate = 1
-    min_length_rate = 0.33
+    min_length_rate = 0.1
 
     if dataset_choice == 'skoda':
         encoding = '3d'
@@ -104,7 +107,7 @@ if __name__ == '__main__':
         bit_values = 64
         null_class_percentage = 0.5
         fitness_function = 2
-        save_internals = True
+        save_internals = False
     elif dataset_choice == 'hci_freehand':
         encoding = False
         classes = [49, 50, 51, 52, 53]
@@ -160,6 +163,19 @@ if __name__ == '__main__':
         thresholds = [1005, 3630, 967, 2935, 1733, 734, 1755, 1711, -294, -52, 1845, 684, 2134, 2053, 1488, 1389, 2028,
                       2041, -385, 1125, 906, 1465, 1439, 1673, 1407, 1724]
         bit_values = 8
+    elif dataset_choice == 'beachvolleyball':
+        classes = [1001, 1002, 1003, 1004]
+        output_folder = "{}/beachvolleyball/variable_templates".format(outputs_path)
+        params = [[31, 1, 2], [62, 56, 14], [43, 14, 5], [14, 8, 8]]
+        thresholds = [-362, 872, -644, 824]
+        bit_values = 128
+    elif dataset_choice == 'beachvolleyball_encoded':
+        encoding = '3d'
+        classes = [1001, 1002, 1003, 1004]
+        output_folder = "{}/beachvolleyball_encoded/variable_templates".format(outputs_path)
+        params = [[37, 1, 2], [44, 26, 10], [52, 5, 0], [34, 9, 4]]
+        thresholds = [-362, 872, -644, 824]
+        bit_values = 15
     elif dataset_choice == 'shl_preview':
         encoding = False
         classes = [1, 2, 4, 7, 8]
@@ -173,16 +189,28 @@ if __name__ == '__main__':
         bit_values = 64
         null_class_percentage = 0.5
 
-    templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice,
+    templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice, use_quick_loader=True,
                                                                   classes=classes, user=user,
                                                                   extract_null=use_null,
-                                                                  template_choice_method='mrt',
+                                                                  template_choice_method='mrt_lcs',
                                                                   null_class_percentage=null_class_percentage)
 
-    # Group streams by labels
-    streams_labels_sorted_idx = streams_labels.argsort()
-    streams = [streams[i] for i in streams_labels_sorted_idx]
-    streams_labels = streams_labels[streams_labels_sorted_idx]
+    if split_train_test:
+        streams_train, streams_test, train_labels, test_labels = train_test_split(streams, streams_labels,
+                                                                                  test_size=.33,
+                                                                                  random_state=train_test_random_state)
+        streams_test_labels_sorted_idx = test_labels.argsort()
+        streams_test = [streams_test[i] for i in streams_test_labels_sorted_idx]
+        test_labels = test_labels[streams_test_labels_sorted_idx]
+    else:
+        # Group streams by labels
+        streams_labels_sorted_idx = streams_labels.argsort()
+        streams = [streams[i] for i in streams_labels_sorted_idx]
+        streams_labels = streams_labels[streams_labels_sorted_idx]
+        streams_test = streams
+        streams_train = streams
+        train_labels = streams_labels
+        test_labels = streams_labels
 
     if optimize_thresholds:
         thresholds = [None for _ in range(len(classes))]
@@ -216,7 +244,7 @@ if __name__ == '__main__':
     print("Min length rate: {}".format(min_length_rate))
     print("Use encoding: {}".format(encoding))
     for i, c in enumerate(classes):
-        tmp_labels = np.copy(streams_labels)
+        tmp_labels = np.copy(train_labels)
         tmp_labels[tmp_labels != c] = 0
         chromosomes = len(templates[i])
         if inject_templates:
@@ -224,7 +252,7 @@ if __name__ == '__main__':
         else:
             injected_template = None
         print("{} - {}".format(c, chromosomes))
-        optimizer = ESVariableTemplateGenerator(streams, tmp_labels, params[i], thresholds[i], c, chromosomes,
+        optimizer = ESVariableTemplateGenerator(streams_train, tmp_labels, params[i], thresholds[i], c, chromosomes,
                                                 bit_values,
                                                 chosen_template=injected_template, use_encoding=encoding,
                                                 num_individuals=num_individuals, rank=rank,
@@ -306,23 +334,22 @@ if __name__ == '__main__':
     print("Results written")
     print(output_file_path.replace(".txt", ""))
 
-    m_wlcss_cuda = WLCSSCuda(best_templates, streams, params, encoding)
+    m_wlcss_cuda = WLCSSCuda(best_templates, streams_test, params, encoding)
     mss = m_wlcss_cuda.compute_wlcss()
     m_wlcss_cuda.cuda_freemem()
 
     if optimize_thresholds:
         thresholds = best_thresholds
-    fitness_score = ftf.isolated_fitness_function_params(mss, streams_labels, thresholds, classes,
+    fitness_score = ftf.isolated_fitness_function_params(mss, test_labels, thresholds, classes,
                                                          parameter_to_optimize='f1')
     print(fitness_score)
 
     original_t_lengths = list()
     generated_t_lengths = list()
     for i, c in enumerate(classes):
-        tmp_labels = np.copy(streams_labels)
+        tmp_labels = np.copy(test_labels)
         tmp_labels[tmp_labels != c] = 0
-        start_length = int(np.ceil(
-            np.average([len(streams[i]) for i, sl in enumerate(streams_labels) if sl == c]).astype(int)))
+        start_length = len(templates[i])
         templates_fitness_score = ftf.isolated_fitness_function_templates(mss[:, i], tmp_labels, thresholds[i],
                                                                           parameter_to_optimize=fitness_function)
         print(
@@ -336,13 +363,14 @@ if __name__ == '__main__':
                 len(best_templates[i])))
         original_t_lengths.append(start_length)
         generated_t_lengths.append(len(best_templates[i]))
-        print("Computation saved: {:3.2f}".format(
-            np.sum(np.array(generated_t_lengths)) / np.sum(np.array(original_t_lengths)) * 100))
+        print("Computation saved: {:3.2f}".format(100 -
+                                                  np.sum(np.array(generated_t_lengths)) / np.sum(
+            np.array(original_t_lengths)) * 100))
 
     print("")
 
     plt_creator.plot_templates_scores(output_file_path.replace(".txt", ""))
-    plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes, streams_labels,
+    plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes, test_labels,
                                   title="Isolated matching score - Template gen. - {}".format(dataset_choice))
     plt.show()
     print("End!")

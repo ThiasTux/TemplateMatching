@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colors as mcolors, patches
 
-from data_processing import data_loader_old as dl
+from data_processing import data_loader as dl
 from template_matching import wlcss_c as wlcss
 from utils import filter_data as fd
 from utils import utils
@@ -77,6 +77,37 @@ def plot_gestures(data, labels, classes=None, use_labels_color=False, save_fig=F
             sub.plot(e)
 
 
+def plot_3d_gestures(data, labels, classes=None, use_labels_color=False, save_fig=False):
+    if classes is None:
+        classes = np.unique(labels)
+    for c in classes:
+        fig = plt.figure(figsize=(10, 5))
+        fig.suptitle("Class: {}".format(c))
+        fig.canvas.set_window_title("{}".format(c))
+        gestures_idx = np.where(labels == c)[0]
+        gesture_data = [data[d] for d in gestures_idx]
+        num_instances_root = math.sqrt(len(gesture_data))
+        num_rows = (math.floor(num_instances_root) if num_instances_root % math.floor(
+            num_instances_root) < 0.5 else math.ceil(num_instances_root))
+        num_cols = math.ceil(num_instances_root)
+        for i, e in enumerate(gesture_data):
+            sub = fig.add_subplot(num_rows, num_cols + 2, i + 1, projection='3d')
+            sub.set_title("{}".format(i))
+            # sub.set_xticks([])
+            # sub.set_xticklabels([])
+            # sub.set_yticks([])
+            # sub.set_yticklabels([])
+            # sub.set_zticks([])
+            # sub.set_zticklabels([])
+            sub.set_xlabel("X")
+            sub.set_ylabel("Y")
+            sub.set_zlabel("Z")
+            sub.plot(e[:, 0], e[:, 1], e[:, 2], 'k:')
+            sub.plot(e[::10, 0], e[::10, 1], e[::10, 2], 'ks', markersize=.5)
+            sub.scatter(e[0, 0], e[0, 1], e[0, 2], marker='>', color='orange')
+            sub.scatter(e[-1, 0], e[-1, 1], e[-1, 2], marker='s', color='red')
+
+
 def plot_gascores(input_paths, save_img=False, title=None, output_file=""):
     fig = plt.figure(figsize=(13, 3))
     if title is not None:
@@ -116,13 +147,13 @@ def plot_gascores(input_paths, save_img=False, title=None, output_file=""):
 
 
 def plot_perclass_gascores(input_paths, save_img=False, title=None, output_file=""):
-    fig = plt.figure(figsize=(13, 3))
-    if title is not None:
-        fig.suptitle(title)
-    else:
-        fig.suptitle("Scores")
-    subplt = fig.add_subplot(111)
     for input_path in input_paths:
+        fig = plt.figure(figsize=(13, 3))
+        if title is not None:
+            fig.suptitle(title)
+        else:
+            fig.suptitle("Scores")
+        subplt = fig.add_subplot(111)
         with open("{}_conf.txt".format(input_path)) as conf_file:
             conf_file.readline()
             classes = [int(i) for i in conf_file.readline().split(":")[1].strip().split(" ")]
@@ -142,18 +173,18 @@ def plot_perclass_gascores(input_paths, save_img=False, title=None, output_file=
             mean_scores = np.mean(max_scores, axis=1)
             std_scores = np.std(max_scores, axis=1)
             t = np.arange(len(mean_scores))
-            p = subplt.plot(t, mean_scores, label=c)
             perc90 = np.percentile(mean_scores, 90)
             perc90_idx = np.argmax(mean_scores >= perc90)
-            annot_max(perc90_idx, perc90, subplt)
+            # annot_max(perc90_idx, perc90, subplt)
+            p = subplt.plot(t, mean_scores, label="{} - {} - {:4.3f}".format(c, perc90_idx, perc90))
             subplt.fill_between(t, (mean_scores + std_scores / 2), (mean_scores - std_scores / 2),
                                 color=lighten_color(p[0].get_color()))
-    subplt.set_ylim(0, 1.1)
-    subplt.set_xlim(-10, iterations + int(iterations * 0.1))
-    subplt.set_xticks(np.arange(0, iterations + int(iterations * 0.1), int(iterations / 5)))
-    plt.legend(loc=4)
-    if save_img:
-        plt.savefig(join(OUTPUT_PATH, output_file), bbox_inches='tight', format='eps', dpi=1200)
+        subplt.set_ylim(0, 1.1)
+        subplt.set_xlim(-10, iterations + int(iterations * 0.1))
+        subplt.set_xticks(np.arange(0, iterations + int(iterations * 0.1), int(iterations / 5)))
+        plt.legend(loc=4)
+        if save_img:
+            plt.savefig(join(OUTPUT_PATH, output_file), bbox_inches='tight', format='eps', dpi=1200)
 
 
 def annot_max(xmax, ymax, ax=None):
@@ -248,6 +279,65 @@ def plot_templates(input_path, num_templates=20, save_img=False, title=None, out
                     j += 1
             print("Class: {} - Start length: {} - End length: {}".format(c, len(
                 [int(v) for v in lines[0].split(" ")[:-1]]), len([int(v) for v in lines[-1].split(" ")[:-1]])))
+
+
+def plot_generated_templates_mrt_comparison(input_path):
+    conf_path = input_path + "_conf.txt"
+    with open(conf_path, 'r') as conf_file:
+        for i, line in enumerate(conf_file.readlines()):
+            if i == 0:
+                dataset_name_line = line
+            elif i == 1:
+                classes_line = line
+            elif i == 3:
+                iterations_line = line
+            elif i == 10:
+                num_test_line = line
+        dataset_name = dataset_name_line.split(":")[1].strip()
+        classes = classes_line.split(":")[1].strip().split(" ")
+        iterations = int(iterations_line.split(":")[1].strip())
+        num_test = int(num_test_line.split(":")[1].strip())
+    # line_to_print = [0, 10, 30, 60, 100, 200, 500, 999]
+    mrt_templates, _, _ = dl.load_training_dataset(dataset_choice=dataset_name)
+    line_to_print = [0, 5, 10, 20, 50, 100, 150, 200, 300, 499]
+    num_templates = len(line_to_print)
+    fig = plt.figure(figsize=(15, 8))
+    for i, c in enumerate(classes):
+        templates_file_path = input_path + ("_{}_templates.txt".format(c))
+        j = (num_templates + 1) * i + 1
+        with open(templates_file_path, 'r') as templates_file:
+            lines = templates_file.readlines()
+            q = 0
+            for k, line in enumerate(lines):
+                if k == line_to_print[q]:
+                    t = [int(v) for v in line.split(" ")[:-1]]
+                    subplt = fig.add_subplot(len(classes), num_templates + 1, j)
+                    subplt.plot(t, linewidth=.8)
+                    if k == line_to_print[-1]:
+                        k += 1
+                    if i == 0:
+                        subplt.set_title("{}".format(k))
+                    if k == 0:
+                        subplt.set_ylabel("{}".format(c), rotation=0, labelpad=10)
+                    subplt.set_xlim([0, len(t)])
+                    subplt.set_xticks([0, len(t)])
+                    subplt.set_xticklabels(["", len(t)])
+                    subplt.set_yticks([])
+                    subplt.set_yticklabels([])
+                    j += 1
+                    q += 1
+        subplt = fig.add_subplot(len(classes), num_templates + 1, j)
+        subplt.plot(mrt_templates[i], linewidth=.8, color='orange')
+        if i == 0:
+            subplt.set_title("MRT")
+        subplt.set_xlim([0, len(mrt_templates[i])])
+        subplt.set_xticks([0, len(mrt_templates[i])])
+        subplt.set_xticklabels(["", len(mrt_templates[i])])
+        subplt.set_yticks([])
+        subplt.set_yticklabels([])
+    fig.text(0.5, 0.95, 'Iterations', ha='center')
+    fig.text(0.09, 0.5, 'Gestures', ha='center', rotation=90)
+    fig.text(0.5, 0.05, 'Templates length', ha='center')
 
 
 def rotate(x, y, origin=(0, 0)):

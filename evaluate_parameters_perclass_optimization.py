@@ -14,7 +14,7 @@ from performance_evaluation import fitness_functions as ftf
 from template_matching.wlcss_cuda_class import WLCSSCuda
 from training.params.ga_params_optimizer import GAParamsOptimizer
 
-test_filepath = "test/params_perclass/test_hci_guided_1.csv"
+test_filepath = "test/params_perclass/test_hci_guided_0.csv"
 test_info = ["dataset_choice", "num_test", "use_null", "bits_params", "bits_thresholds", "write_to_file", "user",
              "null_class_percentage", "num_individuals", "rank", "elitism", "iterations", "fitness_function",
              "crossover_probability", "mutation_probability", "encoding", "classes", "output_folder"]

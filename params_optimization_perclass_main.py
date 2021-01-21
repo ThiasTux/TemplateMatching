@@ -6,6 +6,7 @@ from os.path import join
 
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 from data_processing import data_loader as dl
 from performance_evaluation import fitness_functions as ftf
@@ -14,7 +15,7 @@ from training.params.ga_params_optimizer import GAParamsOptimizer
 from utils.plots import plot_creator as plt_creator
 
 if __name__ == '__main__':
-    dataset_choice = 'hci_guided'
+    dataset_choice = 'beachvolleyball_encoded'
     outputs_path = "/home/mathias/Documents/Academic/PhD/Research/WLCSSTraining/training/cuda"
 
     num_test = 1
@@ -22,17 +23,21 @@ if __name__ == '__main__':
     write_to_file = True
     user = None
     encoding = False
-    save_internals = True
+    save_internals = False
+    split_train_test = True
+    train_test_random_state = 42
 
     num_individuals = 32
     bits_params = 6
     bits_thresholds = 11
-    rank = int(num_individuals / 3)
+    rank = 10
     elitism = 3
-    iterations = 50
+    iterations = 500
     fitness_function = 'f1_acc'
-    crossover_probability = 0.3
-    mutation_probability = 0.1
+    crossover_probability = 0.35
+    mutation_probability = 0.25
+
+    null_class_percentage = 0.5
 
     if dataset_choice == 'skoda':
         encoding = '3d'
@@ -57,8 +62,7 @@ if __name__ == '__main__':
         null_class_percentage = 0.5
     elif dataset_choice == 'hci_table':
         encoding = '2d'
-        # classes = [i for i in range(9, 35)]
-        classes = [9]
+        classes = [i for i in range(9, 35)]
         output_folder = "{}/hci_table/params_perclass".format(outputs_path)
         null_class_percentage = 0.5
     elif dataset_choice == 'skoda_old':
@@ -74,6 +78,13 @@ if __name__ == '__main__':
         user = 3
         output_folder = "{}/opportunity/params_perclass".format(outputs_path)
         null_class_percentage = 0.5
+    elif dataset_choice == 'beachvolleyball':
+        classes = [1001, 1002, 1003, 1004]
+        output_folder = "{}/beachvolleyball/params_perclass".format(outputs_path)
+    elif dataset_choice == 'beachvolleyball_encoded':
+        classes = [1001, 1002, 1003, 1004]
+        output_folder = "{}/beachvolleyball_encoded/params_perclass".format(outputs_path)
+        encoding = '3d'
     elif dataset_choice == 'hci_freehand':
         classes = [49, 50, 51, 52, 53]
         output_folder = "{}/hci_freehand/params_perclass".format(outputs_path)
@@ -109,12 +120,25 @@ if __name__ == '__main__':
         null_class_percentage = 0.5
 
     templates, streams, streams_labels = dl.load_training_dataset(dataset_choice=dataset_choice, classes=classes,
-                                                                  template_choice_method='mrt_lcs')
+                                                                  template_choice_method='mrt_lcs',
+                                                                  use_quick_loader=True)
 
-    # Group streams by labels
-    streams_labels_sorted_idx = streams_labels.argsort()
-    streams = [streams[i] for i in streams_labels_sorted_idx]
-    streams_labels = streams_labels[streams_labels_sorted_idx]
+    if split_train_test:
+        streams_train, streams_test, train_labels, test_labels = train_test_split(streams, streams_labels,
+                                                                                  test_size=.33,
+                                                                                  random_state=train_test_random_state)
+        streams_test_labels_sorted_idx = test_labels.argsort()
+        streams_test = [streams_test[i] for i in streams_test_labels_sorted_idx]
+        test_labels = test_labels[streams_test_labels_sorted_idx]
+    else:
+        # Group streams by labels
+        streams_labels_sorted_idx = streams_labels.argsort()
+        streams = [streams[i] for i in streams_labels_sorted_idx]
+        streams_labels = streams_labels[streams_labels_sorted_idx]
+        streams_test = streams
+        streams_train = streams
+        train_labels = streams_labels
+        test_labels = streams_labels
 
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
     hostname = socket.gethostname().lower()
@@ -137,7 +161,7 @@ if __name__ == '__main__':
 
     for i, c in enumerate(classes):
         print(c)
-        optimizer = GAParamsOptimizer([templates[i]], streams, streams_labels, [c],
+        optimizer = GAParamsOptimizer([templates[i]], streams_train, train_labels, [c],
                                       use_encoding=encoding, save_internals=save_internals,
                                       bits_reward=bits_params,
                                       bits_penalty=bits_params,
@@ -203,17 +227,19 @@ if __name__ == '__main__':
             print(results[i][:-1])
     print("Results written")
 
-    m_wlcss_cuda = WLCSSCuda(templates, streams, params, encoding)
+    m_wlcss_cuda = WLCSSCuda(templates, streams_test, params, encoding)
     mss = m_wlcss_cuda.compute_wlcss()
     m_wlcss_cuda.cuda_freemem()
 
-    fitness_score = ftf.isolated_fitness_function_params(mss, streams_labels, thresholds, classes,
+    fitness_score = ftf.isolated_fitness_function_params(mss, test_labels, thresholds, classes,
                                                          parameter_to_optimize='f1')
     print(fitness_score)
 
-    plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes, streams_labels,
+    plt_creator.plot_isolated_mss(mss, thresholds, dataset_choice, classes, test_labels,
                                   title="Isolated matching score - Params opt. - {}".format(dataset_choice))
     plt_creator.plot_perclass_gascores([output_file_path.replace(".txt", "")],
                                        title="Fitness scores evolution - {}".format(dataset_choice))
+    print(params)
+    print(thresholds)
     plt.show()
     print("End!")
